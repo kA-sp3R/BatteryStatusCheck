@@ -12,13 +12,16 @@ public sealed class RazerPollingRateControllerTests
     [InlineData(0x0088, true)]
     [InlineData(0x00A6, true)]
     [InlineData(0x00DF, true)]
-    [InlineData(0x009F, false)]
-    [InlineData(0x00B3, false)]
-    [InlineData(0x00BF, false)]
-    [InlineData(0x00C1, false)]
+    [InlineData(0x009F, true)]
+    [InlineData(0x00B3, true)]
+    [InlineData(0x00BF, true)]
+    [InlineData(0x00C1, true)]
+    [InlineData(0x009E, false)]
+    [InlineData(0x00C0, false)]
+    [InlineData(0x00BE, false)]
     [InlineData(0x025C, false)]
     [InlineData(0xFFFF, false)]
-    public void OnlyDocumentedOrdinaryWirelessReceiverMappingsAreHandled(ushort productId, bool expected)
+    public void OnlyDocumentedWirelessReceiverMappingsAreHandled(ushort productId, bool expected)
     {
         var endpoint = Endpoint(productId);
         Assert.Equal(expected, new RazerPollingRateController().CanHandle(endpoint, Device(endpoint)));
@@ -39,9 +42,9 @@ public sealed class RazerPollingRateControllerTests
     }
 
     [Fact]
-    public async Task UnsupportedHyperPollingAssociationSendsNoProtocolCommands()
+    public async Task UnknownProductSendsNoProtocolCommands()
     {
-        var endpoint = Endpoint(0x00B3);
+        var endpoint = Endpoint(0xFFFF);
         await using var transport = new FeatureTransport(endpoint);
         var controller = new RazerPollingRateController();
         var read = await controller.ReadAsync(endpoint, transport, Device(endpoint), CancellationToken.None);
@@ -75,13 +78,16 @@ public sealed class RazerPollingRateControllerTests
         Assert.Equal(1, transport.SettingWrites);
     }
 
-    [Fact]
-    public async Task InvalidRateIsRejectedAfterFreshReadWithoutASettingWrite()
+    [Theory]
+    [InlineData(250)]
+    [InlineData(2000)]
+    [InlineData(8000)]
+    public async Task OrdinaryReceiverDoesNotGainRatesFromItsMouseFamilysOptionalUpgrade(int rate)
     {
         var endpoint = Endpoint();
         await using var transport = new FeatureTransport(endpoint);
         var result = await new RazerPollingRateController().ApplyAsync(endpoint, transport,
-            Device(endpoint), 250, () => throw new InvalidOperationException("No permission check is needed for an invalid rate."),
+            Device(endpoint), rate, () => throw new InvalidOperationException("No permission check is needed for an invalid rate."),
             CancellationToken.None);
         Assert.False(result.Verified);
         Assert.Equal(new[] { 125, 500, 1000 }, result.Info.SupportedRatesHz);

@@ -26,13 +26,13 @@
                 <TextBlock x:Name="DetailText" TextWrapping="Wrap" Foreground="#AAAAAA" Margin="0,0,0,16"
                            AutomationProperties.LiveSetting="Polite" />
                 <StackPanel x:Name="RatePanel" Visibility="Collapsed">
-                    <Label Content="_Supported rate" Target="{Binding ElementName=RateBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
+                    <Label Content="_Rate setting" Target="{Binding ElementName=RateBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
                     <DockPanel Margin="0,0,0,12">
                         <Button x:Name="ApplyButton" Content="Apply" DockPanel.Dock="Right" Margin="10,0,0,0"
                                 Foreground="#44D62C" Click="Apply_Click" />
                         <ComboBox x:Name="RateBox" DisplayMemberPath="Name" MinHeight="32"
                                   Foreground="#101010" Background="#EEEEEE"
-                                  AutomationProperties.Name="Supported polling rate"
+                                  AutomationProperties.Name="Polling rate setting"
                                   SelectionChanged="Rate_SelectionChanged" />
                     </DockPanel>
                 </StackPanel>

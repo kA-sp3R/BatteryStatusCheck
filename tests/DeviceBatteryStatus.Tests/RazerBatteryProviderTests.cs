@@ -22,6 +22,8 @@ public sealed class RazerBatteryProviderTests
     [Theory]
     [InlineData(0x00A6, "&mi_00", true)]
     [InlineData(0x00A6, "&mi_01", false)]
+    [InlineData(0x00B3, "&mi_00", true)]
+    [InlineData(0x00B3, "&mi_01", false)]
     [InlineData(0x025C, "&mi_02", true)]
     [InlineData(0x025C, "&mi_00", false)]
     [InlineData(0x0271, "&MI_03", true)]
@@ -68,6 +70,11 @@ public sealed class RazerBatteryProviderTests
         var device = Assert.Single(devices);
         Assert.Equal(ReadingState.Unsupported, device.Battery.State);
         Assert.Null(device.Battery.Percentage);
+        Assert.Equal(ConnectionState.Unknown, device.Connection);
+        Assert.Equal("receiver-a:razer:00B3", device.Device.Id);
+        Assert.Equal("1532:00B3", device.Device.ModelId);
+        Assert.Equal("Razer HyperPolling receiver (paired mouse unknown)", device.Device.Name);
+        Assert.Contains("radio link", device.Battery.Detail);
         Assert.Equal(0, transport.FeatureWrites);
     }
 

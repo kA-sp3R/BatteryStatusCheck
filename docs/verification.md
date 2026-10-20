@@ -1,6 +1,6 @@
 # Milestones 1–4 verification
 
-Milestone 4 source review, Windows compilation, focused regressions and both preview package inspections passed. Application runtime, physical hardware and full testing remain separate and unperformed.
+Milestone 4 source review, Windows compilation, focused regressions and both preview package inspections passed for the source recorded below. A subsequent Razer HyperPolling/high-rate fix is implemented and awaiting Windows CI; the table still records the previous baseline. Application runtime, physical hardware and full testing remain separate and unperformed.
 
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ Malformed Razer/Alienware replies produce failed readings. A valid Razer battery
 ## Outstanding limitations
 
 - Alienware Pro now has an implementation based on the exact-model MIT project `romain-ncls/awpro`, revision `d92f6df5`, whose documented frames and fixtures come from AWCC captures. This establishes implementation evidence, not local Windows or hardware validation. The original pcaps/descriptors are not public in that repository. See [research](research/alienware-awcc.md).
-- Generic Razer HyperPolling and shared receiver association are unsupported. Razer battery replies do not independently prove a live radio connection or exclude firmware-cached data.
+- Generic Razer HyperPolling battery/paired-model association and shared multi-peripheral association are unsupported. Its manual controller addresses receiver configuration with the paired model/link explicitly unknown. Razer battery replies do not independently prove a live radio connection or exclude firmware-cached data.
 - Logitech support is constrained to documented receiver IDs and real percentage capabilities. Level-only models cannot provide the requested exact battery percentage.
 - Windows discovery and native I/O, protocol compatibility, reconnect behavior, and firmware caching need application/hardware verification after permission. Read-only query packets still access hardware when the user launches the app.
 - Milestone 4 was approved by the user. The interface, shell notification delivery, mixed-DPI placement, startup registration and full shutdown behavior remain unverified at runtime.
@@ -39,9 +39,9 @@ Malformed Razer/Alienware replies produce failed readings. A valid Razer battery
 ## Milestone 3 implementation
 
 - Separate polling-rate window, disabled each time it opens. Detect reads capabilities; only an explicit Apply can change a setting. No automatic restore or persisted rate is used.
-- Exact mapped Razer wireless receiver IDs use the documented ordinary 125/500/1000 Hz protocol. High-rate/two-bank and generic HyperPolling associations remain unsupported.
+- Exact mapped ordinary Razer wireless receiver IDs use the documented 125/500/1000 Hz protocol. The subsequent high-rate fix adds `009F`, `00C1`, `00BF` and generic HyperPolling `00B3` with source-profile options through 8000 Hz; generic receiver configuration does not establish paired-mouse identity or battery support.
 - Logitech HID++ 8060/8061 offers device-advertised mouse rates, potentially through 8000 Hz, after fresh identity checks. Unknown identity, unsupported versions and profile-controlled modes are refused.
-- A shared HID gate serializes battery and manual exchanges. Each Apply rechecks capabilities, sends one setting request and verifies reported configuration through readback; uncertain outcomes remain unverified.
+- A shared HID gate serializes battery and manual exchanges. Each Apply checks its target/options and sends the documented setting sequence without retries. Razer high-rate configuration requires two commands, with cancellation and opt-in checked before each; uncertain or partial outcomes remain unverified. Fresh readback confirms the reported effective configuration, not independently stored state for each phase.
 - Disable, selection changes, window closure, suspend/resume and exit revoke pending manual operations. Polling failures do not alter battery data.
 
 Configured-rate readback is not a measurement of USB report timing. No polling-rate behavior, firmware compatibility or receiver/peripheral pairing has been verified on hardware.
@@ -50,7 +50,7 @@ Configured-rate readback is not a measurement of USB report timing. No polling-r
 
 - Reviewed Core battery/polling models and protocols, settings/presentation, WPF/tray lifecycle and native Windows discovery/I/O/startup. Native lifetime and GDI ownership review found no material defect; this does not establish runtime behavior.
 - Preserved fresh link evidence when a failed battery read retains a stale percentage; cancellation after discovery/reads or permission callbacks cannot publish late results or start manual operations.
-- Gated Logitech `1000` percentages on its advertised mileage capability, retaining category-only values as unavailable. Razer admission now excludes unknown/wired products while explicitly recognizing unsupported HyperPolling.
+- Gated Logitech `1000` percentages on its advertised mileage capability, retaining category-only values as unavailable. Razer admission excludes unknown/wired products while explicitly recognizing the HyperPolling receiver with unavailable battery data.
 - Removed unused tray anchoring code and prevented nonpositive HID++ read deadlines. No CPU/memory or real-time performance measurements were taken.
 - Added unsigned `win-x64` framework-dependent and self-contained preview packages, provenance manifests, notices, archive/payload checksums and static ZIP/PE/runtime inspection. See [release instructions](release.md). Packages are CI artifacts; no signed/public GitHub Release is claimed.
 

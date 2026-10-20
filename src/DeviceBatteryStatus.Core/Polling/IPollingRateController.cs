@@ -10,7 +10,7 @@ public sealed record PollingRateInfo(string DeviceId, PollingRateState State, in
 
 public sealed record PollingApplyResult(bool Verified, PollingRateInfo Info, string Detail);
 
-/// <summary>Manual mouse settings operations, independent of battery monitoring.</summary>
+/// <summary>Manual mouse/receiver configuration, independent of battery monitoring.</summary>
 public interface IPollingRateController
 {
     bool CanHandle(HidEndpoint endpoint, PeripheralIdentity device);

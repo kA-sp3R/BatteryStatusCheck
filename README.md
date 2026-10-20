@@ -23,16 +23,18 @@ Freshness is checked every five seconds independently of hardware polling. Sampl
 
 ## Manual polling-rate control
 
-Open **Settings → Polling rate**. Controls start disabled each time the window opens. Enable them, select a mouse and click **Detect** to read its current rate and supported options. Select a rate and click **Apply** to request a change. Saving preferences, battery refresh, device selection and startup never change polling rate.
+Open **Settings → Polling rate**. Controls start disabled each time the window opens. Enable them, select a mouse or receiver and click **Detect** to read its current configuration and rate options. Select a rate and click **Apply** to request a change. Saving preferences, battery refresh, device selection and startup never change polling rate.
 
-Each Apply checks the device and available rates again, sends the setting once, and reads back the reported rate. A failed or interrupted verification cannot establish whether the setting changed; detect again before another attempt. Disabling controls, changing devices, closing the window, sleep/resume and shutdown invalidate pending operations and displayed capabilities. Battery refresh and manual exchanges share one gate to prevent competing replies.
+Each Apply checks the target and available rates again, sends its documented setting sequence without retries, and reads back the reported rate. Razer high-rate receivers require two setting commands; cancellation and opt-in are checked before each one. An interrupted or failed sequence may already have changed configuration; detect again before another attempt. For these high-rate receivers, an explicit Apply sends both commands even when the reported rate already matches, allowing a new deliberate attempt after partial completion. Disabling controls, changing devices, closing the window, sleep/resume and shutdown invalidate pending operations and displayed capabilities. Battery refresh and manual exchanges share one gate to prevent competing replies.
 
 | Family | Polling-rate implementation | Limitations |
 | --- | --- | --- |
-| Razer | Exact documented wireless receiver IDs using the ordinary 125/500/1000 Hz protocol | High-rate, generic HyperPolling and ambiguous receiver associations remain unsupported. See [protocol coverage](docs/protocols/razer-polling.md). |
+| Razer | Ordinary HyperSpeed receivers at 125/500/1000 Hz; documented high-rate receivers `009F`, `00C1`, `00BF` and generic HyperPolling `00B3` at 125/500/1000/2000/4000/8000 Hz | Options are source-backed profiles, not negotiated limits. Generic `00B3` controls receiver configuration; paired mouse identity/link and battery remain unavailable. Firmware/physical compatibility is unverified. See [protocol coverage](docs/protocols/razer-polling.md). |
 | Logitech | Mouse-only HID++ 8060/8061 features, with device-advertised options potentially up to 8000 Hz | Requires fresh pairing identity and compatible receiver/firmware; profile-controlled modes are not changed. See [protocol coverage](docs/protocols/logitech-polling.md). |
 
 These are source-backed implementations; physical compatibility and the actual USB reporting frequency remain unverified. Reading back a configured rate does not measure report timing. Polling-rate failures do not replace battery readings or imply a radio-link state.
+
+An ordinary 1000 Hz HyperSpeed receiver does not gain higher rates through software. A compatible mouse using an upgraded HyperPolling receiver follows that receiver's `00B3` route; its model is not inferred from the dongle.
 
 ## Build and verification
 
@@ -51,7 +53,7 @@ Compilation is not application runtime or hardware verification. Obtain explicit
 
 | Family | Implementation | Limitations |
 | --- | --- | --- |
-| Razer | Mapped wireless mouse/keyboard PIDs; battery and charging control reports | [Exact mappings](docs/protocols/razer.md). Radio-link state unknown; receiver firmware caching unverified. Generic HyperPolling association unsupported. |
+| Razer | Mapped wireless mouse/keyboard PIDs; battery and charging control reports | [Exact mappings](docs/protocols/razer.md). Radio-link state unknown; receiver firmware caching unverified. Generic HyperPolling battery/paired-model association unsupported; receiver polling configuration is implemented separately. |
 | Logitech | Selected LIGHTSPEED/Unifying receiver PIDs; per-slot HID++ ping, identity, percentage features/register | [Exact coverage](docs/protocols/logitech.md). Percentage-less models remain unsupported, including many category-only devices. |
 | Alienware Pro headset | Source-backed protocol reader for `413C:A529` / vendor collection `FF13` | Checks model identity and radio link before accepting battery data. Windows/hardware behavior unverified. Wired `A528` excluded. See [protocol and evidence](docs/protocols/alienware.md). |
 

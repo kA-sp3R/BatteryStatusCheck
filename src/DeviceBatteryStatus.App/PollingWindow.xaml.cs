@@ -54,7 +54,7 @@ public partial class PollingWindow : Window
         InvalidateOperation();
         Volatile.Write(ref enabled, EnableBox.IsChecked == true ? 1 : 0);
         ResetCapabilities(EnableBox.IsChecked == true
-            ? "Click Detect to read this mouse's supported rates."
+            ? "Click Detect to read the current configuration and rate options."
             : "Polling-rate control is disabled.");
     }
 
@@ -78,7 +78,7 @@ public partial class PollingWindow : Window
         detected = null;
         RateBox.ItemsSource = null;
         CurrentText.Text = "Detecting current rate…";
-        DetailText.Text = "Reading capabilities. No polling-rate change is being sent.";
+        DetailText.Text = "Reading current configuration. No polling-rate change is being sent.";
         var (operation, version) = BeginOperation();
         try
         {
@@ -113,8 +113,7 @@ public partial class PollingWindow : Window
     {
         if (busy || Volatile.Read(ref enabled) != 1 || DeviceBox.SelectedItem is not DeviceChoice selected ||
             RateBox.SelectedItem is not RateChoice requested || detected is not { State: PollingRateState.Supported } capabilities ||
-            capabilities.DeviceId != selected.Identity.Id || !capabilities.SupportedRatesHz.Contains(requested.Hertz) ||
-            capabilities.CurrentRateHz == requested.Hertz) return;
+            capabilities.DeviceId != selected.Identity.Id || !capabilities.SupportedRatesHz.Contains(requested.Hertz)) return;
 
         // Consume this detected permission before awaiting. Every Apply requires a deliberate new Detect afterwards.
         detected = null;
@@ -228,7 +227,7 @@ public partial class PollingWindow : Window
         RatePanel.Visibility = detected is null ? Visibility.Collapsed : Visibility.Visible;
         RateBox.IsEnabled = canUse && !busy && detected is not null;
         ApplyButton.IsEnabled = canUse && !busy && detected is not null && RateBox.SelectedItem is RateChoice selected &&
-            detected.SupportedRatesHz.Contains(selected.Hertz) && detected.CurrentRateHz != selected.Hertz;
+            detected.SupportedRatesHz.Contains(selected.Hertz);
     }
 
     private void OnClosing(object? sender, CancelEventArgs e)

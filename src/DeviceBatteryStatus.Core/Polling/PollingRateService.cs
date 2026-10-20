@@ -57,7 +57,7 @@ public sealed class PollingRateService(IHidDiscovery discovery, IHidTransportFac
                 if (selection.Unavailable is not null) return NotApplied(selection.Unavailable);
                 await using var transport = await transports.OpenAsync(selection.Endpoint!, cancellationToken).ConfigureAwait(false);
                 EnsureAllowed(canApply, cancellationToken);
-                // The controller must rediscover capabilities/identity and recheck this guard immediately before its write.
+                // The controller must validate its target/options and recheck this guard before each setting command.
                 var result = await selection.Controller!.ApplyAsync(selection.Endpoint!, transport, device,
                     rateHz, canApply, cancellationToken).ConfigureAwait(false);
                 if (result.Info.DeviceId != device.Id)

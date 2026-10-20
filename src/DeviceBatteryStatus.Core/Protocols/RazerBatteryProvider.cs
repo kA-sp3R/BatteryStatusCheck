@@ -37,7 +37,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
 
     public string Name => "Razer battery control reports";
 
-    public static byte? GetExpectedInterfaceNumber(ushort productId) =>
+    public static byte? GetExpectedInterfaceNumber(ushort productId) => productId == 0x00B3 ? (byte)0 :
         Models.TryGetValue(productId, out var model) ? model.InterfaceNumber : null;
 
     public bool CanHandle(HidEndpoint endpoint)
@@ -45,8 +45,8 @@ public sealed class RazerBatteryProvider : IBatteryProvider
         if (endpoint.VendorId != 0x1532 || endpoint.FeatureReportLength != RazerProtocol.ReportLength)
             return false;
         // USB ancestry alone cannot distinguish a wireless receiver from a wired Razer device.
-        // Keep only exact wireless mappings and the documented, explicitly unsupported HyperPolling receiver.
-        if (!Models.ContainsKey(endpoint.ProductId)) return endpoint.ProductId == 0x00B3;
+        // Keep exact wireless mappings plus the HyperPolling receiver, whose battery remains unavailable.
+        if (!Models.ContainsKey(endpoint.ProductId) && endpoint.ProductId != 0x00B3) return false;
         var expectedInterface = GetExpectedInterfaceNumber(endpoint.ProductId);
 
         var marker = endpoint.DevicePath.IndexOf("&mi_", StringComparison.OrdinalIgnoreCase);
@@ -61,14 +61,16 @@ public sealed class RazerBatteryProvider : IBatteryProvider
     {
         cancellationToken.ThrowIfCancellationRequested();
         Models.TryGetValue(endpoint.ProductId, out var model);
+        var name = endpoint.ProductId == 0x00B3 ? "Razer HyperPolling receiver (paired mouse unknown)"
+            : model?.Name ?? endpoint.ProductName ?? "Unknown Razer USB endpoint";
         var identity = new PeripheralIdentity($"{endpoint.ReceiverId}:razer:{endpoint.ProductId:X4}",
-            model?.Name ?? endpoint.ProductName ?? "Unknown Razer USB endpoint", DeviceVendor.Razer,
+            name, DeviceVendor.Razer,
             endpoint.ReceiverId, $"1532:{endpoint.ProductId:X4}");
 
         if (!CanHandle(endpoint) || model is null)
         {
             var detail = endpoint.ProductId == 0x00B3
-                ? "HyperPolling receiver detected; its paired peripheral identity is not implemented."
+                ? "Paired mouse identity and radio link are unknown; no battery percentage is supplied. Manual polling control addresses the receiver's configuration."
                 : "No documented protocol mapping for this Razer wireless endpoint.";
             return [new(identity, BatteryReading.Unavailable(ReadingState.Unsupported, detail))];
         }
