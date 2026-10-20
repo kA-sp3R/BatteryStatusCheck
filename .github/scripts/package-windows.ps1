@@ -43,6 +43,27 @@ Get-ChildItem -LiteralPath $publish -Force | Copy-Item -Destination $staging -Re
 Copy-Item (Join-Path $repositoryRoot 'THIRD_PARTY_NOTICES.md') (Join-Path $staging 'THIRD_PARTY_NOTICES.md') -Force
 Copy-Item (Join-Path $repositoryRoot 'docs/release.md') (Join-Path $staging 'README.md') -Force
 
+$sdk = (& dotnet --version).Trim()
+if ($LASTEXITCODE -ne 0) { throw 'Cannot record the packaging SDK.' }
+# Both flavors redistribute an apphost from the installed .NET distribution.
+# Keep that distribution's notices as well as exact runtime-pack notices below.
+$dotnetRoot = Split-Path (Get-Command dotnet -CommandType Application).Source -Parent
+$distributionNotices = @(Get-ChildItem -LiteralPath $dotnetRoot -File | Where-Object {
+    $_.Name -match '^(LICENSE(?:\.(?:TXT|MD))?|THIRD[-_]?PARTY[-_]?NOTICES\.(?:TXT|MD))$'
+})
+if (@($distributionNotices | Where-Object { $_.Name -match '^LICENSE(?:\.|$)' }).Count -eq 0 -or
+    @($distributionNotices | Where-Object { $_.Name -match '^THIRD[-_]?PARTY[-_]?NOTICES\.' }).Count -eq 0) {
+    throw 'The active .NET distribution is missing license/notice text for apphost redistribution.'
+}
+$distributionNoticePaths = @()
+foreach ($notice in $distributionNotices) {
+    $destination = "licenses/dotnet-distribution/$($notice.Name)"
+    $destinationPath = Join-Path $staging $destination
+    New-Item -ItemType Directory -Force (Split-Path $destinationPath -Parent) | Out-Null
+    Copy-Item -LiteralPath $notice.FullName -Destination $destinationPath
+    $distributionNoticePaths += $destination
+}
+
 $runtimeLicenses = @()
 if ($selfContained) {
     if (!$env:NUGET_PACKAGES) { throw 'The runtime package cache must be explicit for license provenance.' }
@@ -78,8 +99,6 @@ foreach ($file in $stagingFiles) {
     if ($relative -in 'package-manifest.json', 'SHA256SUMS.txt') { throw 'Publish output contains reserved package metadata.' }
     $files[$relative] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
 }
-$sdk = (& dotnet --version).Trim()
-if ($LASTEXITCODE -ne 0) { throw 'Cannot record the packaging SDK.' }
 $manifest = [ordered]@{
     schemaVersion = 1
     product = 'Device Battery Status'
@@ -95,6 +114,7 @@ $manifest = [ordered]@{
     runtimeOptions = $runtimeConfig.runtimeOptions
     applicationLaunched = $false
     hardwareVerified = $false
+    distributionNotices = [ordered]@{ source = 'active-dotnet-distribution'; sdkVersion = $sdk; files = $distributionNoticePaths }
     runtimeLicenses = @($runtimeLicenses)
     files = $files
 }

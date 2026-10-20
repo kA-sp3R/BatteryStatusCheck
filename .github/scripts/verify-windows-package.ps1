@@ -59,6 +59,17 @@ try {
         finally { $stream.Dispose() }
         if ($hash -cne $manifest.files[$path]) { throw "Payload checksum mismatch: $path" }
     }
+    if ($manifest.distributionNotices.source -ne 'active-dotnet-distribution' -or
+        $manifest.distributionNotices.sdkVersion -cne $manifest.sdkVersion) { throw 'Missing apphost notice provenance.' }
+    $distributionPaths = @($manifest.distributionNotices.files)
+    if (@($distributionPaths | Where-Object { [IO.Path]::GetFileName($_) -match '^LICENSE(?:\.|$)' }).Count -eq 0 -or
+        @($distributionPaths | Where-Object { [IO.Path]::GetFileName($_) -match '^THIRD[-_]?PARTY[-_]?NOTICES\.' }).Count -eq 0) {
+        throw 'Missing .NET distribution license/notice files for apphost redistribution.'
+    }
+    foreach ($path in $distributionPaths) {
+        if (!$path.StartsWith('licenses/dotnet-distribution/', [StringComparison]::Ordinal) -or
+            !$entries.ContainsKey($path) -or $entries[$path].Length -eq 0) { throw "Invalid .NET distribution notice payload: $path" }
+    }
     $exe = Read-EntryBytes $entries['DeviceBatteryStatus.exe']
     if ($exe.Length -lt 256 -or $exe[0] -ne 0x4D -or $exe[1] -ne 0x5A) { throw 'Apphost is not a PE executable.' }
     $header = [BitConverter]::ToInt32($exe, 0x3C)
