@@ -1,15 +1,15 @@
 # Milestones 1–4 verification
 
-Milestone 4 source review, Windows compilation, focused regressions and both preview package inspections passed for the source recorded below. A subsequent Razer HyperPolling/high-rate fix is implemented and awaiting Windows CI; the table still records the previous baseline. Application runtime, physical hardware and full testing remain separate and unperformed.
+Milestone 4 review and the subsequent Razer HyperPolling/high-rate fix passed Windows compilation, focused regressions and both preview.2 package inspections for the source recorded below. Application runtime, physical hardware and full testing remain separate and unperformed.
 
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
 | Static review | Completed | Source/peer review, XML/project-reference checks and whitespace checks. This is not compilation or a rendered UI check. |
-| Windows compilation | Passed | [Windows run `39419305858`](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39419305858), source commit `8bf6aeb005b7e805d2955b95abbf9a593bab1b0e`; WPF solution compiled and development artifact uploaded. |
-| Focused C# automated tests | 291 passed; 0 failed; 0 skipped | Same Windows run/source commit. Actual TRX counters exposed through check `118615974334`: Executed=291, Passed=291, Failed=0, Skipped=0, NativeExit=0. Includes 14 new Milestone 4 accuracy/cancellation regressions alongside prior protocol, presentation and settings cases. |
-| Offline capture parser tests | 5 passed; 0 skipped | Same Windows run/source commit, check `118615974087`: Ran=5, Skipped=0, NativeExit=0. Synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
-| Framework-dependent package | Passed static inspection | Check `118616469454`: 11 files, x64 GUI PE, runtime metadata, source/run provenance and all payload hashes verified. No application launch. |
-| Self-contained package | Passed static inspection | Check `118616469483`: 482 files, x64 GUI PE, bundled .NET/Windows Desktop 10.0.13, license provenance and all payload hashes verified. No application launch. |
+| Windows compilation | Passed | [Windows run `39491021366`](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39491021366), source commit `3eaeb556a578da1922518d5b5aa421c44372c0fb`; WPF solution compiled and development artifact uploaded. |
+| Focused C# automated tests | 348 passed; 0 failed; 0 skipped | Same Windows run/source commit. Actual TRX counters exposed through check `118863920305`: Executed=348, Passed=348, Failed=0, Skipped=0, NativeExit=0. Includes high-rate framing, receiver transactions, partial-sequence recovery, cancellation and ordinary-receiver limit regressions alongside prior battery, presentation and settings cases. |
+| Offline capture parser tests | 5 passed; 0 skipped | Same Windows run/source commit, check `118863920439`: Ran=5, Skipped=0, NativeExit=0. Synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
+| Framework-dependent package | Passed static inspection | Check `118864758566`: 11 files, x64 GUI PE, runtime metadata, source/run provenance and all payload hashes verified. No application launch. |
+| Self-contained package | Passed static inspection | Check `118864758814`: 482 files, x64 GUI PE, bundled .NET/Windows Desktop 10.0.13, license provenance and all payload hashes verified. No application launch. |
 | Full testing | Not run | Separate permission requested for the full automated software suite; no response yet. Application runtime and hardware checks are excluded from that request. |
 | Application runtime | Not run | Requires explicit permission on Windows. |
 | Physical hardware | Not run | Requires explicit permission; no compatibility or accuracy certification claimed. |
@@ -58,11 +58,13 @@ Source review and authorized compilation, focused regressions and both package i
 
 ## Preview downloads
 
-Both packages are version `0.1.0-preview.1`, built with SDK `10.0.402` from source `8bf6aeb` in the Windows run above. Both artifacts were downloaded successfully; local archive checksums and embedded source provenance match the Windows evidence. GitHub artifacts expire after 14 days. Extract the GitHub artifact wrapper, then extract the application ZIP inside it.
+Both packages are version `0.1.0-preview.2`, built with SDK `10.0.402` from source `3eaeb55` in the Windows run above. Both artifacts were downloaded successfully; local archive checksums and embedded source provenance match the Windows evidence. GitHub artifacts expire after 14 days. Extract the GitHub artifact wrapper, then extract the application ZIP inside it.
 
 | Package | ZIP size | SHA-256 | Download artifact |
 | --- | --- | --- | --- |
-| Framework-dependent; needs .NET 10 Windows Desktop Runtime x64 | 201,706 bytes | `48cf6cb4906839749d203f2e7530e3a1c47cfa0396ac64046a5d6996bc0ec518` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39419305858/artifacts/12263252456) |
-| Self-contained | 76,228,336 bytes | `5127e4bf236a66d4690661e04a9e781c02bc39eb038850e0ca4439cb43bb9a92` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39419305858/artifacts/12263177484) |
+| Framework-dependent; needs .NET 10 Windows Desktop Runtime x64 | 203,241 bytes | `a4041271a3ad3c15b09eb91fa96b062a5a13dc81d0f3720cff4822ce7f3e977a` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39491021366/artifacts/12296002257) |
+| Self-contained | 76,229,873 bytes | `7f11483e18686360fc5890574fab98a531d46f22bef8da6503d04c75f4c35e16` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39491021366/artifacts/12295382625) |
+
+The Razer fix adds documented two-command high-rate configuration for `009F`, `00C1`, `00BF` and generic HyperPolling `00B3`. Each command has a fresh cancellation/opt-in check; failed or partial sequences are unverified and never retried automatically. Detect followed by explicit same-rate Apply can complete a later deliberate attempt even if the first phase already affected the reported rate. Generic receiver configuration leaves paired-mouse identity, radio link and battery unavailable. Static source profiles do not establish negotiated firmware capabilities or physical polling frequency; see [protocol evidence](protocols/razer-polling.md).
 
 The earlier packaging failure was confined to ZIP timestamp assignment and missing runtime-pack notice text. Windows CI confirmed both fixes in this passing run: timestamps are set before writing entries, and absent pack notices explicitly refer to bundled distribution-wide notices while retaining exact-pack licenses.
