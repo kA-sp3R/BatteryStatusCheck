@@ -44,8 +44,10 @@ public sealed class RazerBatteryProvider : IBatteryProvider
     {
         if (endpoint.VendorId != 0x1532 || endpoint.FeatureReportLength != RazerProtocol.ReportLength)
             return false;
+        // USB ancestry alone cannot distinguish a wireless receiver from a wired Razer device.
+        // Keep only exact wireless mappings and the documented, explicitly unsupported HyperPolling receiver.
+        if (!Models.ContainsKey(endpoint.ProductId)) return endpoint.ProductId == 0x00B3;
         var expectedInterface = GetExpectedInterfaceNumber(endpoint.ProductId);
-        if (expectedInterface is null) return true; // Unknown models report Unsupported without protocol I/O.
 
         var marker = endpoint.DevicePath.IndexOf("&mi_", StringComparison.OrdinalIgnoreCase);
         if (marker < 0) return true; // Non-composite HID paths have no MI component.
@@ -60,7 +62,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
         cancellationToken.ThrowIfCancellationRequested();
         Models.TryGetValue(endpoint.ProductId, out var model);
         var identity = new PeripheralIdentity($"{endpoint.ReceiverId}:razer:{endpoint.ProductId:X4}",
-            model?.Name ?? endpoint.ProductName ?? "Unknown Razer receiver", DeviceVendor.Razer,
+            model?.Name ?? endpoint.ProductName ?? "Unknown Razer USB endpoint", DeviceVendor.Razer,
             endpoint.ReceiverId, $"1532:{endpoint.ProductId:X4}");
 
         if (!CanHandle(endpoint) || model is null)

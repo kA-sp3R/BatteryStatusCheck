@@ -10,6 +10,16 @@ public sealed class RazerBatteryProviderTests
     private static readonly DateTimeOffset SampleTime = new(2026, 10, 20, 0, 0, 0, TimeSpan.Zero);
 
     [Theory]
+    [InlineData(0x007A, false)] // Wired Viper Ultimate.
+    [InlineData(0x007C, false)] // Wired DeathAdder V2 Pro.
+    [InlineData(0x0086, false)] // Wired Basilisk Ultimate.
+    [InlineData(0xFFFF, false)] // An unknown USB product is not evidence of a receiver.
+    [InlineData(0x00B3, true)] // Retain explicit Unsupported reporting for the known HyperPolling dongle.
+    [InlineData(0x00A6, true)]
+    public void ReceiverSelectionExcludesWiredAndUnidentifiedUsbProducts(ushort productId, bool expected) =>
+        Assert.Equal(expected, new RazerBatteryProvider().CanHandle(Endpoint(productId)));
+
+    [Theory]
     [InlineData(0x00A6, "&mi_00", true)]
     [InlineData(0x00A6, "&mi_01", false)]
     [InlineData(0x025C, "&mi_02", true)]

@@ -34,6 +34,59 @@ public sealed class BatteryMonitorTests
     }
 
     [Fact]
+    public async Task RetainingAStaleBatteryDoesNotDiscardAFreshlyEstablishedRadioLink()
+    {
+        var provider = new StubProvider();
+        provider.Results.Enqueue(() => [Current(0)]);
+        provider.Results.Enqueue(() => [Failed() with { Connection = ConnectionState.Connected }]);
+        var monitor = new BatteryMonitor(new StubDiscovery(), new StubTransportFactory(), [provider]);
+        await monitor.RefreshAsync(CancellationToken.None);
+
+        var result = Assert.Single(await monitor.RefreshAsync(CancellationToken.None));
+
+        Assert.Equal(ReadingState.Stale, result.Battery.State);
+        Assert.Equal(0, result.Battery.Percentage);
+        Assert.Equal(SampleTime, result.Battery.SampledAt);
+        Assert.Equal(ChargingState.Unknown, result.Battery.Charging);
+        Assert.Equal(ConnectionState.Connected, result.Connection);
+    }
+
+    [Fact]
+    public async Task CancellationDuringDiscoveryCannotPublishReceiverRemoval()
+    {
+        var discovery = new StubDiscovery();
+        var provider = new StubProvider();
+        provider.Results.Enqueue(() => [Current(0)]);
+        var monitor = new BatteryMonitor(discovery, new StubTransportFactory(), [provider]);
+        var original = await monitor.RefreshAsync(CancellationToken.None);
+        using var cancellation = new CancellationTokenSource();
+        discovery.Endpoints = [];
+        discovery.OnEnumerate = cancellation.Cancel;
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => monitor.RefreshAsync(cancellation.Token));
+
+        Assert.Same(original, monitor.Devices);
+        Assert.Equal(ReadingState.Current, Assert.Single(monitor.Devices).Battery.State);
+        Assert.Equal(1, provider.Reads);
+    }
+
+    [Fact]
+    public async Task CancellationBeforeAProviderReturnsCannotPublishItsLateMeasurement()
+    {
+        var provider = new StubProvider();
+        provider.Results.Enqueue(() => [Current(0)]);
+        var monitor = new BatteryMonitor(new StubDiscovery(), new StubTransportFactory(), [provider]);
+        var original = await monitor.RefreshAsync(CancellationToken.None);
+        using var cancellation = new CancellationTokenSource();
+        provider.Results.Enqueue(() => { cancellation.Cancel(); return [Current(88)]; });
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => monitor.RefreshAsync(cancellation.Token));
+
+        Assert.Same(original, monitor.Devices);
+        Assert.Equal(0, Assert.Single(monitor.Devices).Battery.Percentage);
+    }
+
+    [Fact]
     public async Task RemovingReceiverClearsBatteryPercentageAndMarksDeviceDisconnected()
     {
         var discovery = new StubDiscovery();
@@ -235,7 +288,12 @@ public sealed class BatteryMonitorTests
         public IReadOnlyList<HidEndpoint> Endpoints { get; set; } = [Endpoint];
         public IReadOnlyList<string> Warnings { get; set; } = [];
         public Exception? Failure { get; set; }
-        public IReadOnlyList<HidEndpoint> Enumerate() => Failure is not null ? throw Failure : Endpoints;
+        public Action? OnEnumerate { get; set; }
+        public IReadOnlyList<HidEndpoint> Enumerate()
+        {
+            OnEnumerate?.Invoke();
+            return Failure is not null ? throw Failure : Endpoints;
+        }
     }
 
     private sealed class StubProvider : IBatteryProvider

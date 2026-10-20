@@ -124,6 +124,28 @@ public sealed class PollingRateServiceTests
     }
 
     [Fact]
+    public async Task CancellationInsideThePostGateAuthorizationCheckDoesNotStartDiscovery()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var discovery = new Discovery();
+        var transports = new Transports();
+        var controller = new Controller();
+        var checks = 0;
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Service(discovery, transports, controller)
+            .ApplyAsync(Peripheral, 500, () =>
+            {
+                if (++checks == 2) cancellation.Cancel();
+                return true;
+            }, cancellation.Token));
+
+        Assert.Equal(2, checks);
+        Assert.Equal(0, discovery.Enumerations);
+        Assert.Empty(transports.Opened);
+        Assert.Equal(0, controller.Applies);
+    }
+
+    [Fact]
     public async Task CancelingAnApplyWhileTheGateIsOccupiedNeverOpensOrWrites()
     {
         var gate = new HidOperationGate();

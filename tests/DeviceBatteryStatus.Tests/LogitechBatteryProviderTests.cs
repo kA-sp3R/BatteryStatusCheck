@@ -68,12 +68,35 @@ public sealed class LogitechBatteryProviderTests
         Assert.DoesNotContain(transport.Requests, request => request[2] == 7);
     }
 
+    [Theory]
+    [InlineData(100, 0x02, 0, ReadingState.Current)]
+    [InlineData(4, 0x02, 50, ReadingState.Unsupported)]
+    [InlineData(100, 0x00, 50, ReadingState.Unsupported)]
+    [InlineData(100, 0x04, 50, ReadingState.Unsupported)]
+    public async Task BatteryStatusRequiresAdvertisedMileageBeforeDisplayingItsNumericLevel(
+        byte levelCount, byte flags, byte reportedLevel, ReadingState expectedState)
+    {
+        var endpoint = Endpoint(0xC539);
+        await using var transport = new ReceiverTransport(endpoint, useBatteryStatus: true,
+            statusLevelCount: levelCount, statusFlags: flags, statusLevel: reportedLevel);
+
+        var result = Assert.Single(await new LogitechBatteryProvider().ReadAsync(
+            endpoint, transport, SampleTime, CancellationToken.None));
+
+        Assert.Equal(expectedState, result.Battery.State);
+        Assert.Equal(expectedState == ReadingState.Current ? reportedLevel : (int?)null, result.Battery.Percentage);
+        Assert.Equal(ChargingState.Discharging, result.Battery.Charging);
+        Assert.Equal(ConnectionState.Connected, result.Connection);
+        Assert.Contains(transport.Requests, request => request[2] == 8 && (request[3] & 0xF0) == 0x10);
+    }
+
     private static HidEndpoint Endpoint(ushort productId) =>
         new("fake-usb-hidpp", 0x046D, productId, 0xFF00, 1, 20, 20, 0, "receiver-a");
 
     /// <summary>A scripted HID++ receiver, not a native transport or hardware simulator.</summary>
     private sealed class ReceiverTransport(HidEndpoint endpoint, byte slots = 1, byte targetSlot = 1,
-        byte? pingError = null, bool timeoutPing = false, bool injectOtherSlotPing = false) : IHidTransport
+        byte? pingError = null, bool timeoutPing = false, bool injectOtherSlotPing = false,
+        bool useBatteryStatus = false, byte statusLevelCount = 100, byte statusFlags = 2, byte statusLevel = 0) : IHidTransport
     {
         private readonly Queue<byte[]> replies = new();
         public HidEndpoint Endpoint { get; } = endpoint;
@@ -119,7 +142,8 @@ public sealed class LogitechBatteryProviderTests
                 replies.Enqueue(Reply(request, featureId switch
                 {
                     0x0003 or 0x0005 => [0, 0, 0],
-                    0x1004 => [7, 0, 0],
+                    0x1004 => useBatteryStatus ? [0, 0, 0] : [7, 0, 0],
+                    0x1000 when useBatteryStatus => [8, 0, 0],
                     _ => throw new InvalidOperationException("Unexpected feature discovery query.")
                 }));
             }
@@ -129,6 +153,13 @@ public sealed class LogitechBatteryProviderTests
                     0 => [0, 2], // Explicit state-of-charge capability.
                     0x10 => [0, 1, 0, 0], // Genuine zero percent, discharging.
                     _ => throw new InvalidOperationException("Unexpected unified-battery query.")
+                }));
+            else if (request[1] == targetSlot && request[2] == 8 && useBatteryStatus)
+                replies.Enqueue(Reply(request, (request[3] & 0xF0) switch
+                {
+                    0x10 => [statusLevelCount, statusFlags],
+                    0 => [statusLevel, 0, 0],
+                    _ => throw new InvalidOperationException("Unexpected battery-status query.")
                 }));
             else throw new InvalidOperationException("Query was routed to an unpaired slot or unsupported address.");
 

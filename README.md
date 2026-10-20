@@ -1,6 +1,6 @@
 # Device Battery Status
 
-Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications and preferences. Milestone 3 adds manual polling-rate controls for supported mice. Final testing and release preparation require approval for Milestone 4.
+Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. Milestone 4 adds final source review and unsigned Windows x64 preview packaging. Runtime and physical hardware behavior remain unverified.
 
 ## Projects
 
@@ -36,7 +36,12 @@ These are source-backed implementations; physical compatibility and the actual U
 
 ## Build and verification
 
-Use the **Windows compilation and focused unit tests** GitHub Actions workflow with the .NET 10 SDK. Separate Windows jobs compile the solution, run focused C# tests and test the offline capture parser. They upload logs and TRX results. The development build artifact requires the matching Windows Desktop Runtime; it is not a release package.
+Use the **Windows compilation and focused unit tests** GitHub Actions workflow with the .NET 10 SDK. Separate Windows jobs compile the solution, run focused C# tests and test the offline capture parser. They upload logs and TRX results. Following those checks, packaging jobs publish and inspect two portable x64 ZIPs without launching the app:
+
+- **Framework-dependent:** smaller package; requires Microsoft .NET 10 Windows Desktop Runtime x64.
+- **Self-contained:** bundles its .NET/Windows Desktop Runtime and notices; requires no separate .NET installation.
+
+Download the relevant `windows-preview-win-x64-…` workflow artifact, extract its package ZIP and keep all files together. Each ZIP has a sibling SHA-256 checksum and an embedded source/run manifest with payload hashes. These are unsigned preview artifacts. See [package instructions and limitations](docs/release.md). The separate `windows-build` artifact is the development compilation output.
 
 Compilation is not application runtime or hardware verification. Obtain explicit permission before launching the app, investigating/testing physical hardware, or running full testing. No hardware compatibility is verified yet. See [verification status](docs/verification.md).
 

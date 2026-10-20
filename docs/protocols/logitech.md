@@ -22,7 +22,7 @@ All peripheral commands target their receiver slot (`1`–`6`), never the receiv
 | Protocol | Source | Behavior |
 | --- | --- | --- |
 | HID++ 2+ | `1004` unified battery | Query capabilities first. Report a percentage only when flags byte bit `02` confirms state-of-charge support. Preserve device-reported `0%`. Otherwise retain unavailable percentage; never translate level categories to numbers. |
-| HID++ 2+ | `1000` battery status | Use the device-reported percentage. A discharging `0%` is valid. Zero in a charging/full state can mean unavailable, so do not display it as an empty battery or manufacture `100%` from a full flag. |
+| HID++ 2+ | `1000` battery status | Require GetBatteryCapability to advertise mileage (flags bit `02`, at least ten levels), rather than interpreting a category value as a percentage. Without mileage, preserve charging but no percentage. A confirmed mileage/discharging `0%` is valid. Zero in a charging/full state can mean unavailable; do not manufacture `100%` from a full flag. |
 | HID++ 1 | Register `0D` battery charge | Use the returned percentage, including `0%`, and supported charging flags. |
 | Other | Register `07`, `1001` voltage, unknown features | Percentage unsupported. No voltage curve or category estimate is supplied. |
 
@@ -36,7 +36,7 @@ This C# implementation was written independently from the protocol facts below. 
 
 - [Logitech's root feature specification](https://github.com/Logitech/cpg-docs/blob/f9107a4e3190d798f9be8c5d596f255f5e5741d2/hidpp20/features/0x0000-IRoot.rst), commit `f9107a4e3190d798f9be8c5d596f255f5e5741d2`: feature discovery, protocol-version ping and echoed marker.
 - [Solaar](https://github.com/pwr-Solaar/Solaar/tree/e7304c4c451cc9bb4f206a914844525e67856a28/lib/logitech_receiver), GPL-2.0-or-later, commit `e7304c4c451cc9bb4f206a914844525e67856a28`: `base_usb.py` receiver IDs, `receiver.py` pairing fields, `base.py` framing/correlation and legacy ping errors, `hidpp10.py` register `0D`, `hidpp20.py` battery/name/identity fields.
-- [Linux HID++ driver](https://github.com/torvalds/linux/blob/c03c1a14507dfaf8b856c2608f9ac216021fc222/drivers/hid/hid-logitech-hidpp.c), GPL-2.0-only: `1004` state-of-charge capability flag; `1000` zero-as-unknown in charging states and status mapping.
+- [Linux HID++ driver](https://github.com/torvalds/linux/blob/c03c1a14507dfaf8b856c2608f9ac216021fc222/drivers/hid/hid-logitech-hidpp.c), GPL-2.0-only: `1004` state-of-charge capability flag; `1000` mileage capability (level count and flags), zero-as-unknown in charging states and status mapping.
 - [libratbag](https://github.com/libratbag/libratbag/blob/8235b5bb6032dea15901ab58a8218956f4494d08/src/hidpp20.c), MIT, commit `8235b5bb6032dea15901ab58a8218956f4494d08`: `1000` battery-level fields and charging status values.
 - [2.4G-battery-viewer](https://github.com/yszyszysz233/2.4G-battery-viewer/blob/f0e983e88900592237c7df9ae6b80b9dbeb3020b/battery.py), reviewed as a secondary reference. Its broader probing and numeric estimates were not adopted.
 

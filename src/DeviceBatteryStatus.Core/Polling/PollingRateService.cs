@@ -111,6 +111,7 @@ public sealed class PollingRateService(IHidDiscovery discovery, IHidTransportFac
         cancellationToken.ThrowIfCancellationRequested();
         if (!canApply())
             throw new OperationCanceledException("Manual polling-rate control is disabled; no setting write was authorized.", cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     private static PollingRateInfo Unavailable(PeripheralIdentity device, PollingRateState state, string detail) =>

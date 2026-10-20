@@ -1,6 +1,6 @@
-# Milestones 1–3 verification
+# Milestones 1–4 verification
 
-Milestone 3 passed Windows compilation and focused automated tests. Application runtime, physical hardware and full testing remain separate and unperformed.
+Milestone 4 source review and preview packaging are implemented; their Windows checks are pending. The table records the previous passing Milestone 3 baseline until the new source is checked. Application runtime, physical hardware and full testing remain separate and unperformed.
 
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
@@ -8,7 +8,7 @@ Milestone 3 passed Windows compilation and focused automated tests. Application 
 | Windows compilation | Passed | [Windows run `39386114095`](https://github.com/wn622c4xv9-dotcom/BatteryStatusCheck/actions/runs/39386114095), source commit `797e393bccf6fbbd81217f71b33ed1cc6cd898d6`; WPF solution compiled and development artifact uploaded. |
 | Focused C# automated tests | 277 passed; 0 failed; 0 skipped | Same Windows run/source commit. Actual TRX counters exposed through check `118506243152`: Executed=277, Passed=277, Failed=0, Skipped=0, NativeExit=0. Includes 95 new polling protocol/control cases alongside prior battery, presentation and settings regressions. |
 | Offline capture parser tests | 5 passed; 0 skipped | Same Windows run/source commit, check `118506243265`: Ran=5, Skipped=0, NativeExit=0. Synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
-| Full testing | Not run | Reserved for Milestone 4; requires permission. |
+| Full testing | Not run | Separate permission requested for the full automated software suite; no response yet. Application runtime and hardware checks are excluded from that request. |
 | Application runtime | Not run | Requires explicit permission on Windows. |
 | Physical hardware | Not run | Requires explicit permission; no compatibility or accuracy certification claimed. |
 
@@ -32,7 +32,7 @@ Malformed Razer/Alienware replies produce failed readings. A valid Razer battery
 - Generic Razer HyperPolling and shared receiver association are unsupported. Razer battery replies do not independently prove a live radio connection or exclude firmware-cached data.
 - Logitech support is constrained to documented receiver IDs and real percentage capabilities. Level-only models cannot provide the requested exact battery percentage.
 - Windows discovery and native I/O, protocol compatibility, reconnect behavior, and firmware caching need application/hardware verification after permission. Read-only query packets still access hardware when the user launches the app.
-- Milestone 3 was approved by the user. Milestone 4 requires approval. The interface, shell notification delivery, mixed-DPI placement, startup registration and full shutdown behavior remain unverified at runtime.
+- Milestone 4 was approved by the user. The interface, shell notification delivery, mixed-DPI placement, startup registration and full shutdown behavior remain unverified at runtime.
 
 ## Milestone 3 implementation
 
@@ -43,3 +43,13 @@ Malformed Razer/Alienware replies produce failed readings. A valid Razer battery
 - Disable, selection changes, window closure, suspend/resume and exit revoke pending manual operations. Polling failures do not alter battery data.
 
 Configured-rate readback is not a measurement of USB report timing. No polling-rate behavior, firmware compatibility or receiver/peripheral pairing has been verified on hardware.
+
+## Milestone 4 review and release readiness
+
+- Reviewed Core battery/polling models and protocols, settings/presentation, WPF/tray lifecycle and native Windows discovery/I/O/startup. Native lifetime and GDI ownership review found no material defect; this does not establish runtime behavior.
+- Preserved fresh link evidence when a failed battery read retains a stale percentage; cancellation after discovery/reads or permission callbacks cannot publish late results or start manual operations.
+- Gated Logitech `1000` percentages on its advertised mileage capability, retaining category-only values as unavailable. Razer admission now excludes unknown/wired products while explicitly recognizing unsupported HyperPolling.
+- Removed unused tray anchoring code and prevented nonpositive HID++ read deadlines. No CPU/memory or real-time performance measurements were taken.
+- Added unsigned `win-x64` framework-dependent and self-contained preview packages, provenance manifests, notices, archive/payload checksums and static ZIP/PE/runtime inspection. See [release instructions](release.md). Packages are CI artifacts; no signed/public GitHub Release is claimed.
+
+Preview readiness requires passing Windows compilation, focused regressions and both package inspections. Full automated testing remains permission-gated; application runtime and physical hardware verification remain unperformed. Hardware compatibility, reconnect behavior, notifications, visual correctness, startup behavior and actual polling frequency remain open validation work.

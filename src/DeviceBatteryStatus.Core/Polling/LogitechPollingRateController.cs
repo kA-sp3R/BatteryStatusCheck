@@ -40,8 +40,6 @@ public sealed class LogitechPollingRateController : IPollingRateController
         {
             RequireAuthorization(canApply, cancellationToken);
             var probe = await ProbeAsync(endpoint, transport, device, cancellationToken);
-            if (probe.Info.State != PollingRateState.Supported)
-                return new(false, probe.Info, "No rate setting was written. " + probe.Info.Detail);
             if (!probe.Info.SupportedRatesHz.Contains(rateHz) ||
                 !LogitechPollingProtocol.TryEncodeRate(probe.FeatureId, rateHz, out byte value))
                 throw new PollingException(PollingRateState.Unsupported, "The selected mouse did not advertise that report rate.");
@@ -197,9 +195,11 @@ public sealed class LogitechPollingRateController : IPollingRateController
         byte function, CancellationToken cancellationToken, byte? expectedEcho = null, byte? pingMarker = null)
     {
         var elapsed = Stopwatch.StartNew();
-        for (int packets = 0; packets < 64 && elapsed.Elapsed < Timeout; packets++)
+        for (int packets = 0; packets < 64; packets++)
         {
-            var report = await transport.ReadAsync(Timeout - elapsed.Elapsed, cancellationToken);
+            var remaining = Timeout - elapsed.Elapsed;
+            if (remaining <= TimeSpan.Zero) break;
+            var report = await transport.ReadAsync(remaining, cancellationToken);
             if (!LogitechHidppProtocol.TryParseReply(report, slot, feature, function, out var reply)) continue;
             if (reply!.ErrorCode is not null)
                 throw new PollingException(reply.LegacyError && reply.ErrorCode is 0x04 or 0x08

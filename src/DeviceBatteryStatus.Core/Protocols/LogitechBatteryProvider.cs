@@ -157,9 +157,18 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
         byte? status = await FeatureIndexAsync(transport, slot, 0x1000, cancellationToken);
         if (status is not null)
         {
+            // 0x1000 also serves category-only devices. Its byte-sized level is not
+            // evidence of battery mileage unless the device advertises that capability.
+            LogitechReply capabilities = await FeatureAsync(transport, slot, status.Value, 0x10, [], cancellationToken);
+            if (capabilities.ErrorCode is not null) return ErrorReading(capabilities, "Battery-status capabilities");
+            if (capabilities.Parameters.Length < 2) return Malformed();
+            bool supportsMileage = capabilities.Parameters[0] >= 10 && (capabilities.Parameters[1] & 0x02) != 0;
             LogitechReply battery = await FeatureAsync(transport, slot, status.Value, 0, [], cancellationToken);
-            return battery.ErrorCode is not null ? ErrorReading(battery, "Battery status") :
-                LogitechHidppProtocol.ParseBattery1000(battery.Parameters, observedAt);
+            if (battery.ErrorCode is not null) return ErrorReading(battery, "Battery status");
+            var reading = LogitechHidppProtocol.ParseBattery1000(battery.Parameters, observedAt);
+            return supportsMileage || reading.State == ReadingState.Failed ? reading
+                : BatteryReading.Unavailable(ReadingState.Unsupported,
+                    "HID++ battery status reports categories, not battery mileage; no percentage is substituted.", reading.Charging);
         }
         return levelOnly ?? BatteryReading.Unavailable(ReadingState.Unsupported,
             "No supported percentage feature (0x1004/0x1000). Voltage and category values are not converted to percentages.");
@@ -239,9 +248,11 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
         await transport.WriteAsync(request, cancellationToken);
         Stopwatch elapsed = Stopwatch.StartNew();
         // Bound both time and unrelated packet count when another HID++ client is active.
-        for (int packets = 0; packets < 64 && elapsed.Elapsed < ReplyTimeout; packets++)
+        for (int packets = 0; packets < 64; packets++)
         {
-            byte[] report = await transport.ReadAsync(ReplyTimeout - elapsed.Elapsed, cancellationToken);
+            var remaining = ReplyTimeout - elapsed.Elapsed;
+            if (remaining <= TimeSpan.Zero) break;
+            byte[] report = await transport.ReadAsync(remaining, cancellationToken);
             if (!LogitechHidppProtocol.TryParseReply(report, slot, feature, function, out LogitechReply? reply)) continue;
             if (reply!.ErrorCode is not null) return reply;
             if (expectedEcho is not null && (reply.Parameters.Length == 0 || reply.Parameters[0] != expectedEcho)) continue;

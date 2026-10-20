@@ -1,7 +1,7 @@
 # Development rules
 
 - Work in the existing checkout. Cloud tasks are already isolated; do not create a Git worktree unless requested.
-- Implement one milestone at a time. The user approved Milestone 3 after reviewing Milestone 2. Obtain approval before beginning Milestone 4.
+- Implement one milestone at a time. The user approved Milestone 4 after reviewing Milestone 3. Final review, optimisation, automated verification and release packaging are in scope; runtime and hardware verification still require separate permission.
 - Compile using **Windows GitHub Actions**. Compilation, focused automated tests, application runtime verification, and physical hardware verification are separate outcomes.
 - Obtain explicit permission before launching the application, physical hardware investigation/testing, or full testing. Hardware-free focused unit tests may run in their separate CI job. Full testing belongs to Milestone 4.
 - Never manufacture battery percentages or treat zero as missing. Preserve Current, Stale, Disconnected, Unsupported, and Failed states and original sample times.

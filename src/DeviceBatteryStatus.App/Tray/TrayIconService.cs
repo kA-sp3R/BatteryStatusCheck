@@ -2,7 +2,6 @@ using System.Runtime.InteropServices;
 using DeviceBatteryStatus.Core.Presentation;
 using Drawing = System.Drawing;
 using Forms = System.Windows.Forms;
-using WpfPoint = System.Windows.Point;
 using Dispatcher = System.Windows.Threading.Dispatcher;
 
 namespace DeviceBatteryStatus.App.Tray;
@@ -127,13 +126,6 @@ public sealed class TrayIconService : IDisposable
         // Windows notification preferences may suppress this request; delivery is not guaranteed.
     }
 
-    /// <summary>Returns physical screen pixels. The WPF popup must convert using its monitor DPI.</summary>
-    public WpfPoint GetAnchor()
-    {
-        dispatcher.VerifyAccess();
-        return GetPhysicalCursorPos(out var point) ? new WpfPoint(point.X, point.Y) : new WpfPoint(0, 0);
-    }
-
     private static string LimitText(string? text, int maximum, string fallback)
     {
         text = text?.Replace('\r', ' ').Replace('\n', ' ').Trim();
@@ -185,15 +177,9 @@ public sealed class TrayIconService : IDisposable
         fallbackIcon = null;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct NativePoint { internal int X; internal int Y; }
-
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr FindWindowW(string className, string? windowName);
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
     [DllImport("user32.dll")] private static extern uint GetDpiForSystem();
     [DllImport("user32.dll")] private static extern int GetSystemMetricsForDpi(int index, uint dpi);
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetPhysicalCursorPos(out NativePoint point);
 }

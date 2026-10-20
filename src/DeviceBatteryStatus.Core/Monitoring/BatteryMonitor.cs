@@ -22,6 +22,7 @@ public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory
             try
             {
                 endpoints = discovery.Enumerate();
+                cancellationToken.ThrowIfCancellationRequested();
                 DiscoveryError = discovery.Warnings.Count == 0 ? null
                     : $"Receiver discovery is incomplete: {string.Join("; ", discovery.Warnings)}";
             }
@@ -64,6 +65,7 @@ public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory
                     await using var transport = await transports.OpenAsync(endpoint, cancellationToken).ConfigureAwait(false);
                     var snapshots = await provider.ReadAsync(endpoint, transport, DateTimeOffset.UtcNow,
                         cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
                     if (snapshots.Count > 0 && snapshots.All(x => !x.Device.Id.EndsWith(":unidentified", StringComparison.Ordinal)))
                     {
                         foreach (var placeholder in prior.Where(x => x.Device.Id.EndsWith(":unidentified", StringComparison.Ordinal)))
@@ -74,7 +76,11 @@ public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory
                     {
                         devices.TryGetValue(incoming.Device.Id, out var previous);
                         devices[incoming.Device.Id] = incoming.Battery.State == ReadingState.Failed && previous is not null
-                            ? WithFailure(previous, incoming.Battery.Detail ?? "Read failed.") with { Device = incoming.Device }
+                            ? WithFailure(previous, incoming.Battery.Detail ?? "Read failed.") with
+                            {
+                                Device = incoming.Device,
+                                Connection = incoming.Connection
+                            }
                             : incoming;
                     }
                     foreach (var missing in prior.Where(x => snapshots.All(y => y.Device.Id != x.Device.Id)))

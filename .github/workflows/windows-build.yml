@@ -75,3 +75,44 @@ jobs:
           name: offline-capture-tests-evidence-${{ github.run_attempt }}
           path: ci-logs/*.log
           if-no-files-found: warn
+
+  package:
+    name: Package win-x64 (${{ matrix.flavor }}, no application launch)
+    needs: [compile, focused-unit-tests, offline-capture-tests]
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [framework-dependent, self-contained]
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish Windows application (no launch)
+        run: |
+          $selfContained = ('${{ matrix.flavor }}' -eq 'self-contained').ToString().ToLowerInvariant()
+          ./.github/scripts/run-ci-command.ps1 -Name 'publish-${{ matrix.flavor }}' -Command @('dotnet', 'publish', 'src/DeviceBatteryStatus.App/DeviceBatteryStatus.App.csproj', '--configuration', 'Release', '--runtime', 'win-x64', '--self-contained', $selfContained, '--output', 'publish', '-p:DebugType=None', '-p:DebugSymbols=false', '-p:SourceRevisionId=${{ github.sha }}')
+      - name: Assemble portable ZIP and checksums
+        run: ./.github/scripts/package-windows.ps1 -PublishDirectory publish -Flavor '${{ matrix.flavor }}'
+      - name: Inspect ZIP, PE headers, payload hashes and runtime metadata (no launch)
+        run: ./.github/scripts/verify-windows-package.ps1 -Flavor '${{ matrix.flavor }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-evidence-${{ matrix.flavor }}-${{ github.run_attempt }}
+          path: ci-logs/*.log
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-preview-win-x64-${{ matrix.flavor }}-${{ github.run_attempt }}
+          path: |
+            artifacts/packages/*.zip
+            artifacts/packages/*.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
