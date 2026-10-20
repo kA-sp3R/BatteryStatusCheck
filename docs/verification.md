@@ -2,14 +2,16 @@
 
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
-| Static review | In progress | Protocol-source review and source/XML/whitespace checks; not compilation. |
-| Windows compilation | Not run | Workflow is authored; a successful Windows GitHub Actions result is required. |
-| Focused automated tests | Authored, not run | Pure Core/protocol tests only. CI records count and outcome separately from compilation. |
+| Static review | Completed | Protocol-source/peer review; 8 XML files parsed, project references resolved, workflow parsed, whitespace checks passed. This is not compilation. |
+| Windows compilation | Result unverified | Source/workflow pushed to `main` at `f564e46`; GitHub API access is blocked, so no run or outcome is claimed. |
+| Focused automated tests | Authored; result unverified | Separate Windows CI job for pure Core/protocol/provider tests. No test counts or passing outcome have been observed. |
 | Full testing | Not run | Reserved for Milestone 4; requires permission. |
 | Application runtime | Not run | Requires explicit permission on Windows. |
 | Physical hardware | Not run | Requires explicit permission; no compatibility or accuracy certification claimed. |
 
 The app does not start during CI. Hardware tests are not part of automated tests.
+
+The existing Git proxy successfully pushed the source; no extra GitHub token was requested. The cloud network allowlist blocks `api.github.com`, preventing CI-run/log retrieval. An additive domain change is saved in the environment configuration draft; it must be reviewed/saved and the environment published before it is active. After access changes, retrieve the workflow result for the source commit, investigate failures, and update this report. The documentation-only status commit uses `[skip ci]`; it does not replace or rerun source validation.
 
 ## Outstanding limitations
 
