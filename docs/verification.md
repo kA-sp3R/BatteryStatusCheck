@@ -1,13 +1,13 @@
 # Milestones 1–3 verification
 
-Milestone 3 Windows compilation and focused tests are pending. The table below records the previous passing Milestone 2 baseline until the new source is checked.
+Milestone 3 passed Windows compilation and focused automated tests. Application runtime, physical hardware and full testing remain separate and unperformed.
 
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
 | Static review | Completed | Source/peer review, XML/project-reference checks and whitespace checks. This is not compilation or a rendered UI check. |
-| Windows compilation | Passed | [Windows run `39383950281`](https://github.com/wn622c4xv9-dotcom/BatteryStatusCheck/actions/runs/39383950281), source commit `cd08a6f0fc93dd8db390bfb6d2eca8b6948c1505`; WPF solution compiled and development artifact uploaded. |
-| Focused C# automated tests | 182 passed; 0 failed; 0 skipped | Same Windows run/source commit. Actual TRX counters exposed through check `118499230945`: Executed=182, Passed=182, Failed=0, Skipped=0, NativeExit=0. Coverage includes protocols, association, stale/zero states, tray selection, alerts and settings persistence. |
-| Offline capture parser tests | 5 passed; 0 skipped | Same Windows run/source commit, check `118499231035`: Ran=5, Skipped=0, NativeExit=0. Synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
+| Windows compilation | Passed | [Windows run `39386114095`](https://github.com/wn622c4xv9-dotcom/BatteryStatusCheck/actions/runs/39386114095), source commit `797e393bccf6fbbd81217f71b33ed1cc6cd898d6`; WPF solution compiled and development artifact uploaded. |
+| Focused C# automated tests | 277 passed; 0 failed; 0 skipped | Same Windows run/source commit. Actual TRX counters exposed through check `118506243152`: Executed=277, Passed=277, Failed=0, Skipped=0, NativeExit=0. Includes 95 new polling protocol/control cases alongside prior battery, presentation and settings regressions. |
+| Offline capture parser tests | 5 passed; 0 skipped | Same Windows run/source commit, check `118506243265`: Ran=5, Skipped=0, NativeExit=0. Synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
 | Full testing | Not run | Reserved for Milestone 4; requires permission. |
 | Application runtime | Not run | Requires explicit permission on Windows. |
 | Physical hardware | Not run | Requires explicit permission; no compatibility or accuracy certification claimed. |
@@ -16,7 +16,7 @@ The app does not start during CI. Hardware tests are not part of automated tests
 
 Live GitHub API requests work. Current requests establish API connectivity; environment metadata alone does not establish whether an operation succeeds. CI exposes actual test counters and failure messages as check annotations through the API; full logs/TRX files are also retained as artifacts. No Git-note writer or extra repository-write permission is needed.
 
-Malformed Razer/Alienware replies now produce failed readings. A valid Razer battery measurement survives an invalid charging reply with charging left unknown. These paths include regressions; the earlier Razer test failure is resolved in the passing source commit above. Documentation-only status commits use `[skip ci]` and do not change that tested application source.
+Malformed Razer/Alienware replies produce failed readings. A valid Razer battery measurement survives an invalid charging reply with charging left unknown. These earlier regressions remain covered in the passing source commit above. Documentation-only status commits use `[skip ci]` and do not change that tested application source.
 
 ## Milestone 2 implementation
 
