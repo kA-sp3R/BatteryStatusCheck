@@ -1,0 +1,36 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceBatteryStatus.Core", "src\DeviceBatteryStatus.Core\DeviceBatteryStatus.Core.csproj", "{D5098EB6-CA23-4B80-B821-6D979095C002}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceBatteryStatus.Windows", "src\DeviceBatteryStatus.Windows\DeviceBatteryStatus.Windows.csproj", "{D5098EB6-CA23-4B80-B821-6D979095C003}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceBatteryStatus.App", "src\DeviceBatteryStatus.App\DeviceBatteryStatus.App.csproj", "{D5098EB6-CA23-4B80-B821-6D979095C004}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceBatteryStatus.Tests", "tests\DeviceBatteryStatus.Tests\DeviceBatteryStatus.Tests.csproj", "{D5098EB6-CA23-4B80-B821-6D979095C005}"
+EndProject
+Global
+  GlobalSection(SolutionConfigurationPlatforms) = preSolution
+    Debug|Any CPU = Debug|Any CPU
+    Release|Any CPU = Release|Any CPU
+  EndGlobalSection
+  GlobalSection(ProjectConfigurationPlatforms) = postSolution
+    {D5098EB6-CA23-4B80-B821-6D979095C002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C002}.Release|Any CPU.Build.0 = Release|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C003}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C003}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C003}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C003}.Release|Any CPU.Build.0 = Release|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C004}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C004}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C004}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C004}.Release|Any CPU.Build.0 = Release|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C005}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C005}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C005}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {D5098EB6-CA23-4B80-B821-6D979095C005}.Release|Any CPU.Build.0 = Release|Any CPU
+  EndGlobalSection
+EndGlobal

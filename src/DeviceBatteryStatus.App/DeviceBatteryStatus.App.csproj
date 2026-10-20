@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>DeviceBatteryStatus</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../DeviceBatteryStatus.Core/DeviceBatteryStatus.Core.csproj" />
+    <ProjectReference Include="../DeviceBatteryStatus.Windows/DeviceBatteryStatus.Windows.csproj" />
+  </ItemGroup>
+</Project>

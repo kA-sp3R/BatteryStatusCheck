@@ -1,0 +1,47 @@
+name: Windows compilation and focused unit tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Compile WPF solution (no application launch)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore
+        run: dotnet restore DeviceBatteryStatus.sln
+      - name: Compile
+        run: dotnet build DeviceBatteryStatus.sln --configuration Release --no-restore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: milestone-1-windows-build
+          path: src/DeviceBatteryStatus.App/bin/Release/net10.0-windows/
+          if-no-files-found: error
+
+  focused-unit-tests:
+    name: Hardware-free model and protocol tests
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Run focused unit tests only
+        run: dotnet test tests/DeviceBatteryStatus.Tests/DeviceBatteryStatus.Tests.csproj --configuration Release --logger "trx;LogFileName=focused.trx" --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: focused-unit-test-results
+          path: TestResults/*.trx
+          if-no-files-found: error
