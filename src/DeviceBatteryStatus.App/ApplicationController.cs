@@ -1,9 +1,11 @@
 using System.Windows;
 using System.Windows.Threading;
 using DeviceBatteryStatus.App.Tray;
+using DeviceBatteryStatus.Core.Hardware;
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Monitoring;
 using DeviceBatteryStatus.Core.Presentation;
+using DeviceBatteryStatus.Core.Polling;
 using DeviceBatteryStatus.Core.Protocols;
 using DeviceBatteryStatus.Core.Settings;
 using DeviceBatteryStatus.Windows.Hardware;
@@ -17,8 +19,11 @@ internal sealed class ApplicationController
 {
     private readonly Application application;
     private readonly CancellationTokenSource shutdown = new();
-    private readonly BatteryMonitor monitor = new(new WindowsHidDiscovery(), new WindowsHidTransportFactory(),
-        [new RazerBatteryProvider(), new LogitechBatteryProvider(), new AlienwareBatteryProvider()]);
+    private readonly object powerGate = new();
+    private CancellationTokenSource powerCancellation = new();
+    private readonly BatteryMonitor monitor;
+    private readonly PollingRateService pollingRates;
+    private readonly HashSet<Task> manualOperations = [];
     private readonly FileSettingsStore store = new(Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeviceBatteryStatus", "settings.json"));
     private readonly StartupRegistration startup = new();
@@ -30,6 +35,7 @@ internal sealed class ApplicationController
     private AppSettings settings;
     private IReadOnlyList<DeviceSnapshot> snapshots = [];
     private SettingsWindow? settingsWindow;
+    private PollingWindow? pollingWindow;
     private Task? polling;
     private Task? activeRefresh;
     private DateTimeOffset? invalidBefore;
@@ -38,12 +44,19 @@ internal sealed class ApplicationController
     private string? settingsWarning;
     private string? displayError;
     private bool refreshing;
-    private bool stopping;
+    private volatile bool stopping;
     private bool cleanedUp;
 
     public ApplicationController(Application application)
     {
         this.application = application;
+        var discovery = new WindowsHidDiscovery();
+        var transports = new WindowsHidTransportFactory();
+        var hidOperations = new HidOperationGate();
+        monitor = new(discovery, transports,
+            [new RazerBatteryProvider(), new LogitechBatteryProvider(), new AlienwareBatteryProvider()], hidOperations);
+        pollingRates = new(discovery, transports,
+            [new RazerPollingRateController(), new LogitechPollingRateController()], hidOperations);
         var loaded = store.Load();
         settings = loaded.Settings;
         settingsWarning = loaded.Error;
@@ -160,10 +173,38 @@ internal sealed class ApplicationController
         string? startupError = null;
         try { enabled = startup.IsEnabled(); }
         catch (Exception exception) { startupError = $"Windows startup could not be read: {exception.Message}"; }
-        settingsWindow = new SettingsWindow(settings, snapshots, startup.CanRegister, enabled, startupError, ApplySettings);
+        settingsWindow = new SettingsWindow(settings, snapshots, startup.CanRegister, enabled, startupError, ApplySettings, ShowPollingControls);
         if (settingsWarning is not null) settingsWindow.ShowNotice(settingsWarning);
         settingsWindow.Closed += (_, _) => settingsWindow = null;
         settingsWindow.Show();
+    }
+
+    private void ShowPollingControls()
+    {
+        if (stopping) return;
+        if (pollingWindow is not null) { pollingWindow.Activate(); return; }
+        pollingWindow = new PollingWindow(snapshots, settings,
+            (device, cancellationToken) => RunManualOperationAsync(
+                token => pollingRates.ReadAsync(device, token), cancellationToken),
+            (device, rateHz, canApply, cancellationToken) => RunManualOperationAsync(
+                token => pollingRates.ApplyAsync(device, rateHz,
+                    () => !token.IsCancellationRequested && canApply(), token), cancellationToken))
+        { Owner = settingsWindow };
+        pollingWindow.Closed += (_, _) => pollingWindow = null;
+        pollingWindow.Show();
+    }
+
+    private async Task<T> RunManualOperationAsync<T>(Func<CancellationToken, Task<T>> operation,
+        CancellationToken cancellationToken)
+    {
+        CancellationTokenSource linked;
+        lock (powerGate)
+            linked = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, cancellationToken, powerCancellation.Token);
+        using var operationLifetime = linked;
+        var task = Task.Run(() => operation(linked.Token), linked.Token);
+        manualOperations.Add(task);
+        try { return await task; }
+        finally { manualOperations.Remove(task); }
     }
 
     private void ApplySettings(AppSettings updated, bool changeStartup)
@@ -200,14 +241,30 @@ internal sealed class ApplicationController
 
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
-        if (e.Mode != PowerModes.Resume || stopping || application.Dispatcher.HasShutdownStarted) return;
-        try { application.Dispatcher.BeginInvoke(new Action(ResumeAfterSleep)); }
+        if (e.Mode is not (PowerModes.Suspend or PowerModes.Resume) || stopping || application.Dispatcher.HasShutdownStarted) return;
+        // SystemEvents runs outside the dispatcher: revoke write permission before queuing UI work.
+        lock (powerGate)
+        {
+            if (stopping) return;
+            powerCancellation.Cancel();
+        }
+        try
+        {
+            application.Dispatcher.BeginInvoke(e.Mode == PowerModes.Resume
+                ? new Action(ResumeAfterSleep) : new Action(() => pollingWindow?.CancelOperations()));
+        }
         catch (InvalidOperationException) when (application.Dispatcher.HasShutdownStarted) { }
     }
 
     private async void ResumeAfterSleep()
     {
         if (stopping) return;
+        pollingWindow?.CancelOperations();
+        lock (powerGate)
+        {
+            powerCancellation.Dispose();
+            powerCancellation = new();
+        }
         invalidBefore = DateTimeOffset.UtcNow;
         MarkCurrentReadingsStale("Refreshing after sleep.");
         UpdatePresentation();
@@ -226,14 +283,17 @@ internal sealed class ApplicationController
         StopImmediately();
         try
         {
-            if (polling is not null) await polling;
-            if (activeRefresh is not null) await activeRefresh;
+            var pending = manualOperations.ToList();
+            if (polling is not null) pending.Add(polling);
+            if (activeRefresh is not null) pending.Add(activeRefresh);
+            await Task.WhenAll(pending);
         }
         catch (OperationCanceledException) { }
         finally
         {
             pollTimer.Dispose();
             shutdown.Dispose();
+            lock (powerGate) powerCancellation.Dispose();
             popup.CloseForShutdown();
             settingsWindow?.Close();
             application.Shutdown();
@@ -246,6 +306,7 @@ internal sealed class ApplicationController
         cleanedUp = true;
         stopping = true;
         shutdown.Cancel();
+        pollingWindow?.CancelOperations();
         presentationTimer.Stop();
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
         popup.Hide();

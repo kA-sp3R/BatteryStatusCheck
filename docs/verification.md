@@ -1,4 +1,6 @@
-# Milestones 1–2 verification
+# Milestones 1–3 verification
+
+Milestone 3 Windows compilation and focused tests are pending. The table below records the previous passing Milestone 2 baseline until the new source is checked.
 
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
@@ -12,7 +14,7 @@
 
 The app does not start during CI. Hardware tests are not part of automated tests.
 
-Live GitHub API requests now work, despite environment metadata still showing the older policy. Current requests, rather than that metadata, establish API connectivity. Detailed log/artifact redirects use additional hosts that remain blocked here. CI exposes actual test counters and failure messages as check annotations, which can be read through the working API; full logs/TRX files are also retained as artifacts. No Git-note writer or extra repository-write permission is needed.
+Live GitHub API requests work. Current requests establish API connectivity; environment metadata alone does not establish whether an operation succeeds. CI exposes actual test counters and failure messages as check annotations through the API; full logs/TRX files are also retained as artifacts. No Git-note writer or extra repository-write permission is needed.
 
 Malformed Razer/Alienware replies now produce failed readings. A valid Razer battery measurement survives an invalid charging reply with charging left unknown. These paths include regressions; the earlier Razer test failure is resolved in the passing source commit above. Documentation-only status commits use `[skip ci]` and do not change that tested application source.
 
@@ -30,4 +32,14 @@ Malformed Razer/Alienware replies now produce failed readings. A valid Razer bat
 - Generic Razer HyperPolling and shared receiver association are unsupported. Razer battery replies do not independently prove a live radio connection or exclude firmware-cached data.
 - Logitech support is constrained to documented receiver IDs and real percentage capabilities. Level-only models cannot provide the requested exact battery percentage.
 - Windows discovery and native I/O, protocol compatibility, reconnect behavior, and firmware caching need application/hardware verification after permission. Read-only query packets still access hardware when the user launches the app.
-- Milestone 2 was approved by the user. Milestone 3 has not started and requires approval. The interface, shell notification delivery, mixed-DPI placement, startup registration and full shutdown behavior remain unverified at runtime.
+- Milestone 3 was approved by the user. Milestone 4 requires approval. The interface, shell notification delivery, mixed-DPI placement, startup registration and full shutdown behavior remain unverified at runtime.
+
+## Milestone 3 implementation
+
+- Separate polling-rate window, disabled each time it opens. Detect reads capabilities; only an explicit Apply can change a setting. No automatic restore or persisted rate is used.
+- Exact mapped Razer wireless receiver IDs use the documented ordinary 125/500/1000 Hz protocol. High-rate/two-bank and generic HyperPolling associations remain unsupported.
+- Logitech HID++ 8060/8061 offers device-advertised mouse rates, potentially through 8000 Hz, after fresh identity checks. Unknown identity, unsupported versions and profile-controlled modes are refused.
+- A shared HID gate serializes battery and manual exchanges. Each Apply rechecks capabilities, sends one setting request and verifies reported configuration through readback; uncertain outcomes remain unverified.
+- Disable, selection changes, window closure, suspend/resume and exit revoke pending manual operations. Polling failures do not alter battery data.
+
+Configured-rate readback is not a measurement of USB report timing. No polling-rate behavior, firmware compatibility or receiver/peripheral pairing has been verified on hardware.

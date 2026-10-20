@@ -13,14 +13,17 @@ public partial class SettingsWindow : Window
     private readonly AppSettings original;
     private readonly Action<AppSettings, bool> save;
     private readonly bool initialStartup;
+    private readonly Action? showPolling;
     private readonly List<(string Id, TextBox Editor)> names = [];
 
     public SettingsWindow(AppSettings settings, IReadOnlyList<DeviceSnapshot> devices, bool canRegister,
-        bool startupEnabled, string? startupError, Action<AppSettings, bool> save)
+        bool startupEnabled, string? startupError, Action<AppSettings, bool> save, Action? showPolling = null)
     {
         InitializeComponent();
         original = settings;
         this.save = save;
+        this.showPolling = showPolling;
+        PollingButton.IsEnabled = showPolling is not null;
         initialStartup = startupEnabled;
         IntervalBox.Text = settings.RefreshIntervalSeconds.ToString(CultureInfo.InvariantCulture);
         ThresholdBox.Text = settings.LowBatteryThreshold.ToString(CultureInfo.InvariantCulture);
@@ -93,6 +96,11 @@ public partial class SettingsWindow : Window
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e) => Close();
+    private void Polling_Click(object sender, RoutedEventArgs e)
+    {
+        try { showPolling?.Invoke(); }
+        catch (Exception exception) { ErrorText.Text = $"Polling-rate control could not open. {exception.Message}"; }
+    }
     public void ShowNotice(string message) => ErrorText.Text = message;
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {

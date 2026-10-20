@@ -1,10 +1,10 @@
 # Device Battery Status
 
-Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals. Milestone 2 adds the circular percentage icon, compact popup, background refresh, notifications and preferences. Polling-rate control and release preparation require approval for Milestones 3 and 4.
+Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications and preferences. Milestone 3 adds manual polling-rate controls for supported mice. Final testing and release preparation require approval for Milestone 4.
 
 ## Projects
 
-- `Core`: battery state model, refresh/reconnection coordination, read-only protocols, settings and presentation/notification policies.
+- `Core`: battery state model, refresh/reconnection coordination, read-only battery protocols, independent manual polling-rate controllers, settings and presentation/notification policies.
 - `Windows`: native SetupAPI/HID discovery and cancellable I/O, plus opt-in Windows startup. USB ancestry excludes Bluetooth.
 - `App`: one tray icon, a 300-DIP popup, settings, automatic refresh and clean cancellation.
 - `Tests`: focused hardware-free state, framing, association, settings and presentation tests. They never enumerate HID or launch the app.
@@ -20,6 +20,19 @@ Settings are stored at `%LOCALAPPDATA%\DeviceBatteryStatus\settings.json`: refre
 Notifications default to 20%, suppress known charging/full states, and require a fresh measured percentage. A new alert requires a fresh recovery at least five percentage points above the threshold. Unknown charging state stays unknown. Windows notification preferences can suppress delivery. Startup is off unless explicitly enabled in Settings and registers only the current `DeviceBatteryStatus.exe` apphost for the current user.
 
 Freshness is checked every five seconds independently of hardware polling. Samples older than twice the refresh interval plus five seconds turn stale, and readings from before sleep stay stale until refreshed. The icon is rendered for the notification area's DPI, including centered `0` and `100`; visual behavior still needs Windows runtime verification.
+
+## Manual polling-rate control
+
+Open **Settings → Polling rate**. Controls start disabled each time the window opens. Enable them, select a mouse and click **Detect** to read its current rate and supported options. Select a rate and click **Apply** to request a change. Saving preferences, battery refresh, device selection and startup never change polling rate.
+
+Each Apply checks the device and available rates again, sends the setting once, and reads back the reported rate. A failed or interrupted verification cannot establish whether the setting changed; detect again before another attempt. Disabling controls, changing devices, closing the window, sleep/resume and shutdown invalidate pending operations and displayed capabilities. Battery refresh and manual exchanges share one gate to prevent competing replies.
+
+| Family | Polling-rate implementation | Limitations |
+| --- | --- | --- |
+| Razer | Exact documented wireless receiver IDs using the ordinary 125/500/1000 Hz protocol | High-rate, generic HyperPolling and ambiguous receiver associations remain unsupported. See [protocol coverage](docs/protocols/razer-polling.md). |
+| Logitech | Mouse-only HID++ 8060/8061 features, with device-advertised options potentially up to 8000 Hz | Requires fresh pairing identity and compatible receiver/firmware; profile-controlled modes are not changed. See [protocol coverage](docs/protocols/logitech-polling.md). |
+
+These are source-backed implementations; physical compatibility and the actual USB reporting frequency remain unverified. Reading back a configured rate does not measure report timing. Polling-rate failures do not replace battery readings or imply a radio-link state.
 
 ## Build and verification
 

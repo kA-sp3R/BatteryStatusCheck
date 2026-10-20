@@ -1,0 +1,44 @@
+<Window x:Class="DeviceBatteryStatus.App.PollingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Device Battery Status · Polling rate" Width="440" Height="480"
+        MinWidth="390" MinHeight="420" Background="#080808" Foreground="#EEEEEE"
+        WindowStartupLocation="CenterOwner" PreviewKeyDown="Window_PreviewKeyDown">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,8,0">
+                <TextBlock Text="Mouse polling rate" Foreground="#44D62C" FontSize="22" Margin="0,0,0,12" />
+                <TextBlock Text="Changes are sent only when you click Apply." TextWrapping="Wrap" Foreground="#CCCCCC" Margin="0,0,0,16" />
+                <CheckBox x:Name="EnableBox" Content="Enable control for this session" IsChecked="False"
+                          Foreground="#EEEEEE" Margin="0,0,0,18"
+                          Checked="Enable_Changed" Unchecked="Enable_Changed" />
+                <Label Content="_Mouse / receiver" Target="{Binding ElementName=DeviceBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
+                <ComboBox x:Name="DeviceBox" DisplayMemberPath="Name" MinHeight="32"
+                          Foreground="#101010" Background="#EEEEEE" Margin="0,0,0,10"
+                          AutomationProperties.Name="Mouse or receiver for polling-rate control"
+                          SelectionChanged="Device_SelectionChanged" />
+                <Button x:Name="DetectButton" Content="Detect" HorizontalAlignment="Left" Click="Detect_Click" Margin="0,0,0,14" />
+                <TextBlock x:Name="CurrentText" Text="Current rate unavailable" Foreground="#44D62C" FontSize="16" Margin="0,0,0,7" />
+                <TextBlock x:Name="DetailText" TextWrapping="Wrap" Foreground="#AAAAAA" Margin="0,0,0,16"
+                           AutomationProperties.LiveSetting="Polite" />
+                <StackPanel x:Name="RatePanel" Visibility="Collapsed">
+                    <Label Content="_Supported rate" Target="{Binding ElementName=RateBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
+                    <DockPanel Margin="0,0,0,12">
+                        <Button x:Name="ApplyButton" Content="Apply" DockPanel.Dock="Right" Margin="10,0,0,0"
+                                Foreground="#44D62C" Click="Apply_Click" />
+                        <ComboBox x:Name="RateBox" DisplayMemberPath="Name" MinHeight="32"
+                                  Foreground="#101010" Background="#EEEEEE"
+                                  AutomationProperties.Name="Supported polling rate"
+                                  SelectionChanged="Rate_SelectionChanged" />
+                    </DockPanel>
+                </StackPanel>
+                <TextBlock Text="Configured rate only. Actual USB timing and hardware compatibility are unverified." FontSize="11" Foreground="#888888" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+        <Button Grid.Row="1" Content="Close" HorizontalAlignment="Right" Margin="0,16,0,0" Click="Close_Click" />
+    </Grid>
+</Window>

@@ -6,9 +6,9 @@ namespace DeviceBatteryStatus.Core.Monitoring;
 
 /// <summary>Serializes refreshes and retains failed samples as explicitly stale.</summary>
 public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory transports,
-    IReadOnlyList<IBatteryProvider> providers)
+    IReadOnlyList<IBatteryProvider> providers, HidOperationGate? operationGate = null)
 {
-    private readonly SemaphoreSlim gate = new(1, 1);
+    private readonly HidOperationGate gate = operationGate ?? new();
     private readonly Dictionary<string, DeviceSnapshot> devices = new(StringComparer.Ordinal);
     private IReadOnlyList<DeviceSnapshot> published = Array.Empty<DeviceSnapshot>();
     public IReadOnlyList<DeviceSnapshot> Devices => Volatile.Read(ref published);
@@ -16,8 +16,7 @@ public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory
 
     public async Task<IReadOnlyList<DeviceSnapshot>> RefreshAsync(CancellationToken cancellationToken)
     {
-        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
+        using (await gate.EnterAsync(cancellationToken).ConfigureAwait(false))
         {
             IReadOnlyList<HidEndpoint> endpoints;
             try
@@ -104,7 +103,6 @@ public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory
             }
             return Publish();
         }
-        finally { gate.Release(); }
     }
 
     private IReadOnlyList<DeviceSnapshot> Publish()
