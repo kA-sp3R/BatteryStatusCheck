@@ -3,9 +3,9 @@
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
 | Static review | Completed | Source/peer review, XML/project-reference checks and whitespace checks. This is not compilation or a rendered UI check. |
-| Windows compilation | Milestone 1 passed; Milestone 2 pending | Observed successful compile for `be23f36` in run `39362307220`. The current interface changes still need their own Windows result. |
-| Focused C# automated tests | Earlier run failed; current changes pending | Run `39362307220` failed its focused test job. Current coverage adds tray selection, expiry, notification hysteresis and settings persistence. Failure details and current results must be resolved before claiming success. |
-| Offline capture parser tests | 5 passed | `python3 -m unittest discover -s tools/alienware -p 'test_*.py' -v`; synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
+| Windows compilation | Passed | [Windows run `39383950281`](https://github.com/wn622c4xv9-dotcom/BatteryStatusCheck/actions/runs/39383950281), source commit `cd08a6f0fc93dd8db390bfb6d2eca8b6948c1505`; WPF solution compiled and development artifact uploaded. |
+| Focused C# automated tests | 182 passed; 0 failed; 0 skipped | Same Windows run/source commit. Actual TRX counters exposed through check `118499230945`: Executed=182, Passed=182, Failed=0, Skipped=0, NativeExit=0. Coverage includes protocols, association, stale/zero states, tray selection, alerts and settings persistence. |
+| Offline capture parser tests | 5 passed; 0 skipped | Same Windows run/source commit, check `118499231035`: Ran=5, Skipped=0, NativeExit=0. Synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
 | Full testing | Not run | Reserved for Milestone 4; requires permission. |
 | Application runtime | Not run | Requires explicit permission on Windows. |
 | Physical hardware | Not run | Requires explicit permission; no compatibility or accuracy certification claimed. |
@@ -13,6 +13,8 @@
 The app does not start during CI. Hardware tests are not part of automated tests.
 
 Live GitHub API requests now work, despite environment metadata still showing the older policy. Current requests, rather than that metadata, establish API connectivity. Detailed log/artifact redirects use additional hosts that remain blocked here. CI exposes actual test counters and failure messages as check annotations, which can be read through the working API; full logs/TRX files are also retained as artifacts. No Git-note writer or extra repository-write permission is needed.
+
+Malformed Razer/Alienware replies now produce failed readings. A valid Razer battery measurement survives an invalid charging reply with charging left unknown. These paths include regressions; the earlier Razer test failure is resolved in the passing source commit above. Documentation-only status commits use `[skip ci]` and do not change that tested application source.
 
 ## Milestone 2 implementation
 
