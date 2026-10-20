@@ -1,10 +1,10 @@
-# Milestone 1 verification
+# Milestones 1–2 verification
 
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
-| Static review | Completed | Protocol-source/peer review; 8 XML files parsed, project references resolved, workflow parsed, whitespace checks passed. This is not compilation. |
-| Windows compilation | Result unverified | Windows CI is configured; GitHub API access is blocked, so no run or outcome is claimed. This also applies to the new Alienware reader/control transport. |
-| Focused C# automated tests | Authored; result unverified | Separate Windows CI job for pure Core/protocol/provider tests, including Alienware captured-byte and receiver/link-state scenarios. No C# test counts or passing outcome have been observed. |
+| Static review | Completed | Source/peer review, XML/project-reference checks and whitespace checks. This is not compilation or a rendered UI check. |
+| Windows compilation | Milestone 1 passed; Milestone 2 pending | Observed successful compile for `be23f36` in run `39362307220`. The current interface changes still need their own Windows result. |
+| Focused C# automated tests | Earlier run failed; current changes pending | Run `39362307220` failed its focused test job. Current coverage adds tray selection, expiry, notification hysteresis and settings persistence. Failure details and current results must be resolved before claiming success. |
 | Offline capture parser tests | 5 passed | `python3 -m unittest discover -s tools/alienware -p 'test_*.py' -v`; synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
 | Full testing | Not run | Reserved for Milestone 4; requires permission. |
 | Application runtime | Not run | Requires explicit permission on Windows. |
@@ -12,7 +12,15 @@
 
 The app does not start during CI. Hardware tests are not part of automated tests.
 
-The existing Git proxy successfully pushed the initial source; no extra GitHub token was requested. The cloud network allowlist blocks `api.github.com`, preventing CI-run/log retrieval. An additive domain change is saved in the environment configuration draft; it must be reviewed/saved and the environment published before it is active. After access changes, retrieve the workflow result for the current source commit, investigate failures, and update this report. The earlier documentation-only status commit uses `[skip ci]`; the functional Alienware change does not skip CI.
+Live GitHub API requests now work, despite environment metadata still showing the older policy. Current requests, rather than that metadata, establish API connectivity. Detailed log/artifact redirects use additional hosts that remain blocked here. CI exposes actual test counters and failure messages as check annotations, which can be read through the working API; full logs/TRX files are also retained as artifacts. No Git-note writer or extra repository-write permission is needed.
+
+## Milestone 2 implementation
+
+- One DPI-aware circular tray icon; fresh lowest/preferred-device selection, exact percentage colors and neutral unavailable state.
+- Compact black/green popup with dynamic height, device glyphs, independent charging/link labels, stale timestamps, keyboard/outside dismissal and monitor work-area placement.
+- One serialized background polling loop, independent presentation expiry, refresh after resume and cancellation before exit.
+- Refresh interval, aliases, preferred device, low-battery alerts and explicit opt-in Windows startup; settings saves retain a recoverable prior file and do not overwrite unrelated startup commands.
+- Focused hardware-free tests cover real zero, stale/preferred selection, alias identity preservation, alert suppression/recovery, settings round trips and corrupt-file preservation.
 
 ## Outstanding limitations
 
@@ -20,4 +28,4 @@ The existing Git proxy successfully pushed the initial source; no extra GitHub t
 - Generic Razer HyperPolling and shared receiver association are unsupported. Razer battery replies do not independently prove a live radio connection or exclude firmware-cached data.
 - Logitech support is constrained to documented receiver IDs and real percentage capabilities. Level-only models cannot provide the requested exact battery percentage.
 - Windows discovery and native I/O, protocol compatibility, reconnect behavior, and firmware caching need application/hardware verification after permission. Read-only query packets still access hardware when the user launches the app.
-- No Milestone 2 work should begin until the user approves it. These verification limitations prevent claiming all Milestone 1 hardware requirements are complete.
+- Milestone 2 was approved by the user. Milestone 3 has not started and requires approval. The interface, shell notification delivery, mixed-DPI placement, startup registration and full shutdown behavior remain unverified at runtime.

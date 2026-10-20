@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: pwsh
+
 jobs:
   compile:
     name: Compile WPF solution (no application launch)
@@ -19,12 +23,18 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Restore
-        run: dotnet restore DeviceBatteryStatus.sln
+        run: ./.github/scripts/run-ci-command.ps1 -Name restore -Command @('dotnet', 'restore', 'DeviceBatteryStatus.sln')
       - name: Compile
-        run: dotnet build DeviceBatteryStatus.sln --configuration Release --no-restore
+        run: ./.github/scripts/run-ci-command.ps1 -Name compile -Command @('dotnet', 'build', 'DeviceBatteryStatus.sln', '--configuration', 'Release', '--no-restore')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compile-evidence-${{ github.run_attempt }}
+          path: ci-logs/*.log
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         with:
-          name: milestone-1-windows-build
+          name: windows-build-${{ github.run_attempt }}
           path: src/DeviceBatteryStatus.App/bin/Release/net10.0-windows/
           if-no-files-found: error
 
@@ -38,12 +48,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Run focused unit tests only
-        run: dotnet test tests/DeviceBatteryStatus.Tests/DeviceBatteryStatus.Tests.csproj --configuration Release --logger "trx;LogFileName=focused.trx" --results-directory TestResults
+        run: ./.github/scripts/run-ci-command.ps1 -Name focused -Command @('dotnet', 'test', 'tests/DeviceBatteryStatus.Tests/DeviceBatteryStatus.Tests.csproj', '--configuration', 'Release', '--logger', 'trx;LogFileName=focused.trx', '--results-directory', 'TestResults')
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: focused-unit-test-results
-          path: TestResults/*.trx
+          name: focused-unit-tests-evidence-${{ github.run_attempt }}
+          path: |
+            ci-logs/*.log
+            TestResults/*.trx
           if-no-files-found: error
 
   offline-capture-tests:
@@ -56,4 +68,10 @@ jobs:
         with:
           python-version: '3.13'
       - name: Test offline capture parser
-        run: python -m unittest discover -s tools/alienware -p "test_*.py" -v
+        run: ./.github/scripts/run-ci-command.ps1 -Name offline -Command @('python', '-m', 'unittest', 'discover', '-s', 'tools/alienware', '-p', 'test_*.py', '-v')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-capture-tests-evidence-${{ github.run_attempt }}
+          path: ci-logs/*.log
+          if-no-files-found: warn

@@ -1,0 +1,41 @@
+<Window x:Class="DeviceBatteryStatus.App.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Device Battery Status · Settings" Width="430" Height="610"
+        MinHeight="470" MinWidth="390" Background="#080808" Foreground="#EEEEEE"
+        WindowStartupLocation="CenterScreen" PreviewKeyDown="Window_PreviewKeyDown">
+    <Grid Margin="22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="Settings" Foreground="#44D62C" FontSize="22" Margin="0,0,0,16" />
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,8,0">
+                <Label Content="_Refresh interval (seconds)" Target="{Binding ElementName=IntervalBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
+                <TextBox x:Name="IntervalBox" MaxLength="4" AutomationProperties.Name="Refresh interval in seconds" />
+                <TextBlock Text="10–3600 seconds" FontSize="11" Foreground="#888888" Margin="0,4,0,15" />
+                <Label Content="_Tray icon device" Target="{Binding ElementName=PreferredBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
+                <ComboBox x:Name="PreferredBox" DisplayMemberPath="Name" MinHeight="30" Margin="0,0,0,5" AutomationProperties.Name="Tray icon device" />
+                <TextBlock Text="A selected device turns neutral when its reading is unavailable." FontSize="11" Foreground="#999999" TextWrapping="Wrap" Margin="0,0,0,15" />
+                <CheckBox x:Name="NotifyBox" Content="Low-battery notifications" Foreground="#EEEEEE" Margin="0,0,0,8" />
+                <DockPanel Margin="0,0,0,17">
+                    <TextBox x:Name="ThresholdBox" Width="50" MaxLength="2" DockPanel.Dock="Right" AutomationProperties.Name="Low battery threshold percentage" />
+                    <TextBlock Text="Notify at or below (%)" VerticalAlignment="Center" Foreground="#BBBBBB" />
+                </DockPanel>
+                <CheckBox x:Name="StartupBox" Content="Start with Windows" Foreground="#EEEEEE" Margin="0,0,0,6" />
+                <TextBlock x:Name="StartupNote" TextWrapping="Wrap" Foreground="#999999" FontSize="11" Margin="0,0,0,16" />
+                <TextBlock Text="Device names" FontWeight="SemiBold" Foreground="#44D62C" Margin="0,0,0,8" />
+                <StackPanel x:Name="AliasPanel" />
+                <TextBlock x:Name="EmptyNames" Text="Names will appear here after a device is detected." Foreground="#999999" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+        <TextBlock Grid.Row="2" x:Name="ErrorText" Foreground="#FFB366" TextWrapping="Wrap" Margin="0,12,0,8" AutomationProperties.LiveSetting="Polite" />
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" Margin="0,0,8,0" Click="Cancel_Click" />
+            <Button Content="Save" Foreground="#44D62C" IsDefault="True" Click="Save_Click" />
+        </StackPanel>
+    </Grid>
+</Window>
