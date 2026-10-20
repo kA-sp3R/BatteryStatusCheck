@@ -193,6 +193,21 @@ public sealed class AlienwareBatteryProviderTests
     }
 
     [Fact]
+    public async Task MalformedBatteryReplyBecomesFailedWithNoInventedPercentageOrConnection()
+    {
+        var endpoint = Endpoint();
+        await using var transport = new ControlTransport(endpoint, malformedBattery: true);
+
+        var result = Assert.Single(await new AlienwareBatteryProvider().ReadAsync(
+            endpoint, transport, SampleTime, CancellationToken.None));
+
+        Assert.Equal(ReadingState.Failed, result.Battery.State);
+        Assert.Null(result.Battery.Percentage);
+        Assert.Equal(ConnectionState.Unknown, result.Connection);
+        Assert.Equal(new byte[] { 0x09, 0x00, 0x0A }, transport.Commands);
+    }
+
+    [Fact]
     public async Task MonitorRetainsTheLastGenuineZeroAsStaleAfterALaterAlienwareReadFails()
     {
         var endpoint = Endpoint();
@@ -231,7 +246,8 @@ public sealed class AlienwareBatteryProviderTests
 
     private sealed class ControlTransport(HidEndpoint endpoint, byte initialLink = 0xCC, byte finalLink = 0xCC,
         byte percentage = 64, byte charging = 0, ushort identityProductId = 0xA528,
-        byte? timeoutCommand = null, bool closeOnFailure = false, bool ioFailure = false) : IHidTransport
+        byte? timeoutCommand = null, bool closeOnFailure = false, bool ioFailure = false,
+        bool malformedBattery = false) : IHidTransport
     {
         private byte? activeCommand;
         private int linkRequests;
@@ -277,6 +293,7 @@ public sealed class AlienwareBatteryProviderTests
                 0x0A => AlienwareFixtures.Battery(percentage, charging),
                 _ => throw new InvalidOperationException("Unexpected monitoring command.")
             };
+            if (malformedBattery && activeCommand == 0x0A) response[3] = 0;
             var descriptorSized = new byte[Endpoint.InputReportLength];
             Array.Copy(response, descriptorSized, Math.Min(response.Length, descriptorSized.Length));
             return ValueTask.FromResult(descriptorSized);

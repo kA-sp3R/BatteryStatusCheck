@@ -89,6 +89,21 @@ public sealed class RazerBatteryProviderTests
     }
 
     [Fact]
+    public async Task MalformedChargingReplyKeepsTheValidBatteryAndUnknownChargingState()
+    {
+        var endpoint = Endpoint(0x00A6);
+        await using var transport = new FeatureTransport(endpoint, request => request[8] == 0x80
+            ? RazerProtocolTests.BatteryReply(0)
+            : new byte[91]);
+
+        var device = Assert.Single(await new RazerBatteryProvider().ReadAsync(endpoint, transport, SampleTime, CancellationToken.None));
+
+        Assert.Equal(ReadingState.Current, device.Battery.State);
+        Assert.Equal(0, device.Battery.Percentage);
+        Assert.Equal(ChargingState.Unknown, device.Battery.Charging);
+    }
+
+    [Fact]
     public async Task ReceiverTimeoutMeansFailedReadRatherThanProofOfDisconnection()
     {
         var endpoint = Endpoint(0x00B8);

@@ -50,7 +50,7 @@ public sealed class AlienwareBatteryProvider : IBatteryProvider
 
             return [new(identity, battery, ConnectionState.Connected)];
         }
-        catch (Exception exception) when (exception is IOException or TimeoutException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or InvalidDataException or TimeoutException or UnauthorizedAccessException)
         {
             // Native timeouts may close this session. Keep the original failure and unknown
             // link state; a later refresh opens a new session instead of reusing a failed one.

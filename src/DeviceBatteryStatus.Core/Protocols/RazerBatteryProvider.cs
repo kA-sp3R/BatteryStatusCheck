@@ -98,7 +98,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
                             _ => ChargingState.Unknown
                         };
                 }
-                catch (Exception exception) when (exception is IOException or TimeoutException or UnauthorizedAccessException)
+                catch (Exception exception) when (exception is IOException or InvalidDataException or TimeoutException or UnauthorizedAccessException)
                 {
                     // Charging is independent: retain a successful battery sample, not an invented charge state.
                 }
@@ -107,7 +107,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
             return [new(identity, BatteryReading.Current(RazerProtocol.ToPercentage(battery.Value!.Value),
                 charging, observedAt))];
         }
-        catch (Exception exception) when (exception is IOException or TimeoutException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or InvalidDataException or TimeoutException or UnauthorizedAccessException)
         {
             return [new(identity, BatteryReading.Unavailable(ReadingState.Failed,
                 $"Razer battery query failed: {exception.Message}"))];
