@@ -100,13 +100,22 @@ try {
             $licenses = @($manifest.runtimeLicenses | Where-Object { $_.pack -eq $pack -and $_.version -eq $framework.version })
             if ($licenses.Count -ne 1) { throw "Missing runtime license provenance: $pack" }
             $paths = @($licenses[0].files)
-            if (@($paths | Where-Object { [IO.Path]::GetFileName($_) -match '^LICENSE(?:\.|$)' }).Count -eq 0 -or
-                @($paths | Where-Object { [IO.Path]::GetFileName($_) -match '^THIRD[-_]?PARTY[-_]?NOTICES\.' }).Count -eq 0) {
-                throw "Missing runtime license/notice files: $pack"
+            if (@($paths | Where-Object { [IO.Path]::GetFileName($_) -match '^LICENSE(?:\.|$)' }).Count -eq 0) {
+                throw "Missing runtime license files: $pack"
             }
             foreach ($path in $paths) {
                 if (!$path.StartsWith("licenses/$pack-$($framework.version)/", [StringComparison]::Ordinal) -or
                     !$entries.ContainsKey($path) -or $entries[$path].Length -eq 0) { throw "Invalid runtime license payload: $path" }
+            }
+            $noticeSource = $licenses[0].thirdPartyNoticeSource
+            $noticePaths = @($licenses[0].thirdPartyNoticeFiles)
+            if ($noticePaths.Count -eq 0 -or $noticeSource -notin 'runtime-pack', 'active-dotnet-distribution') {
+                throw "Missing runtime third-party notice provenance: $pack"
+            }
+            foreach ($path in $noticePaths) {
+                $sourcePaths = if ($noticeSource -eq 'runtime-pack') { $paths } else { $distributionPaths }
+                if ($path -notin $sourcePaths -or [IO.Path]::GetFileName($path) -notmatch '^THIRD[-_]?PARTY[-_]?NOTICES\.' -or
+                    !$entries.ContainsKey($path) -or $entries[$path].Length -eq 0) { throw "Invalid runtime third-party notice payload: $path" }
             }
         }
     }

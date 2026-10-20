@@ -74,9 +74,9 @@ if ($selfContained) {
         $notices = @(Get-ChildItem -LiteralPath $packDirectory -Recurse -File | Where-Object {
             $_.Name -match '^(LICENSE(?:\.(?:TXT|MD))?|THIRD[-_]?PARTY[-_]?NOTICES\.(?:TXT|MD))$'
         })
-        if (@($notices | Where-Object { $_.Name -match '^LICENSE(?:\.|$)' }).Count -eq 0 -or
-            @($notices | Where-Object { $_.Name -match '^THIRD[-_]?PARTY[-_]?NOTICES\.' }).Count -eq 0) {
-            throw "Runtime pack is missing redistributable license/notice text: $pack $($framework.version)"
+        if (@($notices | Where-Object { $_.Name -match '^LICENSE(?:\.|$)' }).Count -eq 0) {
+            $inventory = @(Get-ChildItem -LiteralPath $packDirectory -Force | Select-Object -First 20 -ExpandProperty Name) -join ', '
+            throw "Runtime pack is missing license text: $pack $($framework.version); Root inventory: $inventory"
         }
         $licensePaths = @()
         foreach ($notice in $notices) {
@@ -87,7 +87,19 @@ if ($selfContained) {
             Copy-Item -LiteralPath $notice.FullName -Destination $destinationPath
             $licensePaths += $destination
         }
-        $runtimeLicenses += [ordered]@{ pack = $pack; version = $framework.version; files = $licensePaths }
+        $thirdPartyPaths = @($licensePaths | Where-Object { [IO.Path]::GetFileName($_) -match '^THIRD[-_]?PARTY[-_]?NOTICES\.' })
+        $thirdPartySource = 'runtime-pack'
+        if ($thirdPartyPaths.Count -eq 0) {
+            # Some Windows Desktop packs omit this text. Retain the actual pack's
+            # license and use the separately identified distribution-wide notices.
+            $thirdPartySource = 'active-dotnet-distribution'
+            $thirdPartyPaths = @($distributionNoticePaths | Where-Object { [IO.Path]::GetFileName($_) -match '^THIRD[-_]?PARTY[-_]?NOTICES\.' })
+        }
+        $runtimeLicenses += [ordered]@{
+            pack = $pack; version = $framework.version; files = $licensePaths
+            thirdPartyNoticeSource = $thirdPartySource; thirdPartyNoticeFiles = $thirdPartyPaths
+        }
+        Write-Output "::notice title=Runtime notice provenance::$pack $($framework.version); LicenseSource=runtime-pack; ThirdPartyNoticeSource=$thirdPartySource"
     }
 }
 
@@ -132,8 +144,14 @@ $archive = [IO.Compression.ZipFile]::Open($zipPath, [IO.Compression.ZipArchiveMo
 try {
     foreach ($file in Get-ChildItem -LiteralPath $staging -Recurse -File | Sort-Object FullName) {
         $relative = [IO.Path]::GetRelativePath($staging, $file.FullName).Replace([char]92, [char]47)
-        $entry = [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $file.FullName, $relative, [IO.Compression.CompressionLevel]::Optimal)
+        $entry = $archive.CreateEntry($relative, [IO.Compression.CompressionLevel]::Optimal)
         $entry.LastWriteTime = $timestamp
+        $inputStream = [IO.File]::OpenRead($file.FullName)
+        try {
+            $outputStream = $entry.Open()
+            try { $inputStream.CopyTo($outputStream) }
+            finally { $outputStream.Dispose() }
+        } finally { $inputStream.Dispose() }
     }
 } finally { $archive.Dispose() }
 $hash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
