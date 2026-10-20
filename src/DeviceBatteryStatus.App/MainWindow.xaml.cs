@@ -11,7 +11,7 @@ public partial class MainWindow : Window
 {
     private readonly CancellationTokenSource shutdown = new();
     private readonly BatteryMonitor monitor = new(new WindowsHidDiscovery(), new WindowsHidTransportFactory(),
-        [new RazerBatteryProvider(), new LogitechBatteryProvider()]);
+        [new RazerBatteryProvider(), new LogitechBatteryProvider(), new AlienwareBatteryProvider()]);
     private Task? polling;
     private Task? activeRefresh;
     private bool closing;

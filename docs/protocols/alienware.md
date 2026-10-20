@@ -1,34 +1,67 @@
 # Alienware Pro Wireless Gaming Headset
 
-**Status: unsupported.** No battery reader is implemented. The application's capability
-record is `AlienwareSupport`; it does not claim that an enumerated Dell/Alienware device
-is this headset and does not send speculative HID commands.
+**Status: source-backed reader implemented; Windows application runtime and physical
+hardware compatibility are unverified.** No local battery value or hardware result
+has been observed. Other Alienware headset models remain unsupported.
 
-The requested reference projects do not contain a Pro headset battery protocol at the
-revisions inspected:
+The initial requested reference projects had no Pro-headset protocol. Follow-up
+research found [romain-ncls/awpro](https://github.com/romain-ncls/awpro/tree/d92f6df573b0a5b4c5551fcfc8d3311c435e7a88),
+whose source documents AWCC packet captures and the author's hardware observations.
+The reader uses those protocol facts. See [research and provenance](../research/alienware-awcc.md)
+for source revisions, captured response examples, transport limitations, and the
+blocked attempt to obtain official Dell software.
 
-| Reference | Revision | Result |
-| --- | --- | --- |
-| [FerrisPulse](https://github.com/Ferris-echo/FerrisPulse/tree/ffa66068cc5adc149770b58073ab96828ed92092) | `ffa66068` | No Alienware implementation found. |
-| [2.4G-battery-viewer](https://github.com/yszyszysz233/2.4G-battery-viewer/tree/f0e983e88900592237c7df9ae6b80b9dbeb3020b) | `f0e983e8` | Its headset reader targets DARKRIM, not Alienware. |
-| [HeadsetControl](https://github.com/Sapd/HeadsetControl/tree/b816f5d54cf42fd5dd2398a29f1a8239b9b880bf) | `b816f5d5` | No Alienware implementation found. |
-| [EZ2.4G](https://github.com/Ap0LoG1zE/EZ2.4G/tree/025f829dce0e023e2f9ade8629ad4f880431de94) | `025f829d` | No Alienware implementation found. |
-| [alienfx-tools](https://github.com/T-Troll/alienfx-tools/tree/8171ac38b97400fd433c09090638af6d87c6fdcb) | `8171ac38` | No Pro headset implementation found. |
+## Supported identification and reads
 
-The [USB ID repository](https://github.com/usbids/usbids/blob/5eb613762db1e34b9218da63a88f22dd26f743c5/usb.ids)
-lists vendor `187c` as Alienware Corporation, with lighting/gamepad products, and
-`0b0e:a50a` as the older AW988 headset. Neither is evidence of the **Pro** headset's
-dongle identity. Matching every Dell or Alienware VID would misidentify unrelated
-hardware; reusing an AW988 protocol would also be unsupported.
+- Only USB `413c:a529` (the **2.4 GHz dongle**) and vendor HID usage page `ff13`
+  match the provider. Wired USB-C headset `413c:a528` is excluded.
+- Descriptor capacities must hold the 62-byte request and at least a 17-byte
+  identity reply. The Windows descriptor determines the Input buffer size; the
+  upstream 63-byte Linux buffer is not treated as a Windows descriptor invariant.
+  Output padding is handled by the native transport. Unsupported capacities cause
+  an unavailable result before protocol I/O.
+- Only GET-direction (`c0`) commands can be constructed: radio link `09`, headset
+  identity `00` with documented parameters `00 f5 28 00`, and battery `0a`.
+- Windows control transfers use **Output** report `06` and **Input** report `07`,
+  matching the descriptor types described by the upstream author. Feature reports
+  and guessed firmware/settings opcodes are not used.
+- The radio link must report `cc` before the identity/battery reads and after the
+  battery read. The headset's identity must report model `a528`. A `dd` link is
+  disconnected even while its dongle remains enumerated; other link bytes are
+  unknown and cannot produce a current battery reading.
+- Battery byte 6 is a percentage; genuine `0` is preserved and values above `100`
+  fail validation. Charging byte 7 maps `0` to discharging and `1` to charging;
+  other values remain unknown. A 100% value does not by itself establish a distinct
+  fully-charged status.
 
-Implementing this device requires a trustworthy Pro-specific protocol reference or,
-with the user's permission, investigation of its descriptors and relevant vendor
-software's battery traffic. Required facts include dongle VID/PID, HID collection and
-report lengths, request/response validation, actual percentage encoding, charging
-semantics, and an explicit peripheral-presence signal. A plugged-in dongle alone must
-never establish headset connection. Missing data must never become `0%`.
+Replies require report `07`, direction `c0`, the matching opcode, observed zero
+header byte 4, and a complete payload. The implemented known payload lengths are
+`01` for link, `0c` for identity and `0a` for battery; battery payload byte 5 must
+match the observed zero prefix. Upstream does not enforce declared payload lengths.
+This application deliberately accepts only the captured layouts it decodes, instead
+of allowing padded/truncated or changed layouts to manufacture plausible values.
+New firmware with different layouts may therefore report failed/unavailable until
+its response is understood. No undocumented checksum is inferred.
 
-No application runtime or physical hardware verification was performed. No third-party
-source code was copied: FerrisPulse is GPL-3.0; no licence file was found for
-2.4G-battery-viewer at the inspected revision. These references document research
-scope, not a claim of compatibility or a basis for copying implementation code.
+Queries poll for their matching reply up to 20 times, 20 ms apart. Any query failure
+remains failed with unknown link state; timeouts do not establish disconnection.
+Native timeouts can close the session, so it is not reused for further diagnosis.
+A later refresh opens a new session. The monitor retains any previous measurement
+only as stale, with its original sample time.
+
+## Limits
+
+Association is to the physical receiver plus a reported Pro-headset model. The
+documented identity reply does not supply a unique headset serial number, so this
+does not establish identity continuity if headsets of the same model are exchanged
+on a receiver. No claim is made that the firmware never caches a battery value:
+the protocol has no documented battery sample timestamp or transaction nonce.
+
+No application, installer, third-party CLI, or hardware command was executed during
+this research/implementation. Compilation and automated-test outcomes are tracked
+separately from runtime and hardware verification. Runtime/hardware work requires
+the user's permission and a Windows machine with the headset.
+
+awpro is MIT licensed, copyright 2026 Romain Nicolas. Its notice is retained in
+the repository's third-party notices. No source from the previously inspected GPL
+or unlicensed projects was copied.

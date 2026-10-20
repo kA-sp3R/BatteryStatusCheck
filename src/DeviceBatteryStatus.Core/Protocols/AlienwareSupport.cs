@@ -1,15 +1,16 @@
 namespace DeviceBatteryStatus.Core.Protocols;
 
 /// <summary>
-/// Capability information only. No verified Pro headset receiver identity or battery
-/// protocol is available, so this class deliberately performs no device matching or I/O.
+/// Separates implementation availability from Windows runtime and physical verification.
 /// </summary>
 public static class AlienwareSupport
 {
     public const string DeviceName = "Alienware Pro Wireless Gaming Headset";
-    public const bool BatteryMonitoringImplemented = false;
+    public const bool BatteryMonitoringImplemented = true;
+    public const bool WindowsTransportVerified = false;
+    public const bool HardwareVerified = false;
     public const string Limitation =
-        "Unsupported: the Alienware Pro headset's 2.4 GHz receiver identity and battery protocol " +
-        "have not been verified. No battery percentage, charging state, or peripheral " +
-        "connection state can be reported.";
+        "Alienware Pro has a source-backed battery and radio-link reader for the 413C:A529 " +
+        "2.4 GHz dongle. Windows application runtime and physical hardware compatibility " +
+        "remain unverified; wired USB-C monitoring is excluded.";
 }

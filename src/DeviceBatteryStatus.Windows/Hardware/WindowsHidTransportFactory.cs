@@ -11,9 +11,12 @@ public sealed class WindowsHidTransportFactory : IHidTransportFactory
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Windows HID is required.");
-        // Razer uses FILE_ANY_ACCESS feature IOCTLs. Keyboard/mouse collections can deny generic
-        // read/write access while allowing those control requests. HID++ requires interrupt read/write.
-        var access = endpoint.VendorId == 0x1532 && endpoint.FeatureReportLength > 0
+        // Razer feature requests and the Alienware vendor collection use FILE_ANY_ACCESS control
+        // IOCTLs. Reserved HID collections can deny generic read/write while allowing those requests.
+        // HID++ requires interrupt read/write.
+        var controlReportsOnly = (endpoint.VendorId == 0x1532 && endpoint.FeatureReportLength > 0)
+            || endpoint is { VendorId: 0x413C, ProductId: 0xA529, UsagePage: 0xFF13 };
+        var access = controlReportsOnly
             ? 0u : NativeMethods.GenericRead | NativeMethods.GenericWrite;
         var handle = NativeMethods.CreateFileW(endpoint.DevicePath,
             access, 3, IntPtr.Zero, 3,
@@ -61,6 +64,13 @@ internal sealed class WindowsHidTransport : IHidTransport
 
     public async ValueTask WriteAsync(byte[] report, CancellationToken cancellationToken) =>
         _ = await Start(Pad(report, Endpoint.OutputReportLength), TransferKind.Write, CommandTimeout, cancellationToken)
+            .ConfigureAwait(false);
+
+    public ValueTask<byte[]> GetInputReportAsync(byte[] request, CancellationToken cancellationToken) =>
+        new(Start(Pad(request, Endpoint.InputReportLength), TransferKind.GetInputReport, CommandTimeout, cancellationToken));
+
+    public async ValueTask SetOutputReportAsync(byte[] report, CancellationToken cancellationToken) =>
+        _ = await Start(Pad(report, Endpoint.OutputReportLength), TransferKind.SetOutputReport, CommandTimeout, cancellationToken)
             .ConfigureAwait(false);
 
     public ValueTask<byte[]> ReadAsync(TimeSpan timeout, CancellationToken cancellationToken)
@@ -145,7 +155,7 @@ internal sealed class WindowsHidTransport : IHidTransport
         _drained.TrySetResult(true);
     }
 
-    private enum TransferKind { Read, Write, GetFeature, SetFeature }
+    private enum TransferKind { Read, Write, GetFeature, SetFeature, GetInputReport, SetOutputReport }
 
     private sealed unsafe class PendingTransfer
     {
@@ -190,6 +200,10 @@ internal sealed class WindowsHidTransport : IHidTransport
                             NativeMethods.IoctlHidGetFeature, pointer, length, pointer, length, IntPtr.Zero, _overlapped),
                         TransferKind.SetFeature => NativeMethods.DeviceIoControl(_owner._handle,
                             NativeMethods.IoctlHidSetFeature, pointer, length, IntPtr.Zero, 0, IntPtr.Zero, _overlapped),
+                        TransferKind.GetInputReport => NativeMethods.DeviceIoControl(_owner._handle,
+                            NativeMethods.IoctlHidGetInputReport, pointer, length, pointer, length, IntPtr.Zero, _overlapped),
+                        TransferKind.SetOutputReport => NativeMethods.DeviceIoControl(_owner._handle,
+                            NativeMethods.IoctlHidSetOutputReport, pointer, length, IntPtr.Zero, 0, IntPtr.Zero, _overlapped),
                         _ => throw new InvalidOperationException()
                     };
                     error = started ? 0 : Marshal.GetLastWin32Error();
@@ -250,11 +264,11 @@ internal sealed class WindowsHidTransport : IHidTransport
             {
                 if (error == 0)
                 {
-                    if (_kind is TransferKind.Read or TransferKind.GetFeature)
+                    if (_kind is TransferKind.Read or TransferKind.GetFeature or TransferKind.GetInputReport)
                     {
-                        // Windows excludes the synthetic zero report ID from unnumbered feature byte counts.
+                        // Windows excludes the synthetic zero report ID from unnumbered control-report byte counts.
                         var count = (long)transferred;
-                        if (_kind == TransferKind.GetFeature && _buffer[0] == 0) count++;
+                        if ((_kind is TransferKind.GetFeature or TransferKind.GetInputReport) && _buffer[0] == 0) count++;
                         if (count <= 0 || count > _buffer.Length)
                             Completion.TrySetException(new IOException("The HID driver returned an invalid report length."));
                         else Completion.TrySetResult(_buffer[..(int)count]);

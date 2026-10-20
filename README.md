@@ -23,6 +23,8 @@ Compilation is not application runtime or hardware verification. Obtain explicit
 | --- | --- | --- |
 | Razer | Mapped wireless mouse/keyboard PIDs; battery and charging control reports | [Exact mappings](docs/protocols/razer.md). Radio-link state unknown; receiver firmware caching unverified. Generic HyperPolling association unsupported. |
 | Logitech | Selected LIGHTSPEED/Unifying receiver PIDs; per-slot HID++ ping, identity, percentage features/register | [Exact coverage](docs/protocols/logitech.md). Percentage-less models remain unsupported, including many category-only devices. |
-| Alienware Pro headset | Unsupported | No verified dongle identity/battery protocol found. No speculative queries. See [research](docs/protocols/alienware.md). |
+| Alienware Pro headset | Source-backed protocol reader for `413C:A529` / vendor collection `FF13` | Checks model identity and radio link before accepting battery data. Windows/hardware behavior unverified. Wired `A528` excluded. See [protocol and evidence](docs/protocols/alienware.md). |
 
 Device names in a product family do not establish protocol compatibility. Model-specific PIDs, collection descriptors, firmware and pairing arrangements still need permissioned hardware verification. Discovery failures preserve uncertainty instead of implying disconnection.
+
+For a later Alienware capture, use the [manual capture and offline analysis procedure](docs/research/alienware-capture.md). Its Python helper reads existing files only; it never starts AWCC or sends HID commands. The [AWCC-derived protocol evidence](docs/research/alienware-awcc.md) and [third-party notice](THIRD_PARTY_NOTICES.md) are retained in the repository and notice is included in the application build output.

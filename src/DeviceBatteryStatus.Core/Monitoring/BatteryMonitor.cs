@@ -90,7 +90,12 @@ public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory
                     }
                     else
                     {
-                        var vendor = endpoint.VendorId == 0x1532 ? DeviceVendor.Razer : DeviceVendor.Logitech;
+                        var vendor = endpoint.VendorId switch
+                        {
+                            0x1532 => DeviceVendor.Razer,
+                            0x413C => DeviceVendor.Alienware,
+                            _ => DeviceVendor.Logitech
+                        };
                         var id = new PeripheralIdentity($"{endpoint.ReceiverId}:unidentified",
                             $"{provider.Name} receiver (peripheral unidentified)", vendor, endpoint.ReceiverId);
                         devices[id.Id] = new(id, BatteryReading.Unavailable(ReadingState.Failed, ex.Message));

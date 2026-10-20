@@ -45,3 +45,15 @@ jobs:
           name: focused-unit-test-results
           path: TestResults/*.trx
           if-no-files-found: error
+
+  offline-capture-tests:
+    name: Offline USB capture parser tests (synthetic files only)
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Test offline capture parser
+        run: python -m unittest discover -s tools/alienware -p "test_*.py" -v

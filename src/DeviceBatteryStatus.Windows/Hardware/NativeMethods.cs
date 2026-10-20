@@ -13,6 +13,8 @@ internal static class NativeMethods
     internal const uint FileFlagOverlapped = 0x40000000;
     internal const uint IoctlHidGetFeature = 0x000B0192;
     internal const uint IoctlHidSetFeature = 0x000B0191;
+    internal const uint IoctlHidGetInputReport = 0x000B01A2;
+    internal const uint IoctlHidSetOutputReport = 0x000B0195;
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct DeviceInterfaceData

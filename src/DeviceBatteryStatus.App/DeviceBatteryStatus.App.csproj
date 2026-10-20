@@ -9,5 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="../DeviceBatteryStatus.Core/DeviceBatteryStatus.Core.csproj" />
     <ProjectReference Include="../DeviceBatteryStatus.Windows/DeviceBatteryStatus.Windows.csproj" />
+    <Content Include="../../THIRD_PARTY_NOTICES.md" Link="THIRD_PARTY_NOTICES.md"
+             CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
