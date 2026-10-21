@@ -103,11 +103,13 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
                             peripheral = peripheral with { Id = $"{endpoint.ReceiverId}/logitech/{slot}/unit/{unitId}" };
                     }
                     knownDevices[slotKey] = (pairingKey, peripheral);
-                    BatteryReading battery = legacy
-                        ? await ReadLegacyBatteryAsync(transport, slot, observedAt, cancellationToken)
+                    BatteryQueryResult query = legacy
+                        ? new(await ReadLegacyBatteryAsync(transport, slot, observedAt, cancellationToken))
                         : await ReadFeatureBatteryAsync(transport, slot, observedAt, cancellationToken);
+                    BatteryReading battery = query.Reading;
                     devices.Add(new(peripheral, battery, battery.State == ReadingState.Disconnected
                         ? ConnectionState.Disconnected : ConnectionState.Connected));
+                    if (query.StopSession) return devices;
                 }
                 catch (LogitechProtocolException ex)
                 {
@@ -136,7 +138,7 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
         }
     }
 
-    private async Task<BatteryReading> ReadFeatureBatteryAsync(IHidTransport transport, byte slot,
+    private async Task<BatteryQueryResult> ReadFeatureBatteryAsync(IHidTransport transport, byte slot,
         DateTimeOffset observedAt, CancellationToken cancellationToken)
     {
         BatteryReading? levelOnly = null;
@@ -144,45 +146,89 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
         if (unified is not null)
         {
             LogitechReply capabilities = await FeatureAsync(transport, slot, unified.Value, 0, [], cancellationToken);
-            if (capabilities.ErrorCode is not null) return ErrorReading(capabilities, "Battery capabilities");
-            if (capabilities.Parameters.Length < 2) return Malformed();
+            if (capabilities.ErrorCode is not null) return new(ErrorReading(capabilities, "Battery capabilities"));
+            if (capabilities.Parameters.Length < 2) return new(Malformed());
             LogitechReply battery = await FeatureAsync(transport, slot, unified.Value, 0x10, [], cancellationToken);
-            if (battery.ErrorCode is not null) return ErrorReading(battery, "Unified battery");
+            if (battery.ErrorCode is not null) return new(ErrorReading(battery, "Unified battery"));
             BatteryReading result = LogitechHidppProtocol.ParseUnifiedBattery(battery.Parameters,
-                (capabilities.Parameters[1] & 0x02) != 0, observedAt);
-            if (result.State != ReadingState.Unsupported) return result;
+                (capabilities.Parameters[1] & 0x02) != 0, observedAt, capabilities.Parameters[0]);
+            if (result.State != ReadingState.Current || result.Percentage is not null) return new(result);
             levelOnly = result;
         }
 
-        byte? status = await FeatureIndexAsync(transport, slot, 0x1000, cancellationToken);
-        if (status is not null)
+        // A category is already a valid current reading. The second feature is
+        // optional: it can improve precision, but its failure must not erase it.
+        try
         {
-            // 0x1000 also serves category-only devices. Its byte-sized level is not
-            // evidence of battery mileage unless the device advertises that capability.
-            LogitechReply capabilities = await FeatureAsync(transport, slot, status.Value, 0x10, [], cancellationToken);
-            if (capabilities.ErrorCode is not null) return ErrorReading(capabilities, "Battery-status capabilities");
-            if (capabilities.Parameters.Length < 2) return Malformed();
-            bool supportsMileage = capabilities.Parameters[0] >= 10 && (capabilities.Parameters[1] & 0x02) != 0;
-            LogitechReply battery = await FeatureAsync(transport, slot, status.Value, 0, [], cancellationToken);
-            if (battery.ErrorCode is not null) return ErrorReading(battery, "Battery status");
-            var reading = LogitechHidppProtocol.ParseBattery1000(battery.Parameters, observedAt);
-            return supportsMileage || reading.State == ReadingState.Failed ? reading
+            byte? status = await FeatureIndexAsync(transport, slot, 0x1000, cancellationToken);
+            if (status is not null)
+            {
+                // A byte-sized level is not evidence of mileage unless the device
+                // advertises both sufficient resolution and the mileage flag.
+                LogitechReply capabilities = await FeatureAsync(transport, slot, status.Value, 0x10, [], cancellationToken);
+                if (capabilities.ErrorCode is not null)
+                    return PreferCategory(levelOnly, ErrorReading(capabilities, "Battery-status capabilities"));
+                if (capabilities.Parameters.Length < 2) return PreferCategory(levelOnly, Malformed());
+                if (capabilities.Parameters[0] is < 2 or > 100)
+                    return PreferCategory(levelOnly, BatteryReading.Unavailable(ReadingState.Failed,
+                        "HID++ battery-status capabilities report an invalid level count."));
+                bool supportsMileage = capabilities.Parameters[0] >= 10 && (capabilities.Parameters[1] & 0x02) != 0;
+                LogitechReply battery = await FeatureAsync(transport, slot, status.Value, 0, [], cancellationToken);
+                if (battery.ErrorCode is not null) return PreferCategory(levelOnly, ErrorReading(battery, "Battery status"));
+                var reading = LogitechHidppProtocol.ParseBattery1000(battery.Parameters, observedAt, supportsMileage);
+                return PreferCategory(levelOnly, reading);
+            }
+            return new(levelOnly is not null
+                ? RetainCategory(levelOnly, "not advertised; no alternative percentage is available.")
                 : BatteryReading.Unavailable(ReadingState.Unsupported,
-                    "HID++ battery status reports categories, not battery mileage; no percentage is substituted.", reading.Charging);
+                    "No supported battery feature (0x1004/0x1000). Voltage values are not converted to percentages."));
         }
-        return levelOnly ?? BatteryReading.Unavailable(ReadingState.Unsupported,
-            "No supported percentage feature (0x1004/0x1000). Voltage and category values are not converted to percentages.");
+        catch (LogitechProtocolException ex) when (levelOnly is not null)
+        {
+            return PreferCategory(levelOnly, ErrorReading(ex.Reply, "Alternative battery feature discovery"));
+        }
+        catch (Exception ex) when (levelOnly is not null && ex is IOException or TimeoutException or InvalidDataException)
+        {
+            // Native timeouts close the session. Keep this slot's completed
+            // sample, then stop before another slot can reuse that transport.
+            string outcome = ex is TimeoutException
+                ? "query timed out; the completed category was retained and the HID session was stopped."
+                : $"query failed ({ex.Message}); the completed category was retained and the HID session was stopped.";
+            return new(RetainCategory(levelOnly, outcome), StopSession: true);
+        }
     }
+
+    private static BatteryQueryResult PreferCategory(BatteryReading? category, BatteryReading alternative)
+    {
+        if (category is null || alternative.State == ReadingState.Disconnected ||
+            (alternative.State == ReadingState.Current && (alternative.Percentage is not null ||
+                (category.Category == BatteryCategory.Unknown && alternative.Category != BatteryCategory.Unknown))))
+            return new(alternative);
+        return new(RetainCategory(category, alternative.State == ReadingState.Current
+            ? "reports a category only; no alternative percentage is available."
+            : $"did not provide a percentage: {alternative.Detail}"));
+    }
+
+    private static BatteryReading RetainCategory(BatteryReading category, string alternativeOutcome) =>
+        BatteryReading.CurrentCategory(category.Category!.Value, category.Charging, category.SampledAt!.Value,
+            $"{category.Detail} Alternative HID++ 0x1000 {alternativeOutcome}");
+
+    private sealed record BatteryQueryResult(BatteryReading Reading, bool StopSession = false);
 
     private static async Task<BatteryReading> ReadLegacyBatteryAsync(IHidTransport transport, byte slot,
         DateTimeOffset observedAt, CancellationToken cancellationToken)
     {
         LogitechReply battery = await ExchangeAsync(transport, slot, 0x81, 0x0D, [], cancellationToken);
         if (battery.ErrorCode is null) return LogitechHidppProtocol.ParseBattery0D(battery.Parameters, observedAt);
-        if (battery.ErrorCode is 0x01 or 0x02 or 0x03)
+        if (battery.ErrorCode is not (0x01 or 0x02 or 0x03))
+            return ErrorReading(battery, "HID++ 1.0 battery charge");
+
+        LogitechReply category = await ExchangeAsync(transport, slot, 0x81, 0x07, [], cancellationToken);
+        if (category.ErrorCode is null) return LogitechHidppProtocol.ParseBattery07(category.Parameters, observedAt);
+        if (category.ErrorCode is 0x01 or 0x02 or 0x03)
             return BatteryReading.Unavailable(ReadingState.Unsupported,
-                "This HID++ 1.0 peripheral has no percentage register; level categories are not estimated.");
-        return ErrorReading(battery, "HID++ 1.0 battery charge");
+                "This HID++ 1.0 peripheral exposes neither percentage register 0x0D nor category register 0x07.");
+        return ErrorReading(category, "HID++ 1.0 battery category");
     }
 
     private async Task<(string? Name, string? UnitId)> ReadIdentityAsync(IHidTransport transport,

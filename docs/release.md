@@ -1,4 +1,4 @@
-# Device Battery Status 0.1.0-preview.2
+# Device Battery Status 0.1.0-preview.3
 
 Unsigned preview packages for Windows 10/11 **x64**. Windows compilation and automated tests are separate from application runtime and hardware verification. No physical hardware compatibility is certified. See the repository's `docs/verification.md` for the exact checked source and outcomes.
 
@@ -15,6 +15,7 @@ Start `DeviceBatteryStatus.exe`. Left-click the tray icon for the device popup; 
 
 - USB 2.4 GHz only. Bluetooth and wired device IDs are excluded.
 - Genuine zero is valid. Unavailable, stale and failed values are distinguished; a plugged-in receiver does not prove the peripheral is connected.
+- Logitech category-only readings display the reported category without a percentage or percentage bar. Supported alternative percentage features are preferred when available. HID++ `1000` level zero is a protocol-defined unknown sentinel; genuine `0%` from `1004` SOC and legacy `0D` remains valid. Voltage-derived percentages are not used.
 - Battery protocols are source-backed implementations, not hardware-certified support. Alienware Pro `413C:A529` has an AWCC-derived reader; Windows/headset validation remains outstanding. Razer generic HyperPolling battery/paired-model association is unsupported. Firmware caching and coexistence with vendor applications are unverified.
 - Polling-rate control is off each session and changes only through Apply. Ordinary Razer HyperSpeed receiver profiles stop at 1000 Hz. High-rate `009F`/`00C1`/`00BF` and HyperPolling `00B3` profiles include 125/500/1000/2000/4000/8000 Hz, using two required setting commands with no retries. Explicit same-rate Apply also sends both commands on those receivers, since a partial sequence may already have changed the reported value. Generic `00B3` controls receiver configuration while paired mouse identity/link and battery stay unknown. Logitech options are device-advertised. Readback confirms reported configuration, not measured USB timing or physical compatibility; a partially completed sequence may already have changed the setting.
 - Visual placement, notifications, startup registration, reconnect behavior, physical battery accuracy and actual polling frequency require separate Windows runtime/hardware verification.

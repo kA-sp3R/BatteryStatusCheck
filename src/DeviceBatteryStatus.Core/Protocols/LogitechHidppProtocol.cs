@@ -34,21 +34,40 @@ public static class LogitechHidppProtocol
         return true;
     }
 
-    public static BatteryReading ParseBattery1000(ReadOnlySpan<byte> parameters, DateTimeOffset sampledAt)
+    public static BatteryReading ParseBattery1000(ReadOnlySpan<byte> parameters, DateTimeOffset sampledAt,
+        bool supportsMileage = true)
     {
         if (parameters.Length < 3 || parameters[0] > 100 || parameters[2] > 7)
             return Invalid("Malformed HID++ battery-status reply.");
         if (parameters[2] >= 5) return Invalid("The device reports a battery/charging fault.");
-        // This feature can report zero as 'unknown' while charging; an in-use zero is genuine.
-        if (parameters[0] == 0 && parameters[2] != 0)
-            return BatteryReading.Unavailable(ReadingState.Unsupported,
-                "HID++ battery status does not provide a percentage in this charging state.",
-                MapBatteryStatus(parameters[2]));
+        // The 0x1000 specification defines zero as unknown, including when the
+        // device advertises mileage. This sentinel is specific to this feature.
+        if (parameters[0] == 0)
+            return BatteryReading.CurrentCategory(parameters[2] == 3 ? BatteryCategory.Full : BatteryCategory.Unknown,
+                MapBatteryStatus(parameters[2]), sampledAt,
+                parameters[2] == 3
+                    ? "HID++ 0x1000 reports charge complete; the Full category does not imply a reported 100%."
+                    : "HID++ 0x1000 battery level 0 means unknown; it is not a reported 0%.");
+        if (!supportsMileage)
+        {
+            // HID++ 2.0's normative coarse-level ranges apply when mileage is
+            // disabled or resolution is below ten levels. Do not use a battery
+            // curve, or the Linux/Windows compatibility exception at level 30.
+            BatteryCategory category = parameters[0] switch
+            {
+                <= 10 => BatteryCategory.Critical,
+                <= 30 => BatteryCategory.Low,
+                <= 80 => BatteryCategory.Good,
+                _ => BatteryCategory.Full
+            };
+            return BatteryReading.CurrentCategory(category, MapBatteryStatus(parameters[2]), sampledAt,
+                $"HID++ 0x1000 device-reported category (protocol level {parameters[0]}); no percentage is available.");
+        }
         return BatteryReading.Current(parameters[0], MapBatteryStatus(parameters[2]), sampledAt);
     }
 
     public static BatteryReading ParseUnifiedBattery(ReadOnlySpan<byte> parameters,
-        bool supportsStateOfCharge, DateTimeOffset sampledAt)
+        bool supportsStateOfCharge, DateTimeOffset sampledAt, byte supportedCategories = 0x0F)
     {
         if (parameters.Length < 4 || parameters[2] > 4)
             return Invalid("Malformed HID++ unified-battery reply.");
@@ -61,8 +80,21 @@ public static class LogitechHidppProtocol
             _ => ChargingState.Unknown
         };
         if (!supportsStateOfCharge)
-            return BatteryReading.Unavailable(ReadingState.Unsupported,
-                "This device reports battery categories, not a percentage; no estimate is substituted.", charging);
+        {
+            // 0x1004 defines these category bits independently from the percentage
+            // field. Respect the category mask advertised by the same device.
+            int categories = parameters[1] & supportedCategories & 0x0F;
+            BatteryCategory category = categories switch
+            {
+                _ when (categories & 0x08) != 0 => BatteryCategory.Full,
+                _ when (categories & 0x04) != 0 => BatteryCategory.Good,
+                _ when (categories & 0x02) != 0 => BatteryCategory.Low,
+                _ when (categories & 0x01) != 0 => BatteryCategory.Critical,
+                _ => BatteryCategory.Unknown
+            };
+            return BatteryReading.CurrentCategory(category, charging, sampledAt,
+                "HID++ 0x1004 device-reported battery category; no percentage is available.");
+        }
         if (parameters[0] > 100) return Invalid("HID++ state of charge is outside 0–100%.");
         return BatteryReading.Current(parameters[0], charging, sampledAt);
     }
@@ -79,6 +111,30 @@ public static class LogitechHidppProtocol
             _ => ChargingState.Unknown
         };
         return BatteryReading.Current(parameters[0], charging, sampledAt);
+    }
+
+    public static BatteryReading ParseBattery07(ReadOnlySpan<byte> parameters, DateTimeOffset sampledAt)
+    {
+        if (parameters.Length < 2 || parameters[0] > 7)
+            return Invalid("Malformed HID++ 1.0 battery-status reply.");
+        if (parameters[1] == 0x23) return Invalid("The device reports a charging error.");
+        ChargingState charging = parameters[1] switch
+        {
+            0x00 => ChargingState.Discharging,
+            0x21 or 0x24 or 0x25 => ChargingState.Charging,
+            0x22 or 0x26 => ChargingState.Full,
+            _ => ChargingState.Unknown
+        };
+        BatteryCategory category = parameters[0] switch
+        {
+            1 or 2 => BatteryCategory.Critical,
+            3 or 4 => BatteryCategory.Low,
+            5 or 6 => BatteryCategory.Good,
+            7 => BatteryCategory.High,
+            _ => BatteryCategory.Unknown
+        };
+        return BatteryReading.CurrentCategory(category, charging, sampledAt,
+            "HID++ 1.0 register 0x07 device-reported battery category; no percentage is available.");
     }
 
     private static ChargingState MapBatteryStatus(byte status) => status switch

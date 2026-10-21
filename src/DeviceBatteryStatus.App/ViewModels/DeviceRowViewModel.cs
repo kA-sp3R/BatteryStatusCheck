@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Windows;
 using System.Windows.Media;
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Presentation;
@@ -27,6 +28,7 @@ public sealed class DeviceRowViewModel
     public Brush PercentageBrush { get; }
     public Brush ProgressBrush { get; }
     public double ProgressValue { get; }
+    public Visibility ProgressVisibility { get; }
 
     public DeviceRowViewModel(DeviceSnapshot snapshot, AppSettings settings, DateTimeOffset now)
     {
@@ -41,18 +43,18 @@ public sealed class DeviceRowViewModel
         var fresh = BatteryPresentation.IsFreshCurrent(snapshot, settings, now);
         var stale = battery.State == ReadingState.Stale ||
             (battery.State == ReadingState.Current && !fresh);
-        var hasMeasuredValue = battery.Percentage is not null;
-        PercentageText = fresh && hasMeasuredValue
-            ? $"{battery.Percentage}%"
-            : stale && hasMeasuredValue ? $"{battery.Percentage}% · stale" : "—";
-        PercentageBrush = fresh && hasMeasuredValue ? battery.Percentage switch
+        var hasPercentage = battery.Percentage is not null;
+        PercentageText = BatteryPresentation.GetBatteryValueText(snapshot, settings, now);
+        PercentageBrush = fresh && hasPercentage ? battery.Percentage switch
         {
             <= 10 => Red,
             <= 30 => Yellow,
             _ => Green
         } : Neutral;
         ProgressBrush = fresh ? PercentageBrush : StaleProgress;
-        ProgressValue = (fresh || stale) && hasMeasuredValue ? battery.Percentage!.Value : 0;
+        var showProgress = (fresh || stale) && hasPercentage;
+        ProgressValue = showProgress ? battery.Percentage!.Value : 0;
+        ProgressVisibility = showProgress ? Visibility.Visible : Visibility.Collapsed;
 
         var readingText = stale ? "Stale reading" : battery.State switch
         {
@@ -84,9 +86,12 @@ public sealed class DeviceRowViewModel
         StatusText = string.Join(" · ", status);
 
         var lines = new List<string> { Name, $"{VendorName} · {readingText}", connection, charging };
-        if (hasMeasuredValue)
+        if (hasPercentage)
             lines.Add(stale ? $"Last measured battery: {battery.Percentage}% (stale)"
                 : $"Measured battery: {battery.Percentage}%");
+        if (battery.Category is { } category)
+            lines.Add(stale ? $"Last reported battery category: {category} (stale)"
+                : $"Reported battery category: {category}");
         if (battery.SampledAt is { } sampledAt)
             lines.Add($"Last sample: {sampledAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.CurrentCulture)}");
         if (!string.IsNullOrWhiteSpace(battery.Detail)) lines.Add(battery.Detail);

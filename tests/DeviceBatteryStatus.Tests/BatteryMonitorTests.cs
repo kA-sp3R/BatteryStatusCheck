@@ -34,6 +34,49 @@ public sealed class BatteryMonitorTests
     }
 
     [Fact]
+    public async Task ReadFailureRetainsReportedCategoryWithoutInventingAPercentage()
+    {
+        var reading = BatteryReading.CurrentCategory(BatteryCategory.Low, ChargingState.Charging, SampleTime);
+        var provider = new StubProvider();
+        provider.Results.Enqueue(() => [new(Peripheral, reading, ConnectionState.Connected)]);
+        provider.Results.Enqueue(() => [Failed()]);
+        provider.Results.Enqueue(() => [Failed()]);
+        var monitor = new BatteryMonitor(new StubDiscovery(), new StubTransportFactory(), [provider]);
+
+        await monitor.RefreshAsync(CancellationToken.None);
+        await monitor.RefreshAsync(CancellationToken.None);
+        var result = Assert.Single(await monitor.RefreshAsync(CancellationToken.None));
+
+        Assert.Equal(ReadingState.Stale, result.Battery.State);
+        Assert.Equal(reading.Category, result.Battery.Category);
+        Assert.Null(result.Battery.Percentage);
+        Assert.Equal(SampleTime, result.Battery.SampledAt);
+        Assert.Equal(ChargingState.Unknown, result.Battery.Charging);
+        Assert.Equal(ConnectionState.Unknown, result.Connection);
+    }
+
+    [Fact]
+    public async Task ConfirmedReceiverRemovalClearsAReportedCategory()
+    {
+        var discovery = new StubDiscovery();
+        var provider = new StubProvider();
+        provider.Results.Enqueue(() => [new(Peripheral, BatteryReading.CurrentCategory(
+            BatteryCategory.Good, ChargingState.Discharging, SampleTime), ConnectionState.Connected)]);
+        var monitor = new BatteryMonitor(discovery, new StubTransportFactory(), [provider]);
+        await monitor.RefreshAsync(CancellationToken.None);
+        discovery.Endpoints = [];
+
+        var result = Assert.Single(await monitor.RefreshAsync(CancellationToken.None));
+
+        Assert.Equal(ReadingState.Disconnected, result.Battery.State);
+        Assert.Equal(ConnectionState.Disconnected, result.Connection);
+        Assert.False(result.Battery.HasMeasurement);
+        Assert.Null(result.Battery.Category);
+        Assert.Null(result.Battery.Percentage);
+        Assert.Null(result.Battery.SampledAt);
+    }
+
+    [Fact]
     public async Task RetainingAStaleBatteryDoesNotDiscardAFreshlyEstablishedRadioLink()
     {
         var provider = new StubProvider();

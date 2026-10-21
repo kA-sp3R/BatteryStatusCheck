@@ -17,6 +17,7 @@ public sealed class BatteryReadingTests
 
         Assert.Equal(ReadingState.Current, reading.State);
         Assert.Equal(percentage, reading.Percentage);
+        Assert.Null(reading.Category);
         Assert.Equal(SampleTime, reading.SampledAt);
     }
 
@@ -37,6 +38,8 @@ public sealed class BatteryReadingTests
 
         Assert.Equal(state, reading.State);
         Assert.Null(reading.Percentage);
+        Assert.Null(reading.Category);
+        Assert.False(reading.HasMeasurement);
         Assert.Null(reading.SampledAt);
         Assert.Equal(ChargingState.Unknown, reading.Charging);
         Assert.Equal("No measured battery value.", reading.Detail);
@@ -93,4 +96,45 @@ public sealed class BatteryReadingTests
     [InlineData(ReadingState.Failed)]
     public void AReadingWithoutAPreviousMeasurementCannotBecomeStale(ReadingState state) =>
         Assert.Throws<InvalidOperationException>(() => BatteryReading.Unavailable(state, "Unavailable.").AsStale("Retry failed."));
+
+    [Theory]
+    [InlineData(BatteryCategory.Unknown)]
+    [InlineData(BatteryCategory.Critical)]
+    [InlineData(BatteryCategory.Low)]
+    [InlineData(BatteryCategory.Good)]
+    [InlineData(BatteryCategory.High)]
+    [InlineData(BatteryCategory.Full)]
+    public void ReportedCategoriesRemainCurrentWithoutAnEstimatedPercentage(BatteryCategory category)
+    {
+        var reading = BatteryReading.CurrentCategory(category, ChargingState.Discharging, SampleTime);
+
+        Assert.Equal(ReadingState.Current, reading.State);
+        Assert.Equal(category, reading.Category);
+        Assert.True(reading.HasMeasurement);
+        Assert.Null(reading.Percentage);
+        Assert.Equal(SampleTime, reading.SampledAt);
+    }
+
+    [Fact]
+    public void StaleCategoryRetainsOriginalValueAndTimeWithoutChargingClaim()
+    {
+        var original = BatteryReading.CurrentCategory(BatteryCategory.Low, ChargingState.Charging,
+            SampleTime, "Native category.");
+
+        var stale = original.AsStale("Read failed.");
+
+        Assert.Equal(BatteryCategory.Low, stale.Category);
+        Assert.Null(stale.Percentage);
+        Assert.Equal(SampleTime, stale.SampledAt);
+        Assert.Equal(ChargingState.Unknown, stale.Charging);
+        Assert.Equal(ReadingState.Current, original.State);
+        Assert.Equal(ChargingState.Charging, original.Charging);
+    }
+
+    [Fact]
+    public void UndefinedCategoryCannotBecomeAMeasurement()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => BatteryReading.CurrentCategory(
+            (BatteryCategory)99, ChargingState.Unknown, SampleTime));
+    }
 }

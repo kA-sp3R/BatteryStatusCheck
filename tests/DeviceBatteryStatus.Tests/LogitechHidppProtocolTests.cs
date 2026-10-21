@@ -61,12 +61,13 @@ public sealed class LogitechHidppProtocolTests
     }
 
     [Fact]
-    public void InUseZeroFromBatteryStatusRemainsAGenuineZero()
+    public void BatteryStatusZeroUsesItsProtocolSpecificUnknownMeaning()
     {
         var reading = LogitechHidppProtocol.ParseBattery1000([0, 0, 0], SampleTime);
 
         Assert.Equal(ReadingState.Current, reading.State);
-        Assert.Equal(0, reading.Percentage);
+        Assert.Null(reading.Percentage);
+        Assert.Equal(BatteryCategory.Unknown, reading.Category);
         Assert.Equal(ChargingState.Discharging, reading.Charging);
     }
 
@@ -75,8 +76,9 @@ public sealed class LogitechHidppProtocolTests
     {
         var reading = LogitechHidppProtocol.ParseBattery1000([0, 0, 1], SampleTime);
 
-        Assert.Equal(ReadingState.Unsupported, reading.State);
+        Assert.Equal(ReadingState.Current, reading.State);
         Assert.Null(reading.Percentage);
+        Assert.Equal(BatteryCategory.Unknown, reading.Category);
         Assert.Equal(ChargingState.Charging, reading.Charging);
     }
 
@@ -85,8 +87,9 @@ public sealed class LogitechHidppProtocolTests
     {
         var reading = LogitechHidppProtocol.ParseUnifiedBattery([50, 4, 0, 0], false, SampleTime);
 
-        Assert.Equal(ReadingState.Unsupported, reading.State);
+        Assert.Equal(ReadingState.Current, reading.State);
         Assert.Null(reading.Percentage);
+        Assert.Equal(BatteryCategory.Good, reading.Category);
     }
 
     [Fact]
@@ -105,8 +108,9 @@ public sealed class LogitechHidppProtocolTests
     {
         var reading = LogitechHidppProtocol.ParseUnifiedBattery([0, 4, 1, 0], false, SampleTime);
 
-        Assert.Equal(ReadingState.Unsupported, reading.State);
+        Assert.Equal(ReadingState.Current, reading.State);
         Assert.Null(reading.Percentage);
+        Assert.Equal(BatteryCategory.Good, reading.Category);
         Assert.Equal(ChargingState.Charging, reading.Charging);
     }
 

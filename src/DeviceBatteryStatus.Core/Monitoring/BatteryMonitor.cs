@@ -120,7 +120,7 @@ public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory
 
     private static DeviceSnapshot WithFailure(DeviceSnapshot previous, string detail) => previous with
     {
-        Battery = previous.Battery.Percentage is not null
+        Battery = previous.Battery.HasMeasurement
             ? previous.Battery.AsStale(detail)
             : BatteryReading.Unavailable(ReadingState.Failed, detail),
         Connection = ConnectionState.Unknown

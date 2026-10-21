@@ -20,7 +20,7 @@ public sealed class NotificationPolicy
         foreach (var snapshot in devices.GroupBy(device => device.Device.Id, StringComparer.Ordinal)
                      .Select(group => group.OrderByDescending(device => device.Battery.SampledAt).First()))
         {
-            if (!BatteryPresentation.IsFreshCurrent(snapshot, preferences, now)) continue;
+            if (!BatteryPresentation.IsFreshPercentage(snapshot, preferences, now)) continue;
             if (!states.TryGetValue(snapshot.Device.Id, out var state))
                 states[snapshot.Device.Id] = state = new();
             var sampledAt = snapshot.Battery.SampledAt!.Value;
