@@ -1,0 +1,27 @@
+{
+  "version": "1.0.0",
+  "tag": "v1.0.0",
+  "releaseId": 420080573,
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "sourceCommit": "c2c5d747a0952da7e34826d1cfdd117f7f93bd52",
+  "buildRun": 39679709333,
+  "buildAttempt": 1,
+  "fullTestRun": 39679716090,
+  "fullTestAttempt": 1,
+  "testAutomationCommit": "c2c5d747a0952da7e34826d1cfdd117f7f93bd52",
+  "testCount": 779,
+  "parserTestCount": 5,
+  "automationTestCount": 11,
+  "packages": {
+    "framework-dependent": {
+      "bytes": 226263,
+      "sha256": "e1f53df3ea1f59ce490481ba7f9a077faa3707d4272c9d0be891586933be42d1"
+    },
+    "self-contained": {
+      "bytes": 76252892,
+      "sha256": "dd62f8e6e8f264e82d65585da69a06e802c626dbccb46d564c7848270c9ba359"
+    }
+  }
+}

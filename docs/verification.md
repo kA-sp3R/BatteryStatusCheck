@@ -4,7 +4,17 @@ The v1.0.0 release separates compilation, automated software tests, static packa
 
 ## V1.0.0 release checks
 
-Windows compilation, all solution tests in Debug and Release, all offline parser tests, release-policy tests and both package inspections will be recorded here after their Windows GitHub Actions runs complete. No application launch or physical HID exchange is part of these workflows. The current automated suites exercise managed logic, scripted transports, synthetic capture files and a fake GitHub API.
+Application source: `c2c5d747a0952da7e34826d1cfdd117f7f93bd52`. No application launch or physical HID exchange is part of these workflows. The automated suites exercise managed logic, scripted transports, synthetic capture files and a fake GitHub API.
+
+| Category | Result | Evidence |
+| --- | --- | --- |
+| Windows compilation | Passed | [Build run 39679709333](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39679709333), WPF solution Release compilation. |
+| Focused C# software tests | 779 passed, 0 failed, 0 skipped | Same build run; check 119498682702 reports actual TRX counters and native exit 0. |
+| Full solution software tests | 779 passed in Debug and 779 in Release; 0 failed/skipped | [Full run 39679716090](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39679716090), source and test automation both at the exact commit above. Downloaded TRX and JSON reports independently agree on all counters. |
+| Offline capture parser | 5 passed, 0 failed/skipped | Full run and build run; downloaded log confirms native exit 0. Synthetic files only. |
+| Release policy and interrupted-upload recovery | 11 passed, 0 failed/skipped | Full run; downloaded log confirms native exit 0. GitHub operations are fake in these tests. |
+| Portable packages | Both passed static inspection | Same build run, checks 119499659089 and 119499659134. Framework-dependent: 11 files; self-contained: 482 files, bundled .NET/Windows Desktop 10.0.13. Downloaded archives independently passed source/run provenance, checksum, every payload hash and x64 GUI PE inspection. No launch. |
+| Application runtime, native/hardware integration and performance | Deferred | [Saved record](deferred-verification.md); no passing result claimed. |
 
 The publication workflow requires an exact source commit, successful build and full-test runs, actual test counters, package and payload hashes, unchanged release notes and matching tag provenance. Both package flavors and their immutable verification bundle must match the reviewed manifest before the stable release becomes public. Packages are unsigned.
 
