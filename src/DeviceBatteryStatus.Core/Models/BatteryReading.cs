@@ -34,8 +34,9 @@ public sealed record BatteryReading
         Charging = charging; SampledAt = sampledAt; Detail = detail;
     }
 
-    public static BatteryReading Current(int percentage, ChargingState charging, DateTimeOffset sampledAt) =>
-        new(ReadingState.Current, percentage, null, charging, sampledAt, null);
+    public static BatteryReading Current(int percentage, ChargingState charging, DateTimeOffset sampledAt,
+        string? detail = null) =>
+        new(ReadingState.Current, percentage, null, charging, sampledAt, detail);
 
     public static BatteryReading CurrentCategory(BatteryCategory category, ChargingState charging,
         DateTimeOffset sampledAt, string? detail = null) =>

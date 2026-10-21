@@ -1,4 +1,8 @@
-"""Publish only the exact packages and passing test evidence in a reviewed manifest."""
+"""Publish only the exact packages and passing test evidence in a reviewed manifest.
+
+The historical filename remains compatible with the original preview workflow.
+Stable releases require an explicit manifest policy; publishing never signs a binary.
+"""
 import hashlib
 import json
 import os
@@ -7,12 +11,73 @@ import re
 import subprocess
 import urllib.parse
 import xml.etree.ElementTree as ET
-from zipfile import ZipFile, ZIP_DEFLATED
+from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
+
+
+VERSION_PATTERN = r"(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-preview\.(?:0|[1-9]\d*))?"
 
 
 def require(condition, message):
     if not condition:
         raise SystemExit(message)
+
+
+def release_policy(manifest, version, notes):
+    require(re.fullmatch(VERSION_PATTERN, version), "Invalid release version.")
+    require(manifest["version"] == version and manifest["tag"] == f"v{version}",
+            "Manifest version or tag mismatch.")
+    preview_version = "-" in version
+    # Preserve old preview manifests. A stable release must explicitly opt out of prerelease status.
+    prerelease = manifest.get("prerelease", True)
+    latest = manifest.get("latest", not prerelease)
+    signed = manifest.get("signed", False)
+    require(type(prerelease) is bool and type(latest) is bool and signed is False,
+            "Explicit boolean release policy is required; this publisher supports unsigned packages only.")
+    require(prerelease == preview_version, "Release version and prerelease policy disagree.")
+    require(not (prerelease and latest), "A prerelease cannot be marked latest.")
+    if not preview_version:
+        require(manifest.get("prerelease") is False and manifest.get("signed") is False,
+                "Stable publication requires explicit prerelease:false and signed:false.")
+    require(re.search(r"\bunsigned\b", notes, re.IGNORECASE), "Release notes must disclose unsigned packages.")
+    for field, default in (("testCount", None), ("parserTestCount", 5),
+                           ("buildAttempt", 1), ("fullTestAttempt", 1)):
+        value = manifest.get(field, default)
+        require(type(value) is int and value > 0, f"Invalid manifest count: {field}")
+    if "automationTestCount" in manifest:
+        require(type(manifest["automationTestCount"]) is int and manifest["automationTestCount"] > 0,
+                "Invalid manifest count: automationTestCount")
+    return {"prerelease": prerelease, "latest": latest, "signed": False}
+
+
+def offline_test_counts(log, expected):
+    matches = re.findall(r"(?m)^Ran (\d+) tests?\b", log)
+    require(len(matches) == 1 and int(matches[0]) == expected and
+            re.search(r"(?m)^OK\s*$", log) and not re.search(r"(?m)^FAILED\b", log) and
+            re.search(r"(?m)^native_exit_code=0\s*$", log), "Offline parser evidence did not pass.")
+    return {"executed": expected, "passed": expected, "failed": 0, "skipped": 0}
+
+
+def deterministic_archive(directory, destination):
+    """Exclude filesystem mtimes/permissions and publication-run IDs from immutable evidence."""
+    files = sorted((p for p in directory.rglob("*") if p.is_file()),
+                   key=lambda p: p.relative_to(directory).as_posix().encode("utf-8"))
+    with ZipFile(destination, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
+        for file in files:
+            info = ZipInfo(file.relative_to(directory).as_posix(), date_time=(1980, 1, 1, 0, 0, 0))
+            info.create_system = 3
+            info.external_attr = 0o100644 << 16
+            archive.writestr(info, file.read_bytes(), compress_type=ZIP_DEFLATED, compresslevel=9)
+
+
+def validate_assets(existing, expected, complete=False):
+    names = [asset["name"] for asset in existing]
+    require(len(names) == len(set(names)) and set(names).issubset(expected), "Release contains unexpected assets.")
+    if complete:
+        require(set(names) == set(expected), "Release assets are incomplete.")
+    for asset in existing:
+        require(asset["state"] == "uploaded" and
+                all(asset.get(key) == value for key, value in expected[asset["name"]].items()),
+                f"Existing or uploaded asset does not match: {asset['name']}")
 
 
 def gh(*args):
@@ -24,143 +89,162 @@ def gh(*args):
     return result.stdout
 
 
-repository = os.environ["GITHUB_REPOSITORY"]
-version = os.environ["RELEASE_VERSION"]
-require(re.fullmatch(r"\d+\.\d+\.\d+-preview\.\d+", version), "Invalid preview version.")
-manifest_path = Path(".github/releases") / f"{version}.json"
-manifest = json.loads(manifest_path.read_text())
-require(manifest["version"] == version, "Manifest version mismatch.")
-tag = manifest["tag"]
-require(tag == f"v{version}", "Manifest tag mismatch.")
-source = manifest["sourceCommit"]
-require(re.fullmatch(r"[0-9a-f]{40}", source), "Invalid source commit.")
-api_root = f"repos/{repository}"
+def main():
+    repository = os.environ["GITHUB_REPOSITORY"]
+    version = os.environ["RELEASE_VERSION"]
+    require(re.fullmatch(VERSION_PATTERN, version), "Invalid release version.")
+    manifest_path = Path(".github/releases") / f"{version}.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    notes = manifest_path.with_suffix(".md").read_text(encoding="utf-8")
+    policy = release_policy(manifest, version, notes)
+    tag = manifest["tag"]
+    source = manifest["sourceCommit"]
+    require(re.fullmatch(r"[0-9a-f]{40}", source), "Invalid source commit.")
+    api_root = f"repos/{repository}"
+
+    def api(path):
+        return json.loads(gh("api", f"{api_root}/{path}"))
+
+    def validate_release(release):
+        require(release["id"] == manifest["releaseId"] and
+                release["prerelease"] is policy["prerelease"] and release["tag_name"] == tag and
+                release["target_commitish"] == source, "Release policy or source mismatch.")
+        require((release.get("body") or "").strip() == notes.strip(),
+                "Release notes differ from the reviewed notes.")
+
+    build_run = api(f"actions/runs/{manifest['buildRun']}")
+    test_run = api(f"actions/runs/{manifest['fullTestRun']}")
+    require(build_run["conclusion"] == "success" and build_run["head_sha"] == source and
+            build_run["path"] == ".github/workflows/windows-build.yml" and
+            build_run["run_attempt"] == manifest.get("buildAttempt", 1),
+            "Package build did not pass for the configured source and attempt.")
+    require(test_run["conclusion"] == "success" and
+            test_run["head_sha"] == manifest["testAutomationCommit"] and
+            test_run["path"] == ".github/workflows/full-software-tests.yml" and
+            test_run["run_attempt"] == manifest.get("fullTestAttempt", 1),
+            "Full test automation run did not match the reviewed successful run.")
+    release = api(f"releases/{manifest['releaseId']}")
+    validate_release(release)
+    staging = Path("release-staging")
+    evidence = staging / "evidence"
+    assets = []
+
+    def download(run, name, directory):
+        directory.mkdir(parents=True, exist_ok=True)
+        gh("run", "download", run, "--repo", repository, "--name", name, "--dir", directory)
+
+    for flavor, expected in manifest["packages"].items():
+        require(flavor in {"framework-dependent", "self-contained"}, "Unexpected package flavor.")
+        destination = staging / flavor
+        download(manifest["buildRun"], f"windows-preview-win-x64-{flavor}-{manifest.get('buildAttempt', 1)}", destination)
+        package = destination / f"DeviceBatteryStatus-{version}-win-x64-{flavor}.zip"
+        checksum = package.with_suffix(".sha256")
+        digest = hashlib.sha256(package.read_bytes()).hexdigest()
+        require(package.stat().st_size == expected["bytes"] and digest == expected["sha256"],
+                f"Unexpected package bytes: {flavor}")
+        require(checksum.read_text(encoding="utf-8-sig").split()[0].lower() == digest,
+                f"Checksum mismatch: {flavor}")
+        with ZipFile(package) as archive:
+            package_manifest = json.loads(archive.read("package-manifest.json"))
+            require(package_manifest["sourceCommit"] == source and package_manifest["version"] == version and
+                    package_manifest["workflowRun"] == str(manifest["buildRun"]) and
+                    package_manifest["workflowAttempt"] == str(manifest.get("buildAttempt", 1)) and
+                    package_manifest["repository"] == repository and package_manifest["flavor"] == flavor and
+                    package_manifest["runtimeIdentifier"] == "win-x64", "Package provenance mismatch.")
+            require(package_manifest["applicationLaunched"] is False and package_manifest["hardwareVerified"] is False,
+                    "Unexpected runtime/hardware verification claim.")
+            names = archive.namelist()
+            require(len(names) == len(set(names)) and
+                    set(names) == set(package_manifest["files"]) | {"package-manifest.json"},
+                    "Unexpected ZIP payload.")
+            for name, expected_hash in package_manifest["files"].items():
+                require(hashlib.sha256(archive.read(name)).hexdigest() == expected_hash,
+                        f"Payload hash mismatch: {name}")
+        assets.extend([package, checksum])
+    require(set(manifest["packages"]) == {"framework-dependent", "self-contained"}, "Both package flavors are required.")
+
+    test_results = {}
+    for configuration in ["Debug", "Release"]:
+        destination = evidence / configuration
+        download(manifest["fullTestRun"], f"full-software-tests-{configuration}-{manifest.get('fullTestAttempt', 1)}", destination)
+        report = json.loads(next(destination.rglob(f"full-{configuration}.json")).read_text(encoding="utf-8-sig"))
+        require(report["sourceCommit"] == source and report["configuration"] == configuration and
+                report["nativeExit"] == 0, "Full test provenance mismatch.")
+        expected_counts = {"total": manifest["testCount"], "executed": manifest["testCount"],
+                           "passed": manifest["testCount"], "failed": 0, "notExecuted": 0}
+        require(report["counters"] == expected_counts, "Full test counters do not match.")
+        require(report["applicationLaunched"] is False and report["hardwareVerified"] is False,
+                "Unexpected full test verification claim.")
+        reports = list(destination.rglob("*.trx"))
+        require(len(reports) == report["reportCount"] and len(reports) >= len(report["testProjects"]) > 0,
+                "Missing test project reports.")
+        counts = dict.fromkeys(expected_counts, 0)
+        for trx in reports:
+            counter = ET.parse(trx).getroot().find("{*}ResultSummary/{*}Counters")
+            require(counter is not None, "Missing TRX counters.")
+            for key in counts:
+                counts[key] += int(counter.attrib[key])
+        require(counts == expected_counts, "TRX counters do not match the summary.")
+        test_results[configuration] = counts
+
+    download(manifest["fullTestRun"], f"full-offline-parser-tests-{manifest.get('fullTestAttempt', 1)}", evidence / "offline")
+    offline = next((evidence / "offline").rglob("*.log")).read_text(encoding="utf-8-sig")
+    test_results["offlineParser"] = offline_test_counts(offline, manifest.get("parserTestCount", 5))
+    if "automationTestCount" in manifest:
+        download(manifest["fullTestRun"],
+                 f"full-release-automation-tests-{manifest.get('fullTestAttempt', 1)}", evidence / "release-automation")
+        automation_log = next((evidence / "release-automation").rglob("*.log")).read_text(encoding="utf-8-sig")
+        test_results["releaseAutomation"] = offline_test_counts(automation_log, manifest["automationTestCount"])
+    # This bundle is immutable evidence for the reviewed source/tests, not a publication-attempt log.
+    summary = {**manifest, "releasePolicy": policy, "testResults": test_results,
+               "applicationLaunched": False, "hardwareVerified": False}
+    (evidence / "verification-summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n")
+    (evidence / "VERIFICATION.md").write_text(notes, encoding="utf-8", newline="\n")
+    verification_dir = staging / "verification"
+    verification_dir.mkdir(parents=True, exist_ok=True)
+    verification = verification_dir / f"DeviceBatteryStatus-{version}-verification.zip"
+    deterministic_archive(evidence, verification)
+    verification_checksum = verification.with_suffix(".sha256")
+    verification_checksum.write_text(f"{hashlib.sha256(verification.read_bytes()).hexdigest()}  {verification.name}\n",
+                                     encoding="utf-8", newline="\n")
+    assets.extend([verification, verification_checksum])
+    expected_assets = {file.name: {"size": file.stat().st_size, "digest": "sha256:" + hashlib.sha256(file.read_bytes()).hexdigest()}
+                       for file in assets}
+    validate_assets(release["assets"], expected_assets, complete=not release["draft"])
+    existing_names = {asset["name"] for asset in release["assets"]}
+    missing = [file for file in assets if file.name not in existing_names]
+    if missing:
+        gh("release", "upload", tag, *missing, "--repo", repository)
+    release = api(f"releases/{manifest['releaseId']}")
+    validate_release(release)
+    validate_assets(release["assets"], expected_assets, complete=True)
+    # A missing tag is created at the draft's source; never repoint an existing tag.
+    tags = json.loads(gh("api", "--paginate", "--slurp", f"{api_root}/git/matching-refs/tags/{tag}"))
+    for page in tags:
+        for ref in page:
+            if ref["ref"] == f"refs/tags/{tag}":
+                require(ref["object"]["type"] == "commit" and ref["object"]["sha"] == source,
+                        "Existing release tag does not point to the verified source.")
+    if release["draft"]:
+        gh("release", "edit", tag, "--repo", repository, "--draft=false",
+           f"--prerelease={str(policy['prerelease']).lower()}", f"--latest={str(policy['latest']).lower()}")
+    published = api(f"releases/{manifest['releaseId']}")
+    validate_release(published)
+    validate_assets(published["assets"], expected_assets, complete=True)
+    tag_ref = api(f"git/ref/tags/{tag}")
+    require(not published["draft"] and published["published_at"] and
+            tag_ref["object"]["type"] == "commit" and tag_ref["object"]["sha"] == source,
+            "Published release or tag verification failed.")
+    receipt = {"releaseUrl": published["html_url"], "releaseId": published["id"], "tag": tag,
+               "sourceCommit": source, "publishedAt": published["published_at"], **policy,
+               "fullTestRun": manifest["fullTestRun"], "testResults": test_results, "assets": expected_assets,
+               "publicationWorkflowCommit": os.environ["GITHUB_SHA"], "publicationWorkflowRun": os.environ["GITHUB_RUN_ID"]}
+    (staging / "publication-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"::notice title=Published verified release::{published['html_url']}; Source={source}; Assets={len(expected_assets)}; "
+          f"Prerelease={str(policy['prerelease']).lower()}; Signed=false; Debug={manifest['testCount']} passed; "
+          f"Release={manifest['testCount']} passed; Parser={manifest.get('parserTestCount', 5)} passed; "
+          "ApplicationLaunched=false; HardwareVerified=false")
 
 
-def api(path):
-    return json.loads(gh("api", f"{api_root}/{path}"))
-
-
-build_run = api(f"actions/runs/{manifest['buildRun']}")
-test_run = api(f"actions/runs/{manifest['fullTestRun']}")
-require(build_run["conclusion"] == "success" and build_run["head_sha"] == source,
-        "Package build did not pass for the configured source.")
-require(test_run["conclusion"] == "success" and
-        test_run["head_sha"] == manifest["testAutomationCommit"] and
-        test_run["path"] == ".github/workflows/full-software-tests.yml",
-        "Full test automation run did not match the reviewed successful run.")
-release = api(f"releases/{manifest['releaseId']}")
-require(release["draft"] and release["prerelease"] and release["tag_name"] == tag and
-        release["target_commitish"] == source, "Release draft or source mismatch.")
-notes = (manifest_path.with_suffix(".md")).read_text()
-require(release["body"].strip() == notes.strip(), "Draft notes differ from the reviewed release notes.")
-staging = Path("release-staging")
-evidence = staging / "evidence"
-assets = []
-
-
-def download(run, name, directory):
-    directory.mkdir(parents=True, exist_ok=True)
-    gh("run", "download", run, "--repo", repository, "--name", name, "--dir", directory)
-
-
-for flavor, expected in manifest["packages"].items():
-    destination = staging / flavor
-    download(manifest["buildRun"], f"windows-preview-win-x64-{flavor}-1", destination)
-    package = destination / f"DeviceBatteryStatus-{version}-win-x64-{flavor}.zip"
-    checksum = package.with_suffix(".sha256")
-    digest = hashlib.sha256(package.read_bytes()).hexdigest()
-    require(package.stat().st_size == expected["bytes"] and digest == expected["sha256"],
-            f"Unexpected package bytes: {flavor}")
-    require(checksum.read_text(encoding="utf-8-sig").split()[0].lower() == digest,
-            f"Checksum mismatch: {flavor}")
-    with ZipFile(package) as archive:
-        package_manifest = json.loads(archive.read("package-manifest.json"))
-        require(package_manifest["sourceCommit"] == source and package_manifest["version"] == version and
-                package_manifest["workflowRun"] == str(manifest["buildRun"]), "Package provenance mismatch.")
-        require(package_manifest["applicationLaunched"] is False and package_manifest["hardwareVerified"] is False,
-                "Unexpected runtime/hardware verification claim.")
-        require(set(archive.namelist()) == set(package_manifest["files"]) | {"package-manifest.json"},
-                "Unexpected ZIP payload.")
-        for name, expected_hash in package_manifest["files"].items():
-            require(hashlib.sha256(archive.read(name)).hexdigest() == expected_hash,
-                    f"Payload hash mismatch: {name}")
-    assets.extend([package, checksum])
-
-test_results = {}
-for configuration in ["Debug", "Release"]:
-    destination = evidence / configuration
-    download(manifest["fullTestRun"], f"full-software-tests-{configuration}-1", destination)
-    report = json.loads(next(destination.rglob(f"full-{configuration}.json")).read_text(encoding="utf-8-sig"))
-    require(report["sourceCommit"] == source and report["configuration"] == configuration and
-            report["nativeExit"] == 0, "Full test provenance mismatch.")
-    expected_counts = {"total": manifest["testCount"], "executed": manifest["testCount"],
-                       "passed": manifest["testCount"], "failed": 0, "notExecuted": 0}
-    require(report["counters"] == expected_counts, "Full test counters do not match.")
-    require(report["applicationLaunched"] is False and report["hardwareVerified"] is False,
-            "Unexpected full test verification claim.")
-    reports = list(destination.rglob("*.trx"))
-    require(len(reports) == report["reportCount"] == len(report["testProjects"]), "Missing test project reports.")
-    counts = dict.fromkeys(expected_counts, 0)
-    for trx in reports:
-        counter = ET.parse(trx).getroot().find("{*}ResultSummary/{*}Counters")
-        require(counter is not None, "Missing TRX counters.")
-        for key in counts:
-            counts[key] += int(counter.attrib[key])
-    require(counts == expected_counts, "TRX counters do not match the summary.")
-    test_results[configuration] = counts
-
-download(manifest["fullTestRun"], "full-offline-parser-tests-1", evidence / "offline")
-offline = next((evidence / "offline").rglob("*.log")).read_text(encoding="utf-8-sig")
-require(re.search(r"Ran 5 tests", offline) and re.search(r"(?m)^OK\s*$", offline) and
-        "native_exit_code=0" in offline, "Offline parser evidence did not pass.")
-test_results["offlineParser"] = {"executed": 5, "passed": 5, "failed": 0, "skipped": 0}
-summary = {**manifest, "testResults": test_results, "applicationLaunched": False, "hardwareVerified": False,
-           "publicationWorkflowCommit": os.environ["GITHUB_SHA"],
-           "publicationWorkflowRun": os.environ["GITHUB_RUN_ID"]}
-(evidence / "verification-summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-(evidence / "VERIFICATION.md").write_text(notes)
-verification_dir = staging / "verification"
-verification_dir.mkdir(parents=True, exist_ok=True)
-verification = verification_dir / f"DeviceBatteryStatus-{version}-verification.zip"
-with ZipFile(verification, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
-    for file in sorted(evidence.rglob("*")):
-        if file.is_file():
-            archive.write(file, file.relative_to(evidence).as_posix())
-verification_checksum = verification.with_suffix(".sha256")
-verification_checksum.write_text(f"{hashlib.sha256(verification.read_bytes()).hexdigest()}  {verification.name}\n")
-assets.extend([verification, verification_checksum])
-expected_assets = {file.name: {"size": file.stat().st_size, "digest": "sha256:" + hashlib.sha256(file.read_bytes()).hexdigest()}
-                   for file in assets}
-existing_assets = {asset["name"]: asset for asset in release["assets"]}
-require(set(existing_assets).issubset(expected_assets), "Draft contains unexpected assets.")
-for name, asset in existing_assets.items():
-    require(asset["state"] == "uploaded" and all(asset[key] == value for key, value in expected_assets[name].items()),
-            f"Existing asset does not match: {name}")
-missing = [file for file in assets if file.name not in existing_assets]
-if missing:
-    gh("release", "upload", tag, *missing, "--repo", repository)
-release = api(f"releases/{manifest['releaseId']}")
-require(len(release["assets"]) == len(expected_assets), "Release assets are incomplete.")
-for asset in release["assets"]:
-    require(asset["state"] == "uploaded" and asset["name"] in expected_assets and
-            all(asset[key] == value for key, value in expected_assets[asset["name"]].items()),
-            f"Uploaded asset verification failed: {asset['name']}")
-# Check any existing tag before publishing; a missing tag will be created at the draft's source commit.
-tags = json.loads(gh("api", "--paginate", "--slurp", f"{api_root}/git/matching-refs/tags/{tag}"))
-for page in tags:
-    for ref in page:
-        if ref["ref"] == f"refs/tags/{tag}":
-            require(ref["object"]["type"] == "commit" and ref["object"]["sha"] == source,
-                    "Existing release tag does not point to the verified source.")
-gh("release", "edit", tag, "--repo", repository, "--draft=false", "--prerelease", "--latest=false")
-published = api(f"releases/{manifest['releaseId']}")
-tag_ref = api(f"git/ref/tags/{tag}")
-require(not published["draft"] and published["prerelease"] and published["published_at"] and
-        tag_ref["object"]["type"] == "commit" and tag_ref["object"]["sha"] == source,
-        "Published release or tag verification failed.")
-receipt = {"releaseUrl": published["html_url"], "releaseId": published["id"], "tag": tag,
-           "sourceCommit": source, "publishedAt": published["published_at"], "prerelease": published["prerelease"],
-           "fullTestRun": manifest["fullTestRun"], "testResults": test_results, "assets": expected_assets}
-(staging / "publication-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
-print(f"::notice title=Published verified preview::{published['html_url']}; Source={source}; Assets={len(expected_assets)}; Debug=451 passed; Release=451 passed; Parser=5 passed; ApplicationLaunched=false; HardwareVerified=false")
+if __name__ == "__main__":
+    main()

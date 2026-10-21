@@ -1,0 +1,352 @@
+{
+  "purpose": "Independently recorded protocol/transport facts; manufacturer JavaScript is not redistributed or executed. Metadata alone is not a claim of model compatibility.",
+  "protocolBundle": {
+    "url": "https://apps.razer.com/synapse/products/179/mw/6120.ef5d145fafdfd0069d53.js",
+    "sha256": "1bc185f4b6407b0c5aab6939b827a9f3ccba88e21966c222607bc0e92742beb8"
+  },
+  "receiverFactories": [
+    {
+      "sourceProductId": 124,
+      "url": "https://apps.razer.com/synapse/products/124/mw/main.47698ee1b3062cf2db0d.js",
+      "sha256": "4629e32ef421ccc38a4770dcdda616020bb305bd93476aeb2e42f3600bf413ec",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 124,
+          "dongleId": 125,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 143,
+      "url": "https://apps.razer.com/synapse/products/143/mw/main.3894a1349bab70d9f111.js",
+      "sha256": "f8e0ae16c76cf35d066ac88d192f8ad0c73cd00c432cdd24b47723c9cb5a6b31",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 143,
+          "dongleId": 144,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 148,
+      "url": "https://apps.razer.com/synapse/products/148/mw/main.4f3ac6a54ebb40820e5c.js",
+      "sha256": "f5d75d8b63b5546e4ef4c0f7a02eb7f6cc7ce9695749ca13bf56ac22ff2b9df1",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 148,
+          "dongleId": 148,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 154,
+      "url": "https://apps.razer.com/synapse/products/154/mw/main.264eca7633df5ef7f78c.js",
+      "sha256": "51916e81cb3b4b7c8093de94f8e9f06d7fd109633b740cfaf29db58e04b54bb7",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 154,
+          "dongleId": 154,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 156,
+      "url": "https://apps.razer.com/synapse/products/156/mw/main.41081c49ec69c8274b87.js",
+      "sha256": "994f6baae14249b4ff089c374ddb9efc837449978c0832414b765e01a611cc06",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 156,
+          "dongleId": 156,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 164,
+      "url": "https://apps.razer.com/synapse/products/164/mw/main.62e270f8980e6cf490a5.js",
+      "sha256": "51cd498c2a9e993d6d572f2818f63bed9b92402ce04b268f3a9a8da87ad77ded",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 164,
+          "dongleId": 164,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 165,
+      "url": "https://apps.razer.com/synapse/products/165/mw/main.c1690aa9826e996b22d0.js",
+      "sha256": "4c16242a80791502dedceef37f274c99d1dde2f99544365df94a4e406f33b9ff",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 165,
+          "dongleId": 166,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 167,
+      "url": "https://apps.razer.com/synapse/products/167/mw/main.121b0f27bcf228da20db.js",
+      "sha256": "ab351b20968f9b0000c276fc6ddc00d5e8b4cf955ddbd05b1d575ddaffbfb859",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 167,
+          "dongleId": 168,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 170,
+      "url": "https://apps.razer.com/synapse/products/170/mw/main.825b80863ba2ac985e91.js",
+      "sha256": "019193c5c517dcef3fc67bd63d95dc177a9608377c94d2ef4ba87abbadaaa3b0",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 170,
+          "dongleId": 171,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 175,
+      "url": "https://apps.razer.com/synapse/products/175/mw/main.e592dd8263f928ce6fa9.js",
+      "sha256": "b4f5ebfaf4fbc966a621d5a067b7715fdde0e2bd95365e68c4f7ed24f09f8732",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 175,
+          "dongleId": 176,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 179,
+      "url": "https://apps.razer.com/synapse/products/179/mw/main.6d1e356030ef563555d4.js",
+      "sha256": "b836abc03ea2b5eaec54e8bdfc48d06d5a1bab0bcd0b38499fa1a3c97ecae429",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 179,
+          "dongleId": 179,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 180,
+      "url": "https://apps.razer.com/synapse/products/180/mw/main.1e4355c0959e79bd1c12.js",
+      "sha256": "337f713490be69dca4d85be575a5814214442569a398ddd7a59be0828ea0bc3e",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 180,
+          "dongleId": 180,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 182,
+      "url": "https://apps.razer.com/synapse/products/182/mw/main.7d7bac778fbfcdb02c10.js",
+      "sha256": "6350402b2a4743363838628b6e74a42131517e0859908ea8ce04fbb666428cab",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 182,
+          "dongleId": 183,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 184,
+      "url": "https://apps.razer.com/synapse/products/184/mw/main.4169aceeced34caf9138.js",
+      "sha256": "c9570163e442263cf4ed2489d4d27d67e8d772ac1cbdb8ee7b2e7551f5930f87",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 184,
+          "dongleId": 184,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 185,
+      "url": "https://apps.razer.com/synapse/products/185/mw/main.de906791830e05012ec8.js",
+      "sha256": "d46ab1e1a86beb9b3cd7c7bde4680251984a0f5df37083951cf6bbba92f04deb",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 185,
+          "dongleId": 185,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 192,
+      "url": "https://apps.razer.com/synapse/products/192/mw/main.33313feaf2ec220de5be.js",
+      "sha256": "9d410114847988d7b50eb32642092f76def2502233b1a660423df546f0d1ad97",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 192,
+          "dongleId": 193,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 196,
+      "url": "https://apps.razer.com/synapse/products/196/mw/main.373bc6c28c6486649d04.js",
+      "sha256": "36aeca60f912ccbff06d43040cf20cc0e954edabbfa04f827b1e228058c98e1b",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 196,
+          "dongleId": 197,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 204,
+      "url": "https://apps.razer.com/synapse/products/204/mw/main.640dbef98526f1d76818.js",
+      "sha256": "f71f599a4e6a8c0abf31b20a72f82e5e074af809821a9b21e0ec4a9d31b6e5f7",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 204,
+          "dongleId": 205,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 207,
+      "url": "https://apps.razer.com/synapse/products/207/mw/main.35716b945eedcc2ed000.js",
+      "sha256": "6144428cdb26dd7d7696ac689f599f5f3d818aef9521a9e188b9a57e9f35c2bc",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 207,
+          "dongleId": 207,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 211,
+      "url": "https://apps.razer.com/synapse/products/211/mw/main.424b8401f450a3a0cbe6.js",
+      "sha256": "1aa55fd0d2e9b58acb62733d428c57371e0ee85ddc70aad756cfca1f56cee4fb",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 211,
+          "dongleId": 212,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 214,
+      "url": "https://apps.razer.com/synapse/products/214/mw/main.0115c2b6717e7eaae261.js",
+      "sha256": "48f33f516ca8555f351bc1eae013f739e9f2062e53806f3bbfcc43ebd1a612a1",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 214,
+          "dongleId": 215,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 218,
+      "url": "https://apps.razer.com/synapse/products/218/mw/main.b3fa481ba20e970f41b1.js",
+      "sha256": "cf6d50b3e4bde2d9dec895d1191903b0af3b0cb49ed49ab6d0467bab03c097dc",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 218,
+          "dongleId": 219,
+          "claimInterface": 0
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 222,
+      "url": "https://apps.razer.com/synapse/products/222/mw/main.134623557a51cf61698d.js",
+      "sha256": "6e8ce0ce5322120fe06f7a315a8eeb9d8402904a5864f53c8d5be3df2981ae13",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 222,
+          "dongleId": 223,
+          "claimInterface": 0
+        },
+        {
+          "primaryProductId": 222,
+          "dongleId": 223,
+          "claimInterface": null
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 241,
+      "url": "https://apps.razer.com/synapse/products/241/mw/main.22fef509d930e6fcd701.js",
+      "sha256": "75c75478f6012a5b0de906c1bcea4cdb24c2d0038b338515e7a896fd16ef67f6",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 241,
+          "dongleId": 241,
+          "claimInterface": 3
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 600,
+      "url": "https://apps.razer.com/synapse/products/600/mw/main.9153f191b8c7531217dc.js",
+      "sha256": "fd2d8340cb4dbe7f8006304deea6df7e803781670739216836da915acd2490f3",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 600,
+          "dongleId": 625,
+          "claimInterface": 3
+        }
+      ],
+      "declaresDualLink": true
+    },
+    {
+      "sourceProductId": 697,
+      "url": "https://apps.razer.com/synapse/products/697/mw/main.b7fde0fee0f778f4c14a.js",
+      "sha256": "46ddf096c342e743aa74a13ffe257b458dbabb71209f9e30c8915c58c1c70647",
+      "receiverMetadata": [
+        {
+          "primaryProductId": 697,
+          "dongleId": 698,
+          "claimInterface": 3
+        }
+      ],
+      "declaresDualLink": true
+    }
+  ]
+}

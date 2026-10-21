@@ -68,6 +68,215 @@ public sealed class LogitechPollingTests
     }
 
     [Fact]
+    public async Task OnboardDetectionOffersExplicitSoftwareModeWithoutClaimingAnActiveHostRate()
+    {
+        await using var transport = new FakeTransport { Mode = 1 };
+
+        var info = await new LogitechPollingRateController().ReadAsync(Endpoint, transport, Mouse, CancellationToken.None);
+
+        Assert.Equal(PollingRateState.RequiresHostMode, info.State);
+        Assert.Null(info.CurrentRateHz);
+        Assert.Contains(8000, info.SupportedRatesHz);
+        Assert.Equal(0, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+        Assert.DoesNotContain(transport.Requests, r => r[2] == 5 && (r[3] & 0xF0) == 0x20);
+    }
+
+    [Fact]
+    public async Task ExplicitSoftwareModeApplyChecksModeReadbackThenSetsTheAdvertisedRate()
+    {
+        await using var transport = new FakeTransport { Mode = 1 };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => true, CancellationToken.None);
+
+        Assert.True(result.Verified);
+        Assert.Equal(500, result.Info.CurrentRateHz);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(2, transport.Mode);
+        Assert.Equal(1, transport.SetCommands);
+        var modeSet = transport.Requests.FindIndex(r => r[2] == 4 && (r[3] & 0xF0) == 0x10);
+        var modeReadback = transport.Requests.FindIndex(modeSet + 1, r => r[2] == 4 && (r[3] & 0xF0) == 0x20);
+        var rateSet = transport.Requests.FindIndex(r => r[2] == 5 && (r[3] & 0xF0) == 0x30);
+        Assert.True(modeSet >= 0 && modeReadback > modeSet && rateSet > modeReadback);
+        Assert.DoesNotContain(transport.Requests, r => r[2] == 4 && (r[3] & 0xF0) > 0x20);
+    }
+
+    [Fact]
+    public async Task ASoftwareModeChangeCanBeVerifiedWithoutAnUnnecessaryRateWrite()
+    {
+        await using var transport = new FakeTransport { Mode = 1 };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 1000, () => true, () => true, CancellationToken.None);
+
+        Assert.True(result.Verified);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+        Assert.Equal(1000, result.Info.CurrentRateHz);
+    }
+
+    [Fact]
+    public async Task ModeOptInIsRecheckedImmediatelyBeforeTheModeSetting()
+    {
+        await using var transport = new FakeTransport { Mode = 1 };
+        int guards = 0;
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => ++guards == 1, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(0, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+    }
+
+    [Fact]
+    public async Task AChangedMouseCannotReceiveTheOptedInModeChange()
+    {
+        await using var transport = new FakeTransport { Mode = 1, ChangeUnitOnRead = 2 };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => true, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(PollingRateState.Disconnected, result.Info.State);
+        Assert.Equal(0, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+    }
+
+    [Fact]
+    public async Task ModeOptInRevokedAfterItsSettingPreventsTheReportRateWrite()
+    {
+        bool optedIn = true;
+        await using var transport = new FakeTransport { Mode = 1, AfterModeSetting = () => optedIn = false };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => optedIn, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+        Assert.Contains("profile mode may have changed", result.Detail);
+    }
+
+    [Fact]
+    public async Task CancellationAfterModeWriteReportsItsUncertainEffectWithoutContinuing()
+    {
+        using var cancellation = new CancellationTokenSource();
+        await using var transport = new FakeTransport { Mode = 1, AfterModeSetting = cancellation.Cancel };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => true, cancellation.Token);
+
+        Assert.False(result.Verified);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+        Assert.Contains("profile mode may have changed", result.Detail);
+    }
+
+    [Fact]
+    public async Task ModeSettingTimeoutStopsWithoutReadbackRetryOrRateWrite()
+    {
+        await using var transport = new FakeTransport { Mode = 1, TimeoutOnModeSetReply = true };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => true, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+        Assert.Equal(0, transport.ReadsAfterTimeout);
+        Assert.Contains("profile mode may have changed", result.Detail);
+    }
+
+    [Fact]
+    public async Task AnUnconfirmedModeReadbackPreventsTheReportRateWrite()
+    {
+        await using var transport = new FakeTransport { Mode = 1, IgnoreModeSet = true };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => true, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+        Assert.Contains("profile mode may have changed", result.Detail);
+    }
+
+    [Fact]
+    public async Task SoftwareModeCapabilitiesAreCheckedAgainBeforeTheRateWrite()
+    {
+        await using var transport = new FakeTransport { Mode = 1, RemoveHighRatesAfterModeSet = true };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 8000, () => true, () => true, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+        Assert.Contains("profile mode may have changed", result.Detail);
+    }
+
+    [Fact]
+    public async Task SoftwareModeReprobeUsesTheFreshFeatureEncodingWhenTheAvailableFeatureChanges()
+    {
+        await using var transport = new FakeTransport { Mode = 1, SwitchToOrdinaryAfterModeSet = true };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 125, () => true, () => true, CancellationToken.None);
+
+        Assert.True(result.Verified);
+        Assert.Equal(125, result.Info.CurrentRateHz);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(1, transport.SetCommands);
+        Assert.Equal(8, transport.LastSetValue);
+    }
+
+    [Fact]
+    public async Task AChangedIdentityAfterTheModeSettingPreventsTheRateWrite()
+    {
+        await using var transport = new FakeTransport { Mode = 1, ChangeUnitOnRead = 3 };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => true, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(PollingRateState.Disconnected, result.Info.State);
+        Assert.Equal(1, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+        Assert.Contains("profile mode may have changed", result.Detail);
+    }
+
+    [Fact]
+    public async Task ChangedOptionsBeforeTheModeSettingPreventBothWrites()
+    {
+        await using var transport = new FakeTransport { Mode = 1, RemoveHighRatesOnSecondCapabilities = true };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 8000, () => true, () => true, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(0, transport.ModeSetCommands);
+        Assert.Equal(0, transport.SetCommands);
+    }
+
+    [Fact]
+    public async Task BoltMouseIdentityUsesItsOwnLittleEndianPairingLayoutAndEmbeddedSerial()
+    {
+        var endpoint = Endpoint with { ProductId = 0xC548 };
+        var mouse = Mouse with { Id = "receiver-logitech/logitech/1/4093/89ABCDEF", ModelId = "4093" };
+        await using var transport = new FakeTransport { EndpointOverride = endpoint };
+
+        var result = await new LogitechPollingRateController().ApplyAsync(endpoint, transport,
+            mouse, 500, () => true, CancellationToken.None);
+
+        Assert.True(result.Verified);
+        Assert.Equal(1, transport.SetCommands);
+        Assert.Contains(transport.Requests, r => r[1] == 0xFF && r[4] == 0x51);
+        Assert.DoesNotContain(transport.Requests, r => r[1] == 0xFF && r[4] is 0x20 or 0x30);
+    }
+
+    [Fact]
     public async Task DeliberateApplySendsExactlyOneSettingAndChecksTheSameMouseAgain()
     {
         await using var transport = new FakeTransport();
@@ -202,14 +411,66 @@ public sealed class LogitechPollingTests
     [Theory]
     [InlineData(0, 2, 0)]
     [InlineData(3, 1, 0)]
-    [InlineData(3, 2, 1)]
-    public async Task KeyboardsOnboardProfilesAndUnknownRateVersionsAreRefused(byte kind, byte mode, byte version)
+    [InlineData(3, 0, 0)]
+    public async Task KeyboardsOnboardProfilesAndUnknownProfileModesAreRefused(byte kind, byte mode, byte version)
     {
         await using var transport = new FakeTransport { Kind = kind, Mode = mode, RateVersion = version };
         var result = await new LogitechPollingRateController().ApplyAsync(Endpoint, transport,
             Mouse, 500, () => true, CancellationToken.None);
         Assert.False(result.Verified);
         Assert.Equal(PollingRateState.Unsupported, result.Info.State);
+        Assert.Equal(0, transport.SetCommands);
+    }
+
+    [Theory]
+    [InlineData(true, 1)]
+    [InlineData(true, 2)]
+    [InlineData(true, 255)]
+    [InlineData(false, 1)]
+    [InlineData(false, 255)]
+    public async Task LaterFeatureVersionsUseTheirNormativelyBackwardsCompatibleBaselineFunctions(bool extended, byte version)
+    {
+        await using var transport = new FakeTransport
+        {
+            Extended = extended, RateVersion = version, CurrentCode = extended ? (byte)3 : (byte)1
+        };
+
+        var result = await new LogitechPollingRateController().ApplyAsync(Endpoint, transport,
+            Mouse, 500, () => true, CancellationToken.None);
+
+        Assert.True(result.Verified);
+        Assert.Equal(500, result.Info.CurrentRateHz);
+        Assert.Equal(1, transport.SetCommands);
+    }
+
+    [Theory]
+    [InlineData(0x40)]
+    [InlineData(0x80)]
+    [InlineData(0xC0)]
+    public async Task HiddenOrObsoleteRateFeaturesAreNotUsed(byte flags)
+    {
+        await using var transport = new FakeTransport { RateFeatureFlags = flags };
+
+        var info = await new LogitechPollingRateController().ReadAsync(Endpoint, transport, Mouse, CancellationToken.None);
+
+        Assert.Equal(PollingRateState.Unsupported, info.State);
+        Assert.DoesNotContain(transport.Requests, r => r[2] == 5);
+        Assert.Equal(0, transport.SetCommands);
+    }
+
+    [Theory]
+    [InlineData(0x40)]
+    [InlineData(0x80)]
+    public async Task AnInaccessibleProfileFeatureCannotBeTreatedAsProofOfSoftwareMode(byte flags)
+    {
+        await using var transport = new FakeTransport { Mode = 1, ProfileFeatureFlags = flags };
+
+        var result = await new LogitechPollingRateController().ApplyWithHostModeSwitchAsync(Endpoint, transport,
+            Mouse, 500, () => true, () => true, CancellationToken.None);
+
+        Assert.False(result.Verified);
+        Assert.Equal(PollingRateState.Unsupported, result.Info.State);
+        Assert.Equal(0, transport.ModeSetCommands);
         Assert.Equal(0, transport.SetCommands);
     }
 
@@ -285,14 +546,17 @@ public sealed class LogitechPollingTests
     {
         private byte[] request = [];
         private bool timedOut;
-        public HidEndpoint Endpoint => LogitechPollingTests.Endpoint;
+        public HidEndpoint? EndpointOverride { get; init; }
+        public HidEndpoint Endpoint => EndpointOverride ?? LogitechPollingTests.Endpoint;
         public List<byte[]> Requests { get; } = [];
-        public bool Extended { get; init; } = true;
+        public bool Extended { get; set; } = true;
         public byte CurrentCode { get; set; } = 3;
         public byte Capabilities { get; init; } = 0x7F;
         public byte Kind { get; init; } = 3;
-        public byte Mode { get; init; } = 2;
+        public byte Mode { get; set; } = 2;
         public byte RateVersion { get; init; }
+        public byte RateFeatureFlags { get; init; }
+        public byte ProfileFeatureFlags { get; init; }
         public int ChangeUnitOnRead { get; init; } = int.MaxValue;
         public bool RemoveHighRatesOnSecondCapabilities { get; init; }
         public bool TimeoutOnSetReply { get; init; }
@@ -300,6 +564,12 @@ public sealed class LogitechPollingTests
         public bool IgnoreSet { get; init; }
         public bool ForeignSlotReplies { get; init; }
         public Action? AfterSetting { get; init; }
+        public Action? AfterModeSetting { get; init; }
+        public bool IgnoreModeSet { get; init; }
+        public bool TimeoutOnModeSetReply { get; init; }
+        public bool RemoveHighRatesAfterModeSet { get; init; }
+        public bool SwitchToOrdinaryAfterModeSet { get; init; }
+        public int ModeSetCommands { get; private set; }
         public int SetCommands { get; private set; }
         public byte LastSetValue { get; private set; }
         public int UnitReads { get; private set; }
@@ -308,6 +578,7 @@ public sealed class LogitechPollingTests
         public int ReadsAfterTimeout { get; private set; }
         private bool IsSet => (request[2] == 5 && (request[3] & 0xF0) == 0x30) ||
             (request[2] == 6 && (request[3] & 0xF0) == 0x20);
+        private bool IsModeSet => request[2] == 4 && (request[3] & 0xF0) == 0x10;
 
         public ValueTask WriteAsync(byte[] report, CancellationToken cancellationToken)
         {
@@ -321,6 +592,13 @@ public sealed class LogitechPollingTests
                 if (!IgnoreSet) CurrentCode = LastSetValue;
                 AfterSetting?.Invoke();
             }
+            if (IsModeSet)
+            {
+                ModeSetCommands++;
+                if (!IgnoreModeSet) Mode = request[4];
+                if (SwitchToOrdinaryAfterModeSet) { Extended = false; CurrentCode = 1; }
+                AfterModeSetting?.Invoke();
+            }
             return ValueTask.CompletedTask;
         }
 
@@ -329,6 +607,7 @@ public sealed class LogitechPollingTests
             cancellationToken.ThrowIfCancellationRequested();
             if (timedOut) ReadsAfterTimeout++;
             if (IsSet && TimeoutOnSetReply) { timedOut = true; throw new TimeoutException("Synthetic set reply timeout."); }
+            if (IsModeSet && TimeoutOnModeSetReply) { timedOut = true; throw new TimeoutException("Synthetic mode-setting timeout."); }
             byte[] reply = new byte[20];
             reply[0] = 0x11; reply[1] = ForeignSlotReplies ? (byte)2 : request[1];
             reply[2] = request[2]; reply[3] = request[3];
@@ -340,7 +619,8 @@ public sealed class LogitechPollingTests
                 int feature = (request[4] << 8) | request[5];
                 reply[4] = (byte)(feature switch { 0x0003 => 2, 0x0005 => 3, 0x8100 => 4,
                     0x8061 when Extended => 5, 0x8060 when !Extended => 6, _ => 0 });
-                if (feature is 0x8060 or 0x8061) reply[6] = RateVersion;
+                if (feature is 0x8060 or 0x8061) { reply[5] = RateFeatureFlags; reply[6] = RateVersion; }
+                if (feature == 0x8100) reply[5] = ProfileFeatureFlags;
             }
             else if (request[2] == 2 && function == 0)
             {
@@ -353,13 +633,20 @@ public sealed class LogitechPollingTests
                 reply[4] = request[4];
                 if (request[4] == 0x20) { PairingReads++; reply[7] = 0x40; reply[8] = 0x93; reply[11] = 2; }
                 if (request[4] == 0x30) { reply[5] = 0x89; reply[6] = 0xAB; reply[7] = 0xCD; reply[8] = 0xEF; }
+                if (request[4] == 0x51)
+                {
+                    PairingReads++;
+                    reply[5] = 2; reply[6] = 0x93; reply[7] = 0x40;
+                    reply[8] = 0x89; reply[9] = 0xAB; reply[10] = 0xCD; reply[11] = 0xEF;
+                }
             }
             else if (request[2] == 3 && function == 0x20) reply[4] = Kind;
             else if (request[2] == 4 && function == 0x20) reply[4] = Mode;
             else if ((request[2] == 5 && function == 0x10) || (request[2] == 6 && function == 0))
             {
                 CapabilityReads++;
-                byte flags = RemoveHighRatesOnSecondCapabilities && CapabilityReads > 1 ? (byte)0x0F : Capabilities;
+                byte flags = (RemoveHighRatesOnSecondCapabilities && CapabilityReads > 1) ||
+                    (RemoveHighRatesAfterModeSet && ModeSetCommands > 0) ? (byte)0x0F : Capabilities;
                 if (request[2] == 5) reply[5] = flags; else reply[4] = 0x8B;
             }
             else if ((request[2] == 5 && function == 0x20) || (request[2] == 6 && function == 0x10))

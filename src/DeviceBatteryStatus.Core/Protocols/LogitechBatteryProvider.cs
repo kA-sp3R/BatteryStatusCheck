@@ -9,17 +9,14 @@ namespace DeviceBatteryStatus.Core.Protocols;
 /// <summary>Read-only battery queries through identified USB 2.4 GHz HID++ receivers.</summary>
 public sealed class LogitechBatteryProvider : IBatteryProvider
 {
-    private static readonly HashSet<ushort> Unifying = [0xC52B, 0xC532];
-    private static readonly HashSet<ushort> Lightspeed =
-        [0xC539, 0xC53A, 0xC53D, 0xC53F, 0xC541, 0xC545, 0xC547, 0xC54D];
     private static readonly TimeSpan ReplyTimeout = TimeSpan.FromMilliseconds(700);
-    private readonly Dictionary<string, (string PairingKey, PeripheralIdentity Identity)> knownDevices = [];
+    private readonly Dictionary<string, (string PairingKey, PeripheralIdentity Identity, string? UnitId)> knownDevices = [];
     private int softwareId = 7;
 
     public string Name => "Logitech HID++";
 
     public bool CanHandle(HidEndpoint endpoint) => endpoint.VendorId == 0x046D &&
-        (Unifying.Contains(endpoint.ProductId) || Lightspeed.Contains(endpoint.ProductId)) &&
+        LogitechReceiverCatalog.TryGet(endpoint.ProductId, out _) &&
         endpoint.UsagePage == 0xFF00 && endpoint.Usage is 1 or 2 &&
         endpoint.OutputReportLength >= 7 && endpoint.InputReportLength >= 20;
 
@@ -31,41 +28,66 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
 
         try
         {
-            int slots = Unifying.Contains(endpoint.ProductId) ? 6 : 1;
-            LogitechReply receiverInfo = await ExchangeAsync(transport, 0xFF, 0x83, 0xB5,
-                [0x03], cancellationToken, expectedEcho: 0x03);
-            if (receiverInfo is { ErrorCode: null } && receiverInfo.Parameters.Length >= 7 &&
-                receiverInfo.Parameters[6] is >= 1 and <= 6) slots = receiverInfo.Parameters[6];
+            LogitechReceiverCatalog.TryGet(endpoint.ProductId, out var receiver);
+            int slots = receiver!.DefaultSlots;
+            bool bolt = receiver.Kind == LogitechReceiverKind.Bolt;
+            bool associationComplete = bolt || receiver.Kind == LogitechReceiverKind.Unifying;
+            if (!bolt)
+            {
+                LogitechReply receiverInfo = await ExchangeAsync(transport, 0xFF, 0x83, 0xB5,
+                    [0x03], cancellationToken, expectedEcho: 0x03);
+                if (receiverInfo is { ErrorCode: null } && receiverInfo.Parameters.Length >= 7 &&
+                    receiverInfo.Parameters[6] is >= 1 and <= 6)
+                {
+                    slots = receiverInfo.Parameters[6];
+                    associationComplete = true;
+                }
+            }
 
             for (byte slot = 1; slot <= slots; slot++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                byte pairingOffset = (byte)(0x20 + slot - 1);
+                byte pairingOffset = bolt ? (byte)(0x50 + slot) : (byte)(0x20 + slot - 1);
                 LogitechReply pairing = await ExchangeAsync(transport, 0xFF, 0x83, 0xB5,
                     [pairingOffset], cancellationToken, expectedEcho: pairingOffset);
                 bool paired = pairing is { ErrorCode: null } && pairing.Parameters.Length >= 8;
                 // Unifying pairing registers distinguish an empty slot from an asleep paired device.
-                if (!paired && Unifying.Contains(endpoint.ProductId))
+                if (!paired && receiver.Kind is LogitechReceiverKind.Unifying or LogitechReceiverKind.Bolt)
                 {
                     if (!IsUnknownPairing(pairing))
                         throw new IOException($"Cannot identify the peripheral paired to Logitech slot {slot}.");
+                    if (pairing.ErrorCode != 0x08) associationComplete = false;
                     continue;
                 }
-                if (!paired && slot > 1) continue;
+                if (!paired) associationComplete = false;
+                if (!paired && slot > 1 && receiver.Kind != LogitechReceiverKind.Nano) continue;
 
-                string? wirelessId = paired ? Convert.ToHexString(pairing!.Parameters.AsSpan(3, 2)) : null;
+                string? wirelessId = paired ? bolt
+                    ? $"{pairing.Parameters[3]:X2}{pairing.Parameters[2]:X2}"
+                    : Convert.ToHexString(pairing.Parameters.AsSpan(3, 2)) : null;
+                if (paired && wirelessId is "0000" or "FFFF")
+                    throw new IOException($"Malformed wireless identity in Logitech slot {slot} pairing information.");
                 string? serial = null;
                 if (paired)
                 {
-                    byte serialOffset = (byte)(0x30 + slot - 1);
-                    LogitechReply extended = await ExchangeAsync(transport, 0xFF, 0x83, 0xB5,
-                        [serialOffset], cancellationToken, expectedEcho: serialOffset);
-                    if (extended is { ErrorCode: null } && extended.Parameters.Length >= 5)
+                    if (bolt)
                     {
-                        string value = Convert.ToHexString(extended.Parameters.AsSpan(1, 4));
+                        string value = Convert.ToHexString(pairing.Parameters.AsSpan(4, 4));
                         if (value != "00000000" && value != "FFFFFFFF") serial = value;
                     }
+                    else
+                    {
+                        byte serialOffset = (byte)(0x30 + slot - 1);
+                        LogitechReply extended = await ExchangeAsync(transport, 0xFF, 0x83, 0xB5,
+                            [serialOffset], cancellationToken, expectedEcho: serialOffset);
+                        if (extended is { ErrorCode: null } && extended.Parameters.Length >= 5)
+                        {
+                            string value = Convert.ToHexString(extended.Parameters.AsSpan(1, 4));
+                            if (value != "00000000" && value != "FFFFFFFF") serial = value;
+                        }
+                    }
                 }
+                if (serial is null) associationComplete = false;
                 string displayName = $"Logitech peripheral · slot {slot}";
                 string identity = $"{endpoint.ReceiverId}/logitech/{slot}/{wirelessId ?? "unknown"}/{serial ?? "unknown"}";
                 PeripheralIdentity peripheral = new(identity, displayName, DeviceVendor.Logitech,
@@ -73,7 +95,8 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
                 string slotKey = $"{endpoint.ReceiverId}/{slot}";
                 string pairingKey = $"{wirelessId}/{serial}";
                 if (serial is not null && knownDevices.TryGetValue(slotKey, out var known) && known.PairingKey == pairingKey)
-                    peripheral = known.Identity;
+                    peripheral = peripheral with { Name = known.Identity.Name };
+                string? sampledUnitId = null;
 
                 try
                 {
@@ -84,11 +107,23 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
                     if (ping.ErrorCode is not null && !(ping.LegacyError && ping.ErrorCode == 0x01))
                     {
                         BatteryReading failure = ErrorReading(ping, "Peripheral ping");
+                        if (!paired && receiver.Kind == LogitechReceiverKind.Nano)
+                        {
+                            if (knownDevices.TryGetValue(slotKey, out var previous)) peripheral = previous.Identity;
+                            else if (failure.State == ReadingState.Disconnected) continue;
+                        }
                         devices.Add(new(peripheral, failure, failure.State == ReadingState.Disconnected
                             ? ConnectionState.Disconnected : ConnectionState.Unknown));
                         continue;
                     }
                     bool legacy = ping.LegacyError && ping.ErrorCode == 0x01;
+                    if (receiver.Kind == LogitechReceiverKind.Nano && !paired && legacy)
+                    {
+                        devices.Add(new(peripheral, BatteryReading.Unavailable(ReadingState.Unsupported,
+                            "This Nano receiver does not provide slot-specific peripheral identity; global receiver registers are not attributed to a peripheral."),
+                            ConnectionState.Connected));
+                        continue;
+                    }
                     if (!legacy && (ping.Parameters.Length < 3 || ping.Parameters[0] < 2))
                     {
                         devices.Add(new(peripheral, BatteryReading.Unavailable(ReadingState.Unsupported,
@@ -98,11 +133,30 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
                     if (!legacy)
                     {
                         (string? name, string? unitId) = await ReadIdentityAsync(transport, slot, cancellationToken);
+                        sampledUnitId = unitId;
                         if (name is not null) peripheral = peripheral with { Name = name };
-                        if (unitId is not null && serial is null)
+                        if (unitId is not null && knownDevices.TryGetValue(slotKey, out var sameUnit) && sameUnit.UnitId == unitId)
+                            peripheral = peripheral with { Id = sameUnit.Identity.Id, Name = name ?? sameUnit.Identity.Name,
+                                ModelId = wirelessId ?? sameUnit.Identity.ModelId };
+                        else if (unitId is not null && serial is null)
                             peripheral = peripheral with { Id = $"{endpoint.ReceiverId}/logitech/{slot}/unit/{unitId}" };
+                        if (receiver.Kind == LogitechReceiverKind.Nano && !paired && unitId is null)
+                        {
+                            devices.Add(new(peripheral, BatteryReading.Unavailable(ReadingState.Unsupported,
+                                "This Nano peripheral provides neither slot pairing information nor a unit identity; battery data cannot be associated reliably."),
+                                ConnectionState.Connected));
+                            continue;
+                        }
                     }
-                    knownDevices[slotKey] = (pairingKey, peripheral);
+                    if (knownDevices.TryGetValue(slotKey, out var replaced) && replaced.Identity.Id != peripheral.Id &&
+                        ((sampledUnitId is not null && replaced.UnitId is not null && sampledUnitId != replaced.UnitId) ||
+                         (!peripheral.Id.Contains("/unit/", StringComparison.Ordinal) &&
+                          !replaced.Identity.Id.Contains("/unit/", StringComparison.Ordinal) &&
+                          !peripheral.Id.EndsWith("/unknown", StringComparison.Ordinal) &&
+                          !replaced.Identity.Id.EndsWith("/unknown", StringComparison.Ordinal))))
+                        devices.Add(new(replaced.Identity, BatteryReading.Unavailable(ReadingState.Disconnected,
+                            "This receiver slot now identifies a different peripheral."), ConnectionState.Disconnected));
+                    knownDevices[slotKey] = (pairingKey, peripheral, sampledUnitId);
                     BatteryQueryResult query = legacy
                         ? new(await ReadLegacyBatteryAsync(transport, slot, observedAt, cancellationToken))
                         : await ReadFeatureBatteryAsync(transport, slot, observedAt, cancellationToken);
@@ -129,7 +183,7 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
                     return devices;
                 }
             }
-            return devices;
+            return new ReceiverSnapshotBatch(devices, associationComplete);
         }
         catch (Exception ex) when (devices.Count > 0 && (ex is IOException or TimeoutException))
         {
@@ -277,7 +331,7 @@ public sealed class LogitechBatteryProvider : IBatteryProvider
             [(byte)(feature >> 8), (byte)feature], cancellationToken);
         if (reply.ErrorCode is not null) throw new LogitechProtocolException(reply);
         if (reply.Parameters.Length < 3) throw new IOException("Truncated HID++ feature discovery reply.");
-        return reply.Parameters[0] == 0 || (reply.Parameters[1] & 0x80) != 0 ? null : reply.Parameters[0];
+        return reply.Parameters[0] == 0 || (reply.Parameters[1] & 0xC0) != 0 ? null : reply.Parameters[0];
     }
 
     private Task<LogitechReply> FeatureAsync(IHidTransport transport, byte slot, byte feature, byte function,

@@ -3,7 +3,7 @@ using DeviceBatteryStatus.Core.Models;
 
 namespace DeviceBatteryStatus.Core.Polling;
 
-public enum PollingRateState { Supported, Unsupported, Disconnected, Failed }
+public enum PollingRateState { Supported, Unsupported, Disconnected, Failed, RequiresHostMode }
 
 public sealed record PollingRateInfo(string DeviceId, PollingRateState State, int? CurrentRateHz,
     IReadOnlyList<int> SupportedRatesHz, string Detail);
@@ -18,4 +18,12 @@ public interface IPollingRateController
         PeripheralIdentity device, CancellationToken cancellationToken);
     Task<PollingApplyResult> ApplyAsync(HidEndpoint endpoint, IHidTransport transport,
         PeripheralIdentity device, int rateHz, Func<bool> canApply, CancellationToken cancellationToken);
+}
+
+/// <summary>An additional, separately opted-in software-mode change for manual polling control.</summary>
+public interface IHostModePollingController : IPollingRateController
+{
+    Task<PollingApplyResult> ApplyWithHostModeSwitchAsync(HidEndpoint endpoint, IHidTransport transport,
+        PeripheralIdentity device, int rateHz, Func<bool> canApply, Func<bool> canSwitchToHostMode,
+        CancellationToken cancellationToken);
 }

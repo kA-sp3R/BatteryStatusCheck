@@ -8,15 +8,13 @@ using DeviceBatteryStatus.Core.Protocols;
 namespace DeviceBatteryStatus.Core.Polling;
 
 /// <summary>Manual HID++ mouse rate changes; battery providers never call this controller.</summary>
-public sealed class LogitechPollingRateController : IPollingRateController
+public sealed class LogitechPollingRateController : IHostModePollingController
 {
-    private static readonly HashSet<ushort> Receivers =
-        [0xC52B, 0xC532, 0xC539, 0xC53A, 0xC53D, 0xC53F, 0xC541, 0xC545, 0xC547, 0xC54D];
     private static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(700);
     private int softwareId = RandomNumberGenerator.GetInt32(0, 8);
 
     public bool CanHandle(HidEndpoint endpoint, PeripheralIdentity device) =>
-        endpoint.VendorId == 0x046D && Receivers.Contains(endpoint.ProductId) &&
+        endpoint.VendorId == 0x046D && LogitechReceiverCatalog.TryGet(endpoint.ProductId, out _) &&
         endpoint.UsagePage == 0xFF00 && endpoint.Usage is 1 or 2 &&
         endpoint.InputReportLength >= 20 && endpoint.OutputReportLength >= 7 &&
         TryIdentity(endpoint, device, out _);
@@ -30,22 +28,75 @@ public sealed class LogitechPollingRateController : IPollingRateController
         { return Unavailable(device, PollingRateState.Failed, exception.Message); }
     }
 
-    public async Task<PollingApplyResult> ApplyAsync(HidEndpoint endpoint, IHidTransport transport,
-        PeripheralIdentity device, int rateHz, Func<bool> canApply, CancellationToken cancellationToken)
+    public Task<PollingApplyResult> ApplyAsync(HidEndpoint endpoint, IHidTransport transport,
+        PeripheralIdentity device, int rateHz, Func<bool> canApply, CancellationToken cancellationToken) =>
+        ApplyCoreAsync(endpoint, transport, device, rateHz, canApply, null, cancellationToken);
+
+    public Task<PollingApplyResult> ApplyWithHostModeSwitchAsync(HidEndpoint endpoint, IHidTransport transport,
+        PeripheralIdentity device, int rateHz, Func<bool> canApply, Func<bool> canSwitchToHostMode,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(canSwitchToHostMode);
+        return ApplyCoreAsync(endpoint, transport, device, rateHz, canApply, canSwitchToHostMode, cancellationToken);
+    }
+
+    private async Task<PollingApplyResult> ApplyCoreAsync(HidEndpoint endpoint, IHidTransport transport,
+        PeripheralIdentity device, int rateHz, Func<bool> canApply, Func<bool>? canSwitchToHostMode,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(canApply);
         cancellationToken.ThrowIfCancellationRequested();
         bool writeAttempted = false;
+        bool modeWriteAttempted = false;
         try
         {
             RequireAuthorization(canApply, cancellationToken);
+            if (canSwitchToHostMode is not null) RequireAuthorization(canSwitchToHostMode, cancellationToken);
             var probe = await ProbeAsync(endpoint, transport, device, cancellationToken);
             if (!probe.Info.SupportedRatesHz.Contains(rateHz) ||
                 !LogitechPollingProtocol.TryEncodeRate(probe.FeatureId, rateHz, out byte value))
                 throw new PollingException(PollingRateState.Unsupported, "The selected mouse did not advertise that report rate.");
+            if (probe.Info.State == PollingRateState.RequiresHostMode)
+            {
+                if (canSwitchToHostMode is null)
+                    throw new PollingException(PollingRateState.Unsupported,
+                        "The mouse uses onboard profiles. Changing to software mode requires the separate explicit opt-in.");
+                await ValidateMouseAsync(transport, probe.Identity, cancellationToken);
+                var profile = await ReadProfileModeAsync(transport, probe.Identity.Slot, cancellationToken);
+                var modeRates = await ReadCapabilitiesAsync(transport, probe.Identity.Slot,
+                    probe.FeatureId, probe.FeatureIndex, cancellationToken);
+                if (!modeRates.Contains(rateHz))
+                    throw new PollingException(PollingRateState.Unsupported,
+                        "The advertised rate options changed before the software-mode change; no setting was written.");
+                if (profile.Mode == 1)
+                {
+                    if (profile.FeatureIndex is null) throw new InvalidDataException("The onboard profile feature is unavailable.");
+                    byte function = NextFunction(0x10);
+                    byte[] modeRequest = LogitechHidppProtocol.CreateRequest(probe.Identity.Slot,
+                        profile.FeatureIndex.Value, function, [0x02]);
+                    RequireAuthorization(canApply, cancellationToken);
+                    RequireAuthorization(canSwitchToHostMode, cancellationToken);
+                    modeWriteAttempted = writeAttempted = true;
+                    await transport.WriteAsync(modeRequest, cancellationToken);
+                    await ReceiveAsync(transport, probe.Identity.Slot, profile.FeatureIndex.Value, function, cancellationToken);
+                    await RequireHostModeAsync(transport, probe.Identity.Slot, cancellationToken);
+                }
+                // Re-probe the same mouse after changing modes: software-mode
+                // capabilities and configuration may differ from the onboard view.
+                probe = await ProbeAsync(endpoint, transport, device, cancellationToken);
+                if (probe.Info.State != PollingRateState.Supported)
+                    throw new PollingException(PollingRateState.Failed, "Software mode was not confirmed after the requested change.");
+                if (!probe.Info.SupportedRatesHz.Contains(rateHz) ||
+                    !LogitechPollingProtocol.TryEncodeRate(probe.FeatureId, rateHz, out value))
+                    throw new PollingException(PollingRateState.Unsupported,
+                        "The mouse does not advertise the requested rate after changing to software mode.");
+            }
             RequireAuthorization(canApply, cancellationToken);
+            if (canSwitchToHostMode is not null) RequireAuthorization(canSwitchToHostMode, cancellationToken);
             if (probe.Info.CurrentRateHz == rateHz)
-                return new(true, probe.Info, "The device already reports the requested rate; no setting was written.");
+                return new(true, probe.Info, modeWriteAttempted
+                    ? "Software mode was confirmed and the mouse reports the requested rate; no report-rate setting was needed."
+                    : "The device already reports the requested rate; no setting was written.");
 
             // Repeat the identity, profile and capability checks after the user's selection.
             await ValidateMouseAsync(transport, probe.Identity, cancellationToken);
@@ -58,6 +109,7 @@ public sealed class LogitechPollingRateController : IPollingRateController
             byte setFunction = NextFunction(probe.FeatureId == LogitechPollingProtocol.ExtendedReportRate ? (byte)0x30 : (byte)0x20);
             byte[] request = LogitechHidppProtocol.CreateRequest(probe.Identity.Slot, probe.FeatureIndex, setFunction, [value]);
             RequireAuthorization(canApply, cancellationToken);
+            if (canSwitchToHostMode is not null) RequireAuthorization(canSwitchToHostMode, cancellationToken);
             writeAttempted = true;
             await transport.WriteAsync(request, cancellationToken); // Exactly one setting command; never retried.
             await ReceiveAsync(transport, probe.Identity.Slot, probe.FeatureIndex, setFunction, cancellationToken);
@@ -71,10 +123,10 @@ public sealed class LogitechPollingRateController : IPollingRateController
                 : "The read-back rate differs from the request; no retry or rollback was sent.");
         }
         catch (PollingException exception)
-        { return new(false, Unavailable(device, exception.State, exception.Message), FailureDetail(writeAttempted, exception.Message)); }
+        { return new(false, Unavailable(device, exception.State, exception.Message), ModeFailureDetail(modeWriteAttempted, writeAttempted, exception.Message)); }
         catch (Exception exception) when (exception is IOException or InvalidDataException or TimeoutException or UnauthorizedAccessException ||
             (exception is OperationCanceledException && cancellationToken.IsCancellationRequested && writeAttempted))
-        { return new(false, Unavailable(device, PollingRateState.Failed, exception.Message), FailureDetail(writeAttempted, exception.Message)); }
+        { return new(false, Unavailable(device, PollingRateState.Failed, exception.Message), ModeFailureDetail(modeWriteAttempted, writeAttempted, exception.Message)); }
     }
 
     private async Task<Probe> ProbeAsync(HidEndpoint endpoint, IHidTransport transport,
@@ -84,7 +136,7 @@ public sealed class LogitechPollingRateController : IPollingRateController
         if (!CanHandle(endpoint, device) || transport.Endpoint != endpoint || !TryIdentity(endpoint, device, out var identity))
             throw new PollingException(PollingRateState.Unsupported, "A supported receiver and an exact peripheral identity are required.");
         await ValidateMouseAsync(transport, identity!, cancellationToken);
-        await RequireHostModeAsync(transport, identity!.Slot, cancellationToken);
+        var profile = await ReadProfileModeAsync(transport, identity!.Slot, cancellationToken);
         byte? featureIndex = await FeatureIndexAsync(transport, identity.Slot, LogitechPollingProtocol.ExtendedReportRate, cancellationToken);
         ushort featureId = LogitechPollingProtocol.ExtendedReportRate;
         if (featureIndex is null)
@@ -96,6 +148,10 @@ public sealed class LogitechPollingRateController : IPollingRateController
             throw new PollingException(PollingRateState.Unsupported, "This mouse does not advertise HID++ 0x8060 or 0x8061 report-rate control.");
         var rates = await ReadCapabilitiesAsync(transport, identity.Slot, featureId, featureIndex.Value, cancellationToken);
         if (rates.Count == 0) throw new PollingException(PollingRateState.Unsupported, "No supported whole-Hz rate was advertised.");
+        if (profile.Mode == 1)
+            return new(identity, featureId, featureIndex.Value, new(device.Id,
+                PollingRateState.RequiresHostMode, null, rates,
+                "The mouse uses onboard profiles. A separate opt-in can switch to software mode on Apply; this may change DPI and button behavior. The software-mode rate is not presented as the active onboard rate."));
         int current = await ReadRateAsync(transport, identity.Slot, featureId, featureIndex.Value, rates, cancellationToken);
         return new(identity, featureId, featureIndex.Value, new(device.Id,
             PollingRateState.Supported, current, rates, RateDetail));
@@ -120,16 +176,26 @@ public sealed class LogitechPollingRateController : IPollingRateController
         }
         else
         {
-            byte pairOffset = (byte)(0x20 + identity.Slot - 1);
+            LogitechReceiverCatalog.TryGet(transport.Endpoint.ProductId, out var receiver);
+            bool bolt = receiver!.Kind == LogitechReceiverKind.Bolt;
+            byte pairOffset = bolt ? (byte)(0x50 + identity.Slot) : (byte)(0x20 + identity.Slot - 1);
             var pairing = await ExchangeAsync(transport, 0xFF, 0x83, 0xB5, [pairOffset], cancellationToken, expectedEcho: pairOffset);
             if (pairing.Parameters.Length < 8) throw new InvalidDataException("Truncated HID++ pairing identity.");
-            byte serialOffset = (byte)(0x30 + identity.Slot - 1);
-            var serial = await ExchangeAsync(transport, 0xFF, 0x83, 0xB5, [serialOffset], cancellationToken, expectedEcho: serialOffset);
-            if (serial.Parameters.Length < 5) throw new InvalidDataException("Truncated HID++ pairing serial.");
-            if (!string.Equals(Convert.ToHexString(pairing.Parameters.AsSpan(3, 2)), identity.WirelessId, StringComparison.Ordinal) ||
-                !string.Equals(Convert.ToHexString(serial.Parameters.AsSpan(1, 4)), identity.Serial, StringComparison.Ordinal))
+            string wirelessId = bolt ? $"{pairing.Parameters[3]:X2}{pairing.Parameters[2]:X2}"
+                : Convert.ToHexString(pairing.Parameters.AsSpan(3, 2));
+            string reportedSerial;
+            if (bolt) reportedSerial = Convert.ToHexString(pairing.Parameters.AsSpan(4, 4));
+            else
+            {
+                byte serialOffset = (byte)(0x30 + identity.Slot - 1);
+                var serial = await ExchangeAsync(transport, 0xFF, 0x83, 0xB5, [serialOffset], cancellationToken, expectedEcho: serialOffset);
+                if (serial.Parameters.Length < 5) throw new InvalidDataException("Truncated HID++ pairing serial.");
+                reportedSerial = Convert.ToHexString(serial.Parameters.AsSpan(1, 4));
+            }
+            if (!string.Equals(wirelessId, identity.WirelessId, StringComparison.Ordinal) ||
+                !string.Equals(reportedSerial, identity.Serial, StringComparison.Ordinal))
                 throw new PollingException(PollingRateState.Disconnected, "The mouse paired to this receiver slot changed.");
-            if ((pairing.Parameters[7] & 0x0F) != 0x02)
+            if ((pairing.Parameters[bolt ? 1 : 7] & 0x0F) != 0x02)
                 throw new PollingException(PollingRateState.Unsupported, "The paired peripheral is not identified as a mouse.");
         }
         byte? nameFeature = await FeatureIndexAsync(transport, identity.Slot, 0x0005, cancellationToken);
@@ -141,12 +207,21 @@ public sealed class LogitechPollingRateController : IPollingRateController
 
     private async Task RequireHostModeAsync(IHidTransport transport, byte slot, CancellationToken cancellationToken)
     {
-        byte? profiles = await FeatureIndexAsync(transport, slot, 0x8100, cancellationToken);
-        if (profiles is null) return;
-        var mode = await FeatureAsync(transport, slot, profiles.Value, 0x20, [], cancellationToken);
-        if (mode.Parameters.Length == 0 || mode.Parameters[0] != 0x02)
+        var profile = await ReadProfileModeAsync(transport, slot, cancellationToken);
+        if (profile.Mode != 0x02)
             throw new PollingException(PollingRateState.Unsupported,
-                "The mouse uses onboard or unknown profile mode. This app will not change profile modes or profile memory.");
+                "Software mode is required; no automatic profile-mode or profile-memory change is sent.");
+    }
+
+    private async Task<(byte? FeatureIndex, byte Mode)> ReadProfileModeAsync(IHidTransport transport, byte slot,
+        CancellationToken cancellationToken)
+    {
+        byte? profiles = await FeatureIndexAsync(transport, slot, 0x8100, cancellationToken);
+        if (profiles is null) return (null, 0x02);
+        var mode = await FeatureAsync(transport, slot, profiles.Value, 0x20, [], cancellationToken);
+        if (mode.Parameters.Length == 0 || mode.Parameters[0] is not (0x01 or 0x02))
+            throw new PollingException(PollingRateState.Unsupported, "The mouse reports an unknown profile mode; no setting is changed.");
+        return (profiles, mode.Parameters[0]);
     }
 
     private async Task<IReadOnlyList<int>> ReadCapabilitiesAsync(IHidTransport transport, byte slot,
@@ -172,10 +247,13 @@ public sealed class LogitechPollingRateController : IPollingRateController
     {
         var reply = await FeatureAsync(transport, slot, 0, 0, [(byte)(feature >> 8), (byte)feature], cancellationToken);
         if (reply.Parameters.Length < 3) throw new InvalidDataException("Truncated HID++ feature discovery.");
-        if (reply.Parameters[0] == 0 || (reply.Parameters[1] & 0x80) != 0) return null;
-        if ((feature is LogitechPollingProtocol.AdjustableReportRate or LogitechPollingProtocol.ExtendedReportRate) &&
-            reply.Parameters[2] != 0)
-            throw new PollingException(PollingRateState.Unsupported, $"HID++ rate feature 0x{feature:X4} version {reply.Parameters[2]} is not implemented.");
+        // IRoot specifies that later versions of the same feature preserve its
+        // original functions. Use only those baseline commands and validate all
+        // advertised capabilities/replies; hidden and obsolete features remain excluded.
+        if (feature == 0x8100 && reply.Parameters[0] != 0 && (reply.Parameters[1] & 0xC0) != 0)
+            throw new PollingException(PollingRateState.Unsupported,
+                "The profile-mode feature is hidden or obsolete; software mode cannot be verified safely.");
+        if (reply.Parameters[0] == 0 || (reply.Parameters[1] & 0xC0) != 0) return null;
         return reply.Parameters[0];
     }
 
@@ -246,6 +324,8 @@ public sealed class LogitechPollingRateController : IPollingRateController
     private static string FailureDetail(bool writeAttempted, string error) => writeAttempted
         ? $"The write may have reached the mouse, but the requested rate was not verified. No retry or rollback was sent. {error}"
         : $"No rate setting was written. {error}";
+    private static string ModeFailureDetail(bool modeWriteAttempted, bool writeAttempted, string error) =>
+        (modeWriteAttempted ? "The software/onboard profile mode may have changed. " : "") + FailureDetail(writeAttempted, error);
     private sealed record Identity(byte Slot, string? WirelessId, string? Serial, string? UnitId);
     private sealed record Probe(Identity Identity, ushort FeatureId, byte FeatureIndex, PollingRateInfo Info);
     private sealed class PollingException(PollingRateState state, string detail) : Exception(detail)

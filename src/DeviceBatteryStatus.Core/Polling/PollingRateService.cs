@@ -40,7 +40,7 @@ public sealed class PollingRateService(IHidDiscovery discovery, IHidTransportFac
     }
 
     public async Task<PollingApplyResult> ApplyAsync(PeripheralIdentity device, int rateHz,
-        Func<bool> canApply, CancellationToken cancellationToken)
+        Func<bool> canApply, CancellationToken cancellationToken, Func<bool>? canSwitchToHostMode = null)
     {
         ArgumentNullException.ThrowIfNull(device);
         ArgumentNullException.ThrowIfNull(canApply);
@@ -58,8 +58,11 @@ public sealed class PollingRateService(IHidDiscovery discovery, IHidTransportFac
                 await using var transport = await transports.OpenAsync(selection.Endpoint!, cancellationToken).ConfigureAwait(false);
                 EnsureAllowed(canApply, cancellationToken);
                 // The controller must validate its target/options and recheck this guard before each setting command.
-                var result = await selection.Controller!.ApplyAsync(selection.Endpoint!, transport, device,
-                    rateHz, canApply, cancellationToken).ConfigureAwait(false);
+                var result = canSwitchToHostMode is not null && selection.Controller is IHostModePollingController hostMode
+                    ? await hostMode.ApplyWithHostModeSwitchAsync(selection.Endpoint!, transport, device,
+                        rateHz, canApply, canSwitchToHostMode, cancellationToken).ConfigureAwait(false)
+                    : await selection.Controller!.ApplyAsync(selection.Endpoint!, transport, device,
+                        rateHz, canApply, cancellationToken).ConfigureAwait(false);
                 if (result.Info.DeviceId != device.Id)
                     return NotApplied(Unavailable(device, PollingRateState.Failed,
                         "The setting result did not identify the requested peripheral; the change could not be verified."));

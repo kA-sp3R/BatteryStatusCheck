@@ -261,6 +261,46 @@ public sealed class BatteryMonitorTests
         Assert.Equal(ConnectionState.Unknown, result.Connection);
     }
 
+    [Theory]
+    [InlineData(false, ReadingState.Stale)]
+    [InlineData(true, ReadingState.Disconnected)]
+    public async Task OnlyAnExplicitlyCompletedAssociationScanCanClearAnOmittedPeripheral(
+        bool complete, ReadingState expected)
+    {
+        var provider = new StubProvider();
+        provider.Results.Enqueue(() => [Current(0)]);
+        provider.Results.Enqueue(() => new ReceiverSnapshotBatch([], complete));
+        var monitor = new BatteryMonitor(new StubDiscovery(), new StubTransportFactory(), [provider]);
+        await monitor.RefreshAsync(CancellationToken.None);
+
+        var result = Assert.Single(await monitor.RefreshAsync(CancellationToken.None));
+
+        Assert.Equal(expected, result.Battery.State);
+        Assert.Equal(complete ? ConnectionState.Disconnected : ConnectionState.Unknown, result.Connection);
+        Assert.Equal(complete ? null : (int?)0, result.Battery.Percentage);
+        Assert.Equal(complete ? null : (DateTimeOffset?)SampleTime, result.Battery.SampledAt);
+    }
+
+    [Fact]
+    public async Task AnIncompleteLaterScanCannotResurrectAnExplicitlyDisconnectedOmittedPeripheral()
+    {
+        var provider = new StubProvider();
+        provider.Results.Enqueue(() => [Current(0)]);
+        provider.Results.Enqueue(() => new ReceiverSnapshotBatch([], true));
+        provider.Results.Enqueue(() => new ReceiverSnapshotBatch([], false));
+        var monitor = new BatteryMonitor(new StubDiscovery(), new StubTransportFactory(), [provider]);
+        await monitor.RefreshAsync(CancellationToken.None);
+        var disconnected = Assert.Single(await monitor.RefreshAsync(CancellationToken.None));
+
+        var result = Assert.Single(await monitor.RefreshAsync(CancellationToken.None));
+
+        Assert.Equal(disconnected, result);
+        Assert.Equal(ReadingState.Disconnected, result.Battery.State);
+        Assert.Equal(ConnectionState.Disconnected, result.Connection);
+        Assert.Null(result.Battery.Percentage);
+        Assert.Null(result.Battery.SampledAt);
+    }
+
     [Fact]
     public async Task ReceiverWithoutAQueryableCollectionDoesNotKeepAnOldMeasurementCurrent()
     {

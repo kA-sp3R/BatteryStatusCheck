@@ -1,6 +1,6 @@
 # Device Battery Status
 
-Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. Download the unsigned Windows x64 [0.1.0-preview.3 prerelease](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v0.1.0-preview.3). Runtime and physical hardware behavior remain unverified.
+Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. Version **1.0.0** is an unsigned personal-use Windows x64 release. [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0). Runtime, hardware and performance checks are recorded in the [deferred verification record](docs/deferred-verification.md).
 
 ## Projects
 
@@ -19,20 +19,22 @@ Settings are stored at `%LOCALAPPDATA%\DeviceBatteryStatus\settings.json`: refre
 
 Notifications default to 20%, suppress known charging/full states, and require a fresh measured percentage. A new alert requires a fresh recovery at least five percentage points above the threshold. Unknown charging state stays unknown. Windows notification preferences can suppress delivery. Startup is off unless explicitly enabled in Settings and registers only the current `DeviceBatteryStatus.exe` apphost for the current user.
 
-Freshness is checked every five seconds independently of hardware polling. Samples older than twice the refresh interval plus five seconds turn stale, and readings from before sleep stay stale until refreshed. The icon is rendered for the notification area's DPI, including centered `0` and `100`; visual behavior still needs Windows runtime verification.
+Freshness is checked every five seconds independently of hardware polling. Samples older than twice the refresh interval plus five seconds turn stale, and readings from before sleep stay stale until refreshed. The icon is rendered for the notification area's DPI, including centered `0` and `100`; rendered behavior is part of the deferred runtime checks.
 
 ## Manual polling-rate control
 
 Open **Settings → Polling rate**. Controls start disabled each time the window opens. Enable them, select a mouse or receiver and click **Detect** to read its current configuration and rate options. Select a rate and click **Apply** to request a change. Saving preferences, battery refresh, device selection and startup never change polling rate.
 
+For a Logitech mouse using onboard profiles, Detect presents a separate **Switch Logitech to software mode on Apply** checkbox. Checking it and clicking Apply can leave the onboard profile, which may change DPI and button behavior. Profile memory is not edited. The controller confirms software mode and reads capabilities again before setting the rate. The extra choice resets with detection/selection; an interrupted Apply may already have changed the mode.
+
 Each Apply checks the target and available rates again, sends its documented setting sequence without retries, and reads back the reported rate. Razer high-rate receivers require two setting commands; cancellation and opt-in are checked before each one. An interrupted or failed sequence may already have changed configuration; detect again before another attempt. For these high-rate receivers, an explicit Apply sends both commands even when the reported rate already matches, allowing a new deliberate attempt after partial completion. Disabling controls, changing devices, closing the window, sleep/resume and shutdown invalidate pending operations and displayed capabilities. Battery refresh and manual exchanges share one gate to prevent competing replies.
 
 | Family | Polling-rate implementation | Limitations |
 | --- | --- | --- |
-| Razer | Ordinary HyperSpeed receivers at 125/500/1000 Hz; documented high-rate receivers `009F`, `00C1`, `00BF` and generic HyperPolling `00B3` at 125/500/1000/2000/4000/8000 Hz | Options are source-backed profiles, not negotiated limits. Generic `00B3` controls receiver configuration; paired mouse identity/link and battery remain unavailable. Firmware/physical compatibility is unverified. See [protocol coverage](docs/protocols/razer-polling.md). |
-| Logitech | Mouse-only HID++ 8060/8061 features, with device-advertised options potentially up to 8000 Hz | Requires fresh pairing identity and compatible receiver/firmware; profile-controlled modes are not changed. See [protocol coverage](docs/protocols/logitech-polling.md). |
+| Razer | Ordinary HyperSpeed and documented high-rate/HyperPolling receiver configuration, with mapped options through 8000 Hz | Source-backed rate profiles and fresh readback. Receiver-reported child association is checked when supplied; unknown identities stay unknown. [Protocol coverage](docs/protocols/razer-polling.md). |
+| Logitech | Mouse-only HID++ 8060/8061 baseline functions, including later backwards-compatible feature versions and advertised options potentially through 8000 Hz | Requires fresh pairing/unit identity. Onboard profiles require the separate software-mode checkbox and Apply. [Protocol coverage](docs/protocols/logitech-polling.md). |
 
-These are source-backed implementations; physical compatibility and the actual USB reporting frequency remain unverified. Reading back a configured rate does not measure report timing. Polling-rate failures do not replace battery readings or imply a radio-link state.
+These are source-backed implementations. Physical compatibility, firmware persistence and USB reporting-frequency measurements are deferred. Readback confirms the reported configuration. Polling-rate failures do not replace battery readings or imply a radio-link state.
 
 An ordinary 1000 Hz HyperSpeed receiver does not gain higher rates through software. A compatible mouse using an upgraded HyperPolling receiver follows that receiver's `00B3` route; its model is not inferred from the dongle.
 
@@ -43,22 +45,22 @@ Use the **Windows compilation and focused unit tests** GitHub Actions workflow w
 - **Framework-dependent:** smaller package; requires Microsoft .NET 10 Windows Desktop Runtime x64.
 - **Self-contained:** bundles its .NET/Windows Desktop Runtime and notices; requires no separate .NET installation.
 
-Download an application ZIP from the [published prerelease](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v0.1.0-preview.3), extract it and keep all files together. Release assets include sibling SHA-256 checksums and the full test evidence bundle. Each application ZIP has an embedded source/run manifest with payload hashes. Alternatively, download a `windows-preview-win-x64-…` Actions artifact and extract its wrapper ZIP first. See [package instructions and limitations](docs/release.md). The separate `windows-build` artifact is the development compilation output.
+Download an application ZIP from the [v1.0.0 release page](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0), extract it and keep all files together. Release assets include sibling SHA-256 checksums and the full test evidence bundle. Each application ZIP has an embedded source/run manifest with payload hashes. Alternatively, download a `windows-preview-win-x64-…` Actions artifact and extract its wrapper ZIP first. See [package instructions and limitations](docs/release.md). The separate `windows-build` artifact is the development compilation output.
 
-The manual **Full software suite (no application or hardware launch)** workflow tests an exact source commit without filters in Debug and Release on Windows and runs all offline parser tests. The published preview passed all 451 C# tests in each configuration and all 5 parser tests, with no failures or skips. Publication uses a separate manual workflow that checks the reviewed release manifest, successful build/full-test runs, package provenance, payload hashes and uploaded asset digests before publishing the prerelease.
+The manual **Full software suite (no application or hardware launch)** workflow tests an exact source commit without filters in Debug and Release on Windows and runs all offline parser tests. The exact checked source, test counts and outcomes are recorded in [verification status](docs/verification.md) and the release evidence bundle. Publication uses a separate manual workflow that checks the reviewed release manifest, successful build/full-test runs, package provenance, payload hashes and uploaded asset digests before publishing the release.
 
-Compilation is not application runtime or hardware verification. Obtain explicit permission before launching the app, investigating/testing physical hardware, or running full testing. No hardware compatibility is verified yet. See [verification status](docs/verification.md).
+Windows compilation, automated tests, application runtime and physical hardware are tracked separately. Runtime, hardware and resource measurements are deferred for this personal-use release; resume those checks only with explicit permission. See [verification status](docs/verification.md) and [deferred work](docs/deferred-verification.md).
 
 ## Battery accuracy and support
 
 `Current` means a validated protocol reply was received in the latest successful refresh, not that the battery has been independently measured. `Stale` retains a previous percentage or reported category and its original sample time after a failure. `Disconnected`, `Unsupported` and `Failed` have neither. A genuine **0% remains 0%**; protocol-defined zero sentinels remain unknown (Logitech `1000` defines level zero as unknown). Battery and charging/link states are independent; unavailable charging/link information stays unknown. Level categories and battery voltages are never converted into invented percentages.
 
-| Family | Implementation | Limitations |
+| Family | Source-backed software implementation | Evidence and limits |
 | --- | --- | --- |
-| Razer | Mapped wireless mouse/keyboard PIDs; battery and charging control reports | [Exact mappings](docs/protocols/razer.md). Radio-link state unknown; receiver firmware caching unverified. Generic HyperPolling battery/paired-model association unsupported; receiver polling configuration is implemented separately. |
-| Logitech | Selected LIGHTSPEED/Unifying receiver PIDs; per-slot HID++ ping, identity, reported percentages or native categories | [Exact coverage](docs/protocols/logitech.md). Category-only readings remain useful without a percentage. Alternative percentage features are checked when supported; device/firmware compatibility remains unverified. |
-| Alienware Pro headset | Source-backed protocol reader for `413C:A529` / vendor collection `FF13` | Checks model identity and radio link before accepting battery data. Windows/hardware behavior unverified. Wired `A528` excluded. See [protocol and evidence](docs/protocols/alienware.md). |
+| Razer | Mapped wireless mice/keyboards, HyperPolling child discovery, and mouse/keyboard dual-link battery routing using reported roles | [Exact mappings and protocol evidence](docs/protocols/razer.md). Device-list/link replies are used when available; ambiguous identities/routes remain unavailable. The device supplies no battery sample timestamp. |
+| Logitech | 23 explicit Unifying, LIGHTSPEED, Bolt and Nano receiver IDs; per-slot ping, pairing/unit continuity, reported percentages or native categories | [Exact coverage](docs/protocols/logitech.md). Bolt uses its own pairing layout; Nano data needs a usable slot or unit identity. Categories stay categories when no exact percentage is reported. |
+| Alienware Pro headset | AWCC-derived protocol reader for `413C:A529` / vendor collection `FF13` | Checks reported model and radio link before accepting battery data. The documented reply does not identify a unique headset serial. [Protocol and evidence](docs/protocols/alienware.md). |
 
-Device names in a product family do not establish protocol compatibility. Model-specific PIDs, collection descriptors, firmware and pairing arrangements still need permissioned hardware verification. Discovery failures preserve uncertainty instead of implying disconnection.
+Source-backed implementation does not certify every receiver/firmware combination. Physical compatibility is recorded as deferred work. Discovery failures preserve uncertainty instead of implying disconnection; unknown device fields remain explicit.
 
 For a later Alienware capture, use the [manual capture and offline analysis procedure](docs/research/alienware-capture.md). Its Python helper reads existing files only; it never starts AWCC or sends HID commands. The [AWCC-derived protocol evidence](docs/research/alienware-awcc.md) and [third-party notice](THIRD_PARTY_NOTICES.md) are retained in the repository and notice is included in the application build output.

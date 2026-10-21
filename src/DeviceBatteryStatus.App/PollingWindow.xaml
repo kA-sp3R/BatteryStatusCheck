@@ -26,6 +26,12 @@
                 <TextBlock x:Name="DetailText" TextWrapping="Wrap" Foreground="#AAAAAA" Margin="0,0,0,16"
                            AutomationProperties.LiveSetting="Polite" />
                 <StackPanel x:Name="RatePanel" Visibility="Collapsed">
+                    <CheckBox x:Name="HostModeBox" Content="Switch Logitech to software mode on Apply"
+                              IsChecked="False" Visibility="Collapsed" Foreground="#EEEEEE" Margin="0,0,0,5"
+                              Checked="HostMode_Changed" Unchecked="HostMode_Changed" />
+                    <TextBlock x:Name="HostModeExplanation" Visibility="Collapsed" TextWrapping="Wrap"
+                               Text="This leaves the on-board profile and may change DPI or button behavior. Profile memory is not edited."
+                               Foreground="#AAAAAA" FontSize="11" Margin="0,0,0,12" />
                     <Label Content="_Rate setting" Target="{Binding ElementName=RateBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
                     <DockPanel Margin="0,0,0,12">
                         <Button x:Name="ApplyButton" Content="Apply" DockPanel.Dock="Right" Margin="10,0,0,0"

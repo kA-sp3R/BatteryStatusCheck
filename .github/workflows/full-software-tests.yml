@@ -20,6 +20,33 @@ env:
   TEST_SOURCE_SHA: ${{ inputs.source_sha }}
 
 jobs:
+  release-automation-tests:
+    name: Release policy and interrupted-publication tests (fake GitHub only)
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact application source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TEST_SOURCE_SHA }}
+          path: source
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Test all release automation policies
+        run: |
+          if ($env:TEST_SOURCE_SHA -notmatch '^[0-9a-fA-F]{40}$') { throw 'A full source commit SHA is required.' }
+          $actual = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $actual -ne $env:TEST_SOURCE_SHA) { throw 'Source commit does not match the requested SHA.' }
+          ./.github/scripts/run-ci-command.ps1 -Name release-automation -Command @('python', '-m', 'unittest', 'discover', '-s', '.github/scripts', '-p', 'test_*.py', '-v')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: full-release-automation-tests-${{ github.run_attempt }}
+          path: source/ci-logs/*.log
+          if-no-files-found: error
+          retention-days: 30
+
   full-suite:
     name: Full solution tests (${{ matrix.configuration }}, hardware-free)
     runs-on: windows-latest

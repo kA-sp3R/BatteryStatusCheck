@@ -186,9 +186,10 @@ internal sealed class ApplicationController
         pollingWindow = new PollingWindow(snapshots, settings,
             (device, cancellationToken) => RunManualOperationAsync(
                 token => pollingRates.ReadAsync(device, token), cancellationToken),
-            (device, rateHz, canApply, cancellationToken) => RunManualOperationAsync(
+            (device, rateHz, canApply, canSwitchToHostMode, cancellationToken) => RunManualOperationAsync(
                 token => pollingRates.ApplyAsync(device, rateHz,
-                    () => !token.IsCancellationRequested && canApply(), token), cancellationToken))
+                    () => !token.IsCancellationRequested && canApply(), token,
+                    canSwitchToHostMode is null ? null : () => !token.IsCancellationRequested && canSwitchToHostMode()), cancellationToken))
         { Owner = settingsWindow };
         pollingWindow.Closed += (_, _) => pollingWindow = null;
         pollingWindow.Show();

@@ -141,13 +141,17 @@ public sealed class RazerHighRateTests
     public async Task GenericReceiverControlDoesNotInventBatteryOrPairedMouseIdentity()
     {
         var endpoint = Endpoint(0x00B3);
-        await using var transport = new HighTransport(endpoint);
+        await using var transport = new HighTransport(endpoint)
+        {
+            ResponseOverride = request => request[8] == 0xBF ? Reply(request, 0, 80, 5) : null
+        };
         var snapshot = Assert.Single(await new RazerBatteryProvider().ReadAsync(endpoint, transport,
             DateTimeOffset.UtcNow, CancellationToken.None));
         Assert.Equal(ReadingState.Unsupported, snapshot.Battery.State);
         Assert.Null(snapshot.Battery.Percentage);
         Assert.Equal(ConnectionState.Unknown, snapshot.Connection);
-        Assert.Empty(transport.Commands);
+        Assert.Equal(2, transport.Commands.Count);
+        Assert.All(transport.Commands, request => Assert.Equal(0xBF, request[8]));
 
         var info = await new RazerPollingRateController().ReadAsync(endpoint, transport, snapshot.Device, CancellationToken.None);
         Assert.Equal(PollingRateState.Supported, info.State);

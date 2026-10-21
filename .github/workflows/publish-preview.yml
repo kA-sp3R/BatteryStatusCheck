@@ -1,4 +1,4 @@
-name: Publish verified preview release
+name: Publish verified release
 
 on:
   workflow_dispatch:
@@ -6,15 +6,19 @@ on:
       version:
         description: Version with a reviewed manifest in .github/releases
         required: true
-        default: 0.1.0-preview.3
+        default: 1.0.0
         type: string
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-publication-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
   publish:
-    name: Verify assets and publish prerelease (no application launch)
+    name: Verify assets and publish release (no application launch)
     runs-on: windows-latest
     timeout-minutes: 15
     permissions:
@@ -25,6 +29,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Test publication policy and interrupted-upload recovery (fake GitHub only)
+        run: |
+          New-Item -ItemType Directory -Force release-staging | Out-Null
+          python -m unittest discover -s .github/scripts -p test_publish_verified_preview.py -v 2>&1 | Tee-Object -FilePath release-staging/publisher-policy-tests.log
+          $code = $LASTEXITCODE
+          Add-Content release-staging/publisher-policy-tests.log "`nnative_exit_code=$code"
+          exit $code
       - name: Verify source, full test reports and asset hashes; publish
         env:
           GH_TOKEN: ${{ github.token }}
@@ -33,10 +44,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: preview-publication-evidence-${{ github.run_attempt }}
+          name: release-publication-evidence-${{ github.run_attempt }}
           path: |
             release-staging/verification/*.zip
             release-staging/verification/*.sha256
             release-staging/publication-receipt.json
+            release-staging/publisher-policy-tests.log
           if-no-files-found: warn
           retention-days: 30

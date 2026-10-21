@@ -13,19 +13,20 @@ namespace DeviceBatteryStatus.App;
 public partial class PollingWindow : Window
 {
     private readonly Func<PeripheralIdentity, CancellationToken, Task<PollingRateInfo>> read;
-    private readonly Func<PeripheralIdentity, int, Func<bool>, CancellationToken, Task<PollingApplyResult>> apply;
+    private readonly Func<PeripheralIdentity, int, Func<bool>, Func<bool>?, CancellationToken, Task<PollingApplyResult>> apply;
     private readonly object operationGate = new();
     private CancellationTokenSource? activeOperation;
     private PollingRateInfo? detected;
     private int generation;
     private int enabled;
+    private int hostModeOptIn;
     private int closed;
     private bool busy;
     private bool initializing = true;
 
     public PollingWindow(IReadOnlyList<DeviceSnapshot> devices, AppSettings settings,
         Func<PeripheralIdentity, CancellationToken, Task<PollingRateInfo>> read,
-        Func<PeripheralIdentity, int, Func<bool>, CancellationToken, Task<PollingApplyResult>> apply)
+        Func<PeripheralIdentity, int, Func<bool>, Func<bool>?, CancellationToken, Task<PollingApplyResult>> apply)
     {
         ArgumentNullException.ThrowIfNull(devices);
         ArgumentNullException.ThrowIfNull(settings);
@@ -72,10 +73,18 @@ public partial class PollingWindow : Window
         if (!initializing) UpdateControls(); // Selecting a rate never sends a command.
     }
 
+    private void HostMode_Changed(object sender, RoutedEventArgs e)
+    {
+        if (initializing) return;
+        Volatile.Write(ref hostModeOptIn, HostModeBox.IsChecked == true ? 1 : 0);
+        UpdateControls();
+    }
+
     private async void Detect_Click(object sender, RoutedEventArgs e)
     {
         if (busy || Volatile.Read(ref enabled) != 1 || DeviceBox.SelectedItem is not DeviceChoice selected) return;
         detected = null;
+        ResetHostModeChoice();
         RateBox.ItemsSource = null;
         CurrentText.Text = "Detecting current rate…";
         DetailText.Text = "Reading current configuration. No polling-rate change is being sent.";
@@ -97,6 +106,12 @@ public partial class PollingWindow : Window
             }
             else if (info.State == PollingRateState.Supported)
                 DetailText.Text = "Supported rates could not be confirmed against the reported current rate. No change is available.";
+            else if (info.State == PollingRateState.RequiresHostMode && selected.Identity.Vendor == DeviceVendor.Logitech && rates.Length > 0)
+            {
+                detected = info with { SupportedRatesHz = Array.AsReadOnly(rates) };
+                RateBox.ItemsSource = rates.Select(rate => new RateChoice(rate)).ToArray();
+                RateBox.SelectedIndex = -1;
+            }
         }
         catch (OperationCanceledException)
         {
@@ -112,7 +127,9 @@ public partial class PollingWindow : Window
     private async void Apply_Click(object sender, RoutedEventArgs e)
     {
         if (busy || Volatile.Read(ref enabled) != 1 || DeviceBox.SelectedItem is not DeviceChoice selected ||
-            RateBox.SelectedItem is not RateChoice requested || detected is not { State: PollingRateState.Supported } capabilities ||
+            RateBox.SelectedItem is not RateChoice requested || detected is not { } capabilities ||
+            (capabilities.State != PollingRateState.Supported &&
+                (capabilities.State != PollingRateState.RequiresHostMode || Volatile.Read(ref hostModeOptIn) != 1)) ||
             capabilities.DeviceId != selected.Identity.Id || !capabilities.SupportedRatesHz.Contains(requested.Hertz)) return;
 
         // Consume this detected permission before awaiting. Every Apply requires a deliberate new Detect afterwards.
@@ -124,9 +141,11 @@ public partial class PollingWindow : Window
         // The controller may invoke this immediately before a hardware write on a worker thread.
         // It must never read a WPF control or mutable UI selection from that thread.
         bool CanApply() => IsCurrent(version, token);
+        bool CanSwitchToHostMode() => IsCurrent(version, token) && Volatile.Read(ref hostModeOptIn) == 1;
         try
         {
-            var result = await apply(selected.Identity, requested.Hertz, CanApply, token);
+            var result = await apply(selected.Identity, requested.Hertz, CanApply,
+                capabilities.State == PollingRateState.RequiresHostMode ? CanSwitchToHostMode : null, token);
             if (!IsCurrent(version, token)) return;
             if (!string.Equals(result.Info.DeviceId, selected.Identity.Id, StringComparison.Ordinal))
                 throw new InvalidDataException("The polling-rate result belongs to a different device.");
@@ -150,7 +169,8 @@ public partial class PollingWindow : Window
     {
         CurrentText.Text = info.State == PollingRateState.Supported && info.CurrentRateHz is > 0
             ? $"Reported: {info.CurrentRateHz.Value.ToString(CultureInfo.InvariantCulture)} Hz"
-            : "Current rate unavailable";
+            : info.State == PollingRateState.RequiresHostMode
+                ? "Current rate controlled by on-board profile" : "Current rate unavailable";
         DetailText.Text = info.Detail;
     }
 
@@ -196,11 +216,20 @@ public partial class PollingWindow : Window
     private void ResetCapabilities(string detail)
     {
         detected = null;
+        ResetHostModeChoice();
         busy = false;
         RateBox.ItemsSource = null;
         CurrentText.Text = "Current rate unavailable";
         DetailText.Text = detail;
         UpdateControls();
+    }
+
+    private void ResetHostModeChoice()
+    {
+        Volatile.Write(ref hostModeOptIn, 0);
+        initializing = true;
+        HostModeBox.IsChecked = false;
+        initializing = false;
     }
 
     /// <summary>Revokes this session's permission immediately and resets its UI on the dispatcher.</summary>
@@ -225,9 +254,13 @@ public partial class PollingWindow : Window
         var canUse = Volatile.Read(ref enabled) == 1 && Volatile.Read(ref closed) == 0;
         DetectButton.IsEnabled = canUse && !busy && DeviceBox.SelectedItem is DeviceChoice;
         RatePanel.Visibility = detected is null ? Visibility.Collapsed : Visibility.Visible;
+        HostModeBox.Visibility = detected?.State == PollingRateState.RequiresHostMode ? Visibility.Visible : Visibility.Collapsed;
+        HostModeExplanation.Visibility = HostModeBox.Visibility;
+        HostModeBox.IsEnabled = canUse && !busy;
         RateBox.IsEnabled = canUse && !busy && detected is not null;
         ApplyButton.IsEnabled = canUse && !busy && detected is not null && RateBox.SelectedItem is RateChoice selected &&
-            detected.SupportedRatesHz.Contains(selected.Hertz);
+            detected.SupportedRatesHz.Contains(selected.Hertz) &&
+            (detected.State != PollingRateState.RequiresHostMode || Volatile.Read(ref hostModeOptIn) == 1);
     }
 
     private void OnClosing(object? sender, CancelEventArgs e)

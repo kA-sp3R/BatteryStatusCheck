@@ -45,7 +45,7 @@ public static class RazerProtocol
             5 => RazerReplyStatus.Unsupported,
             _ => throw new InvalidDataException("Unknown Razer command status.")
         };
-        if (status == RazerReplyStatus.Success && report[6] != 2)
+        if (status == RazerReplyStatus.Success && (report[6] != 2 || report[9] != 0))
             throw new InvalidDataException("Razer battery response has an unexpected payload length.");
 
         return new(status, status == RazerReplyStatus.Success ? report[10] : null);

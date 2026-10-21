@@ -60,10 +60,17 @@ public sealed class RazerBatteryProviderTests
     }
 
     [Fact]
-    public async Task UnknownHyperPollingAssociationProducesNoMeasurementAndNoProtocolCommands()
+    public async Task UnsupportedHyperPollingAssociationProducesNoMeasurementOrBatteryCommand()
     {
         var endpoint = Endpoint(0x00B3);
-        await using var transport = new FeatureTransport(endpoint, _ => throw new InvalidOperationException("No query allowed."));
+        await using var transport = new FeatureTransport(endpoint, request =>
+        {
+            Assert.Equal(0xBF, request[8]);
+            var reply = request.ToArray();
+            reply[1] = 5;
+            RazerProtocolTests.SetChecksum(reply);
+            return reply;
+        });
 
         var devices = await new RazerBatteryProvider().ReadAsync(endpoint, transport, SampleTime, CancellationToken.None);
 
@@ -75,7 +82,7 @@ public sealed class RazerBatteryProviderTests
         Assert.Equal("1532:00B3", device.Device.ModelId);
         Assert.Equal("Razer HyperPolling receiver (paired mouse unknown)", device.Device.Name);
         Assert.Contains("radio link", device.Battery.Detail);
-        Assert.Equal(0, transport.FeatureWrites);
+        Assert.Equal(2, transport.FeatureWrites); // Explicit unsupported permits the documented legacy association request.
     }
 
     [Fact]

@@ -84,7 +84,16 @@ public sealed class BatteryMonitor(IHidDiscovery discovery, IHidTransportFactory
                             : incoming;
                     }
                     foreach (var missing in prior.Where(x => snapshots.All(y => y.Device.Id != x.Device.Id)))
-                        devices[missing.Device.Id] = WithFailure(missing, "Receiver did not return this peripheral in this refresh.");
+                        devices[missing.Device.Id] = snapshots is ReceiverSnapshotBatch { AssociationComplete: true }
+                            ? missing with
+                            {
+                                Battery = BatteryReading.Unavailable(ReadingState.Disconnected,
+                                    "A completed receiver association scan no longer reports this peripheral."),
+                                Connection = ConnectionState.Disconnected
+                            }
+                            : missing.Battery.State == ReadingState.Disconnected && missing.Connection == ConnectionState.Disconnected
+                                ? missing
+                                : WithFailure(missing, "Receiver did not return this peripheral in this refresh.");
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
                 catch (Exception ex)
