@@ -1,0 +1,42 @@
+name: Publish verified preview release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version with a reviewed manifest in .github/releases
+        required: true
+        default: 0.1.0-preview.3
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Verify assets and publish prerelease (no application launch)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify source, full test reports and asset hashes; publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: python .github/scripts/publish-verified-preview.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preview-publication-evidence-${{ github.run_attempt }}
+          path: |
+            release-staging/verification/*.zip
+            release-staging/verification/*.sha256
+            release-staging/publication-receipt.json
+          if-no-files-found: warn
+          retention-days: 30

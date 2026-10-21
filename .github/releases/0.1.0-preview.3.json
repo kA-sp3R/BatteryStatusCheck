@@ -1,0 +1,14 @@
+{
+  "version": "0.1.0-preview.3",
+  "tag": "v0.1.0-preview.3",
+  "releaseId": 419053782,
+  "sourceCommit": "b53b6b777d409f83d081b51a7a3be4f06c1aa45d",
+  "buildRun": 39527777290,
+  "fullTestRun": 39528608946,
+  "testAutomationCommit": "6fa0076c66e9efd242018bc90f12e836f583ced7",
+  "testCount": 451,
+  "packages": {
+    "framework-dependent": {"bytes": 206233, "sha256": "3b7a7f639cae65c65ab8ea9b4e53c7ecf18c2a1f6596d69d86266a9147c78fa5"},
+    "self-contained": {"bytes": 76232865, "sha256": "1856b00f85961779429d120a7e92de18fd04c2605290db2d6157ac12ef0ddff1"}
+  }
+}
