@@ -14,13 +14,13 @@ if ($LASTEXITCODE -ne 0 -or $actualSource -ne $ExpectedSource) {
 }
 $solution = Get-Content DeviceBatteryStatus.sln -Raw
 $testProjects = @(Get-ChildItem tests -Recurse -Filter *.csproj | Where-Object {
-    [xml]$project = Get-Content $_.FullName -Raw
-    $project.Project.PropertyGroup.IsTestProject -contains 'true' -or
-        @($project.Project.ItemGroup.PackageReference | Where-Object Include -eq 'Microsoft.NET.Test.Sdk').Count -gt 0
+    [xml]$projectXml = Get-Content $_.FullName -Raw
+    $projectXml.Project.PropertyGroup.IsTestProject -contains 'true' -or
+        @($projectXml.Project.ItemGroup.PackageReference | Where-Object Include -eq 'Microsoft.NET.Test.Sdk').Count -gt 0
 })
 if ($testProjects.Count -eq 0) { throw 'No test projects were found.' }
-foreach ($project in $testProjects) {
-    $relative = [IO.Path]::GetRelativePath((Get-Location).Path, $project.FullName).Replace('/', '\')
+foreach ($testProject in $testProjects) {
+    $relative = [IO.Path]::GetRelativePath((Get-Location).Path, $testProject.FullName).Replace('/', '\')
     if (!$solution.Contains($relative)) { throw "Test project is missing from the solution: $relative" }
 }
 New-Item -ItemType Directory -Force ci-logs, TestResults | Out-Null
