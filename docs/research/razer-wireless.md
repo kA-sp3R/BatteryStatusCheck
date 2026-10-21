@@ -34,7 +34,7 @@ Manufacturer DualLink separates transaction namespaces for mouse (`00`), keyboar
 
 `BF` provides native PID and reported link evidence, not a serial. Invalid flags, duplicate PIDs, invalid identities and truncated records are rejected; disconnected `FFFF` is an empty slot. `C5` identifies the primary role; explicit catalog knowledge can establish a secondary mouse or keyboard. Unknown secondary roles, conflicting types and peers sharing an unaddressed namespace are refused. An unknown single child requires role evidence rather than a guessed mouse type. Device-list/role checks around reads discard measurements whose association changes. `B8` is an independent fallback link query when ordinary modern discovery explicitly reports Unsupported. A disconnected reply discards the legacy value; unknown link or failed optional discovery does not manufacture a disconnect or replace a genuine zero.
 
-No sample timestamp or nonce is exposed. A validated battery reply with matching reported association cannot establish that firmware did not cache it. PID alone cannot uniquely distinguish same-model replacement. Status/detail text and deferred verification preserve these limits.
+No device-side battery sample timestamp or proof of a new physical measurement is exposed. A validated battery reply with matching reported association cannot establish that firmware did not cache it. PID alone cannot uniquely distinguish same-model replacement. Status/detail text and deferred verification preserve these limits.
 
 ## Audited master receiver factories
 

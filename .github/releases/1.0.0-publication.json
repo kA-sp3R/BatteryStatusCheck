@@ -1,0 +1,67 @@
+{
+  "releaseUrl": "https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0",
+  "releaseId": 420080573,
+  "tag": "v1.0.0",
+  "sourceCommit": "c2c5d747a0952da7e34826d1cfdd117f7f93bd52",
+  "publishedAt": "2026-10-21T21:37:45Z",
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "fullTestRun": 39679716090,
+  "testResults": {
+    "Debug": {
+      "total": 779,
+      "executed": 779,
+      "passed": 779,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "Release": {
+      "total": 779,
+      "executed": 779,
+      "passed": 779,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "offlineParser": {
+      "executed": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "releaseAutomation": {
+      "executed": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "assets": {
+    "DeviceBatteryStatus-1.0.0-win-x64-framework-dependent.zip": {
+      "size": 226263,
+      "digest": "sha256:e1f53df3ea1f59ce490481ba7f9a077faa3707d4272c9d0be891586933be42d1"
+    },
+    "DeviceBatteryStatus-1.0.0-win-x64-framework-dependent.sha256": {
+      "size": 124,
+      "digest": "sha256:19228563ffb7e19811811554a5f97d2b7e48a1fb779a1c3a4f0fac1230615e0c"
+    },
+    "DeviceBatteryStatus-1.0.0-win-x64-self-contained.zip": {
+      "size": 76252892,
+      "digest": "sha256:dd62f8e6e8f264e82d65585da69a06e802c626dbccb46d564c7848270c9ba359"
+    },
+    "DeviceBatteryStatus-1.0.0-win-x64-self-contained.sha256": {
+      "size": 119,
+      "digest": "sha256:1f9efb3625785636a9ddfa06230721d27caa7cea7ebc8f40bc0bc331dcab0e80"
+    },
+    "DeviceBatteryStatus-1.0.0-verification.zip": {
+      "size": 391130,
+      "digest": "sha256:05807e2a27fb4d72ade251ee6e7cc1228ed77cde2398e166766b2ed74083c000"
+    },
+    "DeviceBatteryStatus-1.0.0-verification.sha256": {
+      "size": 109,
+      "digest": "sha256:cb566f0cd0c57323c9efef2b5eeb6cfa7ec961ec68329936ec161dac3b49604f"
+    }
+  },
+  "publicationWorkflowCommit": "2ea280522d4c8bf31943dac87a99e1e609d0a47b",
+  "publicationWorkflowRun": "39680261533"
+}

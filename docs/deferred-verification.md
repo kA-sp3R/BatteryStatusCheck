@@ -7,6 +7,7 @@ The user deferred unverified and unmeasured work on 21 October 2026 while reques
 | Windows application runtime | Launching the app; tray and popup rendering; mixed DPI and work-area placement; notifications; startup registration; single-instance behavior; sleep/resume; clean shutdown. |
 | Native Windows USB/HID integration | Physical receiver enumeration, collection routing, access permissions, cancellation/timeouts, unplug/reconnect and coexistence with Synapse, G HUB or AWCC. |
 | Hardware compatibility and battery accuracy | Real receiver, peripheral and firmware combinations; comparison with actual battery/charging/link behavior; firmware caching and sample age. |
+| Same-model replacement identity | Razer and Alienware model association lacks a documented unique peripheral serial in these paths. Replacement by another physical unit of the same model cannot be proven from PID/model alone; replacement behavior remains unverified. |
 | Physical polling behavior | Actual USB report timing, receiver throughput, firmware persistence and the effects of high-rate settings. Protocol readback establishes reported configuration only. |
 | Performance and endurance | CPU/memory measurements, responsiveness and extended runtime stability. |
 | Automated coverage beyond existing suites | WPF/native integration and end-to-end runtime tests require a separate verification setup; current software tests use managed logic, scripted transports and synthetic files. |

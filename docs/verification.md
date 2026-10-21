@@ -14,7 +14,10 @@ Application source: `c2c5d747a0952da7e34826d1cfdd117f7f93bd52`. No application l
 | Offline capture parser | 5 passed, 0 failed/skipped | Full run and build run; downloaded log confirms native exit 0. Synthetic files only. |
 | Release policy and interrupted-upload recovery | 11 passed, 0 failed/skipped | Full run; downloaded log confirms native exit 0. GitHub operations are fake in these tests. |
 | Portable packages | Both passed static inspection | Same build run, checks 119499659089 and 119499659134. Framework-dependent: 11 files; self-contained: 482 files, bundled .NET/Windows Desktop 10.0.13. Downloaded archives independently passed source/run provenance, checksum, every payload hash and x64 GUI PE inspection. No launch. |
+| Stable release publication | Published; latest; all six asset digests verified | [v1.0.0](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0), [publication run 39680261533](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39680261533). Downloaded receipt and verification ZIP independently matched tag/source, actual test counters and all six API asset sizes/digests. [Permanent receipt](../.github/releases/1.0.0-publication.json). |
 | Application runtime, native/hardware integration and performance | Deferred | [Saved record](deferred-verification.md); no passing result claimed. |
+
+Verification ZIP SHA-256: `05807e2a27fb4d72ade251ee6e7cc1228ed77cde2398e166766b2ed74083c000`. The release is stable, latest and unsigned. Documentation/evidence-only commits after the tested source do not change the released binaries.
 
 The publication workflow requires an exact source commit, successful build and full-test runs, actual test counters, package and payload hashes, unchanged release notes and matching tag provenance. Both package flavors and their immutable verification bundle must match the reviewed manifest before the stable release becomes public. Packages are unsigned.
 
