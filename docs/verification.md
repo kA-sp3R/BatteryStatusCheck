@@ -1,6 +1,6 @@
 # Verification
 
-Milestone 4 review, the Razer HyperPolling/high-rate fix and the Logitech category follow-up passed Windows compilation, focused regressions and both preview.3 package inspections for the source recorded below. Application runtime, physical hardware and full testing remain separate and unperformed.
+Milestone 4 review, the Razer HyperPolling/high-rate fix and the Logitech category follow-up passed Windows compilation, focused regressions, the full existing automated software suite and both preview.3 package inspections for the source recorded below. Application runtime and physical hardware remain separate and unperformed.
 
 | Category | Status | Evidence / next action |
 | --- | --- | --- |
@@ -10,7 +10,8 @@ Milestone 4 review, the Razer HyperPolling/high-rate fix and the Logitech catego
 | Offline capture parser tests | 5 passed; 0 skipped | Same Windows run/source commit, check `118986361586`: Ran=5, Skipped=0, NativeExit=0. Synthetic USBPcap submissions/completions, IRP reuse, zero bytes/percentage fields, filtering and truncation. This does not validate actual capture files or hardware. |
 | Framework-dependent package | Passed static inspection | Check `118986813651`: 11 files, x64 GUI PE, runtime metadata, source/run provenance and all payload hashes verified. No application launch. |
 | Self-contained package | Passed static inspection | Check `118986813634`: 482 files, x64 GUI PE, bundled .NET/Windows Desktop 10.0.13, license provenance and all payload hashes verified. No application launch. |
-| Full testing | Not run | Separate permission requested for the full automated software suite; no response yet. Application runtime and hardware checks are excluded from that request. |
+| GitHub prerelease | Published | [v0.1.0-preview.3](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v0.1.0-preview.3), tag target `b53b6b777d409f83d081b51a7a3be4f06c1aa45d`. [Publication run `39529174142`](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39529174142) verified all 6 uploaded asset sizes/digests before publishing; release/tag and downloaded verification evidence were independently checked afterward. Packages are unsigned. |
+| Full existing automated software suite | Passed | User authorized full testing and publication. [Windows run `39528608946`](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39528608946) tested application source `b53b6b777d409f83d081b51a7a3be4f06c1aa45d` with automation `6fa0076`. Complete solution: 451 C# tests passed in Debug and 451 in Release; all 5 offline parser tests passed. No filters, failures or skips. Reports downloaded and independently checked. |
 | Application runtime | Not run | Requires explicit permission on Windows. |
 | Physical hardware | Not run | Requires explicit permission; no compatibility or accuracy certification claimed. |
 
@@ -52,9 +53,15 @@ Configured-rate readback is not a measurement of USB report timing. No polling-r
 - Preserved fresh link evidence when a failed battery read retains a stale percentage; cancellation after discovery/reads or permission callbacks cannot publish late results or start manual operations.
 - Gated Logitech `1000` percentages on its advertised mileage capability. The category follow-up below replaces the earlier unavailable category-only presentation. Razer admission excludes unknown/wired products while explicitly recognizing the HyperPolling receiver with unavailable battery data.
 - Removed unused tray anchoring code and prevented nonpositive HID++ read deadlines. No CPU/memory or real-time performance measurements were taken.
-- Added unsigned `win-x64` framework-dependent and self-contained preview packages, provenance manifests, notices, archive/payload checksums and static ZIP/PE/runtime inspection. See [release instructions](release.md). Packages are CI artifacts; no signed/public GitHub Release is claimed.
+- Added unsigned `win-x64` framework-dependent and self-contained preview packages, provenance manifests, notices, archive/payload checksums and static ZIP/PE/runtime inspection. See [release instructions](release.md). The reviewed CI packages are now published as prerelease assets.
 
-Source review and authorized compilation, focused regressions and both package inspections passed. Full automated testing remains permission-gated; application runtime and physical hardware verification remain unperformed. Hardware compatibility, reconnect behavior, notifications, visual correctness, startup behavior and actual polling frequency remain open validation work. Preview packages are ready for review; a fully verified release is not claimed.
+Source review, Windows compilation, focused regressions, the full existing automated suite and both package inspections passed. Application runtime and physical hardware verification remain unperformed. Hardware compatibility, reconnect behavior, notifications, visual correctness, startup behavior and actual polling frequency remain open validation work. A fully verified release is not claimed.
+
+## Full automated software suite
+
+The manual **Full software suite (no application or hardware launch)** workflow accepts an exact application source SHA. It tests the complete solution without filters in Debug and Release on Windows, checks that every test project is included and produces a TRX report, rejects missing/skipped/failed tests, and runs every offline parser test. Compilation and packaging retain their separate Windows workflow evidence. Current automated tests cover Core and synthetic parser files; there are no application runtime or physical hardware tests in the suite.
+
+The passing run above executed 902 C# test cases across the two configurations (451 distinct cases per configuration) plus 5 parser cases. Checks `118989029849` (Debug) and `118989029451` (Release) report Executed=451, Passed=451, Failed=0, Skipped=0, NativeExit=0 for the exact application source. Parser check `118989029698` reports Ran=5, Skipped=0, NativeExit=0. Downloaded TRX/JSON/log files agree with those counters. An initial automation-only run failed before C# execution due to a PowerShell variable-name collision; the corrected runner produced the passing evidence.
 
 ## Logitech category follow-up
 
@@ -67,12 +74,15 @@ Source review and authorized compilation, focused regressions and both package i
 
 ## Preview downloads
 
-Both packages are version `0.1.0-preview.3`, built with SDK `10.0.402` from source `b53b6b7` in the Windows run above. Both artifacts were downloaded successfully; local archive checksums, every payload hash and embedded source/run provenance match the Windows evidence. GitHub artifacts expire after 14 days. Extract the GitHub artifact wrapper, then extract the application ZIP inside it.
+Both packages are version `0.1.0-preview.3`, built with SDK `10.0.402` from source `b53b6b7` in the Windows run above and published under that exact source tag. Both packages were downloaded successfully; local archive checksums, every payload hash and embedded source/run provenance match the Windows evidence and published asset digests. Release assets below have no extra wrapper. Actions artifacts remain available separately with their 14-day retention and wrapper ZIP.
 
-| Package | ZIP size | SHA-256 | Download artifact |
+| Package | ZIP size | SHA-256 | Release asset |
 | --- | --- | --- | --- |
-| Framework-dependent; needs .NET 10 Windows Desktop Runtime x64 | 206,233 bytes | `3b7a7f639cae65c65ab8ea9b4e53c7ecf18c2a1f6596d69d86266a9147c78fa5` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39527777290/artifacts/12314315038) |
-| Self-contained | 76,232,865 bytes | `1856b00f85961779429d120a7e92de18fd04c2605290db2d6157ac12ef0ddff1` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39527777290/artifacts/12314035452) |
+| Framework-dependent; needs .NET 10 Windows Desktop Runtime x64 | 206,233 bytes | `3b7a7f639cae65c65ab8ea9b4e53c7ecf18c2a1f6596d69d86266a9147c78fa5` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/releases/download/v0.1.0-preview.3/DeviceBatteryStatus-0.1.0-preview.3-win-x64-framework-dependent.zip) |
+| Self-contained | 76,232,865 bytes | `1856b00f85961779429d120a7e92de18fd04c2605290db2d6157ac12ef0ddff1` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/releases/download/v0.1.0-preview.3/DeviceBatteryStatus-0.1.0-preview.3-win-x64-self-contained.zip) |
+| Full test evidence and provenance | 222,371 bytes | `f51a8640d2e7ee2e6d729d86dd419e07a2c677fa0501e73b04679f8f88db7aa8` | [Download](https://github.com/kA-sp3R/BatteryStatusCheck/releases/download/v0.1.0-preview.3/DeviceBatteryStatus-0.1.0-preview.3-verification.zip) |
+
+The local cloud environment's release upload host returned HTTP 401, while the release API remained authorized. Publication therefore used the repository-scoped GitHub Actions token with `actions:read` and `contents:write` in the manual publication job. The successful job checked source/test provenance and uploaded file hashes before publishing; the release receipt and test evidence are retained as release assets and workflow evidence.
 
 The Razer fix adds documented two-command high-rate configuration for `009F`, `00C1`, `00BF` and generic HyperPolling `00B3`. Each command has a fresh cancellation/opt-in check; failed or partial sequences are unverified and never retried automatically. Detect followed by explicit same-rate Apply can complete a later deliberate attempt even if the first phase already affected the reported rate. Generic receiver configuration leaves paired-mouse identity, radio link and battery unavailable. Static source profiles do not establish negotiated firmware capabilities or physical polling frequency; see [protocol evidence](protocols/razer-polling.md).
 

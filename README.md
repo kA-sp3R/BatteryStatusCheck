@@ -1,6 +1,6 @@
 # Device Battery Status
 
-Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. Milestone 4 adds final source review and unsigned Windows x64 preview packaging. Runtime and physical hardware behavior remain unverified.
+Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. Download the unsigned Windows x64 [0.1.0-preview.3 prerelease](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v0.1.0-preview.3). Runtime and physical hardware behavior remain unverified.
 
 ## Projects
 
@@ -43,7 +43,9 @@ Use the **Windows compilation and focused unit tests** GitHub Actions workflow w
 - **Framework-dependent:** smaller package; requires Microsoft .NET 10 Windows Desktop Runtime x64.
 - **Self-contained:** bundles its .NET/Windows Desktop Runtime and notices; requires no separate .NET installation.
 
-Download the relevant `windows-preview-win-x64-…` workflow artifact, extract its package ZIP and keep all files together. Each ZIP has a sibling SHA-256 checksum and an embedded source/run manifest with payload hashes. These are unsigned preview artifacts. See [package instructions and limitations](docs/release.md). The separate `windows-build` artifact is the development compilation output.
+Download an application ZIP from the [published prerelease](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v0.1.0-preview.3), extract it and keep all files together. Release assets include sibling SHA-256 checksums and the full test evidence bundle. Each application ZIP has an embedded source/run manifest with payload hashes. Alternatively, download a `windows-preview-win-x64-…` Actions artifact and extract its wrapper ZIP first. See [package instructions and limitations](docs/release.md). The separate `windows-build` artifact is the development compilation output.
+
+The manual **Full software suite (no application or hardware launch)** workflow tests an exact source commit without filters in Debug and Release on Windows and runs all offline parser tests. The published preview passed all 451 C# tests in each configuration and all 5 parser tests, with no failures or skips. Publication uses a separate manual workflow that checks the reviewed release manifest, successful build/full-test runs, package provenance, payload hashes and uploaded asset digests before publishing the prerelease.
 
 Compilation is not application runtime or hardware verification. Obtain explicit permission before launching the app, investigating/testing physical hardware, or running full testing. No hardware compatibility is verified yet. See [verification status](docs/verification.md).
 
