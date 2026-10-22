@@ -270,6 +270,9 @@ public sealed class DiagnosticLog : IDiagnosticSink, IDisposable
             value = Regex.Replace(value, @"\\\\[^\\\s]+\\[^\r\n\""']*", "[redacted-file-path]", RegexOptions.CultureInvariant, RegexTimeout);
             value = Regex.Replace(value, @"(?<![A-Za-z0-9])/(?:home|Users|tmp|workspace|var)/[^\r\n\""']*", "[redacted-file-path]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
             value = Regex.Replace(value, @"\b(?:serial(?:[\s_-]*(?:number|no\.?|id))?|s/?n|receiverId|deviceId|unitId)\s*[:=]\s*[^\s,;\""']+", "identifier=[redacted]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
+            // Settings JSON paths and early errors can contain canonical identities
+            // before discovery has registered their serial/unit components.
+            value = Regex.Replace(value, @"/logitech/[1-6]/(?:(?:unit|serial)/|(?:[0-9A-F]{4}|unknown)/)[A-Za-z0-9_-]+", "[redacted-device-id]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
             value = Regex.Replace(value, @"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b|\b[0-9a-f]{24,}\b", "[redacted-id]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, RegexTimeout);
         }
         catch (RegexMatchTimeoutException) { return "[detail omitted]"; }

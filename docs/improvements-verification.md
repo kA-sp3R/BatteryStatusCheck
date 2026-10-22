@@ -8,6 +8,13 @@ Windows compilation, full automated tests, both package inspections, both isolat
 
 The Windows application smoke launches only an isolated internal test branch using synthetic current0/category/stale/unsupported data. It exercises rendered WPF/settings actions, selected icons, DPI sizes, process-local shell-message recovery, native resource disposal and redacted exports. It bypasses the normal controller, HID, network and startup registration. Installer smoke separately exercises current-user registration, mutex refusal, upgrades, settings/backup/log preservation, obsolete-owned-file cleanup, unowned-file preservation and clean uninstall with owned/foreign startup commands.
 
+## Failures found during verification
+
+- Initial source `6294ce9488d6bf1a62de190caa7e55aca51ef5d0` passed Windows compilation, 919 Core tests in each configuration, 5 parser tests, 18 release-policy tests and both package inspections. Its [Windows smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39711867611) failed and is not treated as a completed verification.
+- Both application smoke jobs found a real WPF binding error: the progress bar's default two-way binding tried to write to immutable `ProgressValue`. The popup now explicitly uses a one-way binding; the same actual-render smoke will be repeated.
+- Installer compilation stopped at compiler-version detection, before installer execution. The build tool's component file version differs from its engine version; detection now uses a no-output compiler probe while retaining the supported-version guard; Windows CI will verify it.
+- Privacy review found a settings JSON error could expose an unregistered canonical Logitech serial/unit ID. Startup logging now omits detailed settings-load errors, and generic canonical-ID redaction has two new regression cases. Local UI errors remain available without exporting saved settings.
+
 ## Functions affected
 
 | Area | Change and interactions |

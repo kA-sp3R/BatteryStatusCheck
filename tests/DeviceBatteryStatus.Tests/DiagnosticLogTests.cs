@@ -104,6 +104,27 @@ public sealed class DiagnosticLogTests : IDisposable
         Assert.Contains("Validation failed", AllText());
     }
 
+    [Theory]
+    [InlineData("usb:046D:C52B:0123456789ABCDEF01234567/logitech/1/4105/ABCDEF12", "ABCDEF12")]
+    [InlineData("usb:046D:C548:0123456789ABCDEF01234567/logitech/2/unit/13579BDF", "13579BDF")]
+    public void EarlySettingsJsonErrorsCannotExposeUnregisteredCanonicalSerials(string deviceId, string serial)
+    {
+        using var log = new DiagnosticLog(Logs, "1.1.0");
+        log.RecordException("Preferences could not be loaded", new JsonException($"Invalid value. Path: $.CustomNames.{deviceId}"));
+
+        Assert.DoesNotContain(serial, AllText(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(deviceId, AllText(), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Preferences could not be loaded", AllText());
+        var exported = Path.Combine(directory, "early-settings.zip");
+        log.Export(exported);
+        using var archive = ZipFile.OpenRead(exported);
+        foreach (var entry in archive.Entries)
+        {
+            using var reader = new StreamReader(entry.Open());
+            Assert.DoesNotContain(serial, reader.ReadToEnd(), StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     [Fact]
     public void SensitiveFieldValuesAndIdentifyingFieldKeysAreRedacted()
     {

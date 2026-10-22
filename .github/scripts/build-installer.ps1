@@ -100,13 +100,44 @@ if (!$CompilerPath -or !(Test-Path -LiteralPath $CompilerPath -PathType Leaf)) {
     throw 'Inno Setup 6 ISCC.exe must be installed on the Windows runner; this script never downloads or executes an unverified compiler.'
 }
 $compiler = Get-Item -LiteralPath $CompilerPath
-$observedCompilerVersion = "$($compiler.VersionInfo.FileMajorPart).$($compiler.VersionInfo.FileMinorPart).$($compiler.VersionInfo.FileBuildPart)"
-if ($compiler.VersionInfo.FileMajorPart -ne 6 -or $compiler.VersionInfo.FileMinorPart -lt 3) {
-    throw 'Inno Setup 6.3 or later in major version 6 is required for the installer architecture directives.'
+# ISCC.exe is a command-line loader: its PE component version is not the
+# loaded compiler engine version. Inno 6 /? does not print the engine version
+# and --version is not supported there. Compile our file-free, output-disabled
+# probe and parse the engine's own banner before compiling an installer.
+# Primary behavior: jrsoftware/issrc Projects/ISCC.dpr at tag is-6_7_1.
+$probeScript = Join-Path $repositoryRoot 'installer/compiler-probe.iss'
+$probeText = [Text.StringBuilder]::new()
+& $compiler.FullName '/O-' $probeScript 2>&1 | ForEach-Object {
+    if ($probeText.Length -lt 16000) {
+        $line = [string]$_
+        if ($line.Length -gt 1024) { $line = $line.Substring(0, 1024) }
+        [void]$probeText.AppendLine($line)
+    }
+}
+$probeExitCode = $LASTEXITCODE
+$probeOutput = $probeText.ToString()
+$componentVersion = [string]$compiler.VersionInfo.FileVersion
+$productVersion = [string]$compiler.VersionInfo.ProductVersion
+if ($componentVersion.Length -gt 256) { $componentVersion = $componentVersion.Substring(0, 256) }
+if ($productVersion.Length -gt 256) { $productVersion = $productVersion.Substring(0, 256) }
+$probeLog = "ISCC component file version: $componentVersion`nISCC component product version: $productVersion`n" +
+    $probeOutput + "`nnative_exit_code=$probeExitCode`n"
+[IO.File]::WriteAllText((Join-Path $repositoryRoot 'ci-logs/installer-compiler-probe.log'), $probeLog, [Text.UTF8Encoding]::new($false))
+if ($probeExitCode -ne 0) { throw "Inno Setup version probe failed with native exit $probeExitCode; inspect installer-compiler-probe.log." }
+$engineBanners = [regex]::Matches($probeOutput, '(?m)^Compiler engine version: Inno Setup (?<version>\d+\.\d+\.\d+)\r?$')
+if ($engineBanners.Count -ne 1) { throw 'The compiler probe did not report exactly one supported engine-version banner; inspect installer-compiler-probe.log.' }
+$observedCompilerVersion = $engineBanners[0].Groups['version'].Value
+$engineVersion = [version]$observedCompilerVersion
+if ($engineVersion.Major -ne 6 -or $engineVersion.Minor -lt 3) {
+    throw "Inno Setup engine 6.3 or later in major version 6 is required; runner provides $observedCompilerVersion."
 }
 if ($CompilerVersion -and $observedCompilerVersion -cne $CompilerVersion) {
     throw "The reviewed Inno Setup compiler version $CompilerVersion is required; runner provides $observedCompilerVersion. Review the runner/compiler change before updating -CompilerVersion."
 }
+$engineModulePath = Join-Path $compiler.DirectoryName 'ISCmplr.dll'
+$engineModuleHash = if (Test-Path -LiteralPath $engineModulePath -PathType Leaf) {
+    (Get-FileHash -LiteralPath $engineModulePath -Algorithm SHA256).Hash.ToLowerInvariant()
+} else { $null }
 $script = Join-Path $repositoryRoot 'installer/DeviceBatteryStatus.iss'
 function Invoke-InstallerCompiler([string]$BuildVersion, [string]$BuildNumericVersion, [string]$BuildPayload, [string]$BuildOutput, [string]$LogName) {
     & $compiler.FullName "/DAppVersion=$BuildVersion" "/DAppVersionInfo=$BuildNumericVersion" "/DPayloadDirectory=$BuildPayload" "/DInstallerOutputDirectory=$BuildOutput" $script 2>&1 |
@@ -126,7 +157,14 @@ $receipt = [ordered]@{
     repository = $env:GITHUB_REPOSITORY; workflowRun = $env:GITHUB_RUN_ID; workflowAttempt = $env:GITHUB_RUN_ATTEMPT
     package = [ordered]@{ name = $package.Name; sha256 = $packageHash; bytes = $package.Length; workflowRun = $manifest.workflowRun; workflowAttempt = $manifest.workflowAttempt }
     installer = [ordered]@{ name = [IO.Path]::GetFileName($installer); sha256 = $installerHash; bytes = (Get-Item -LiteralPath $installer).Length }
-    compiler = [ordered]@{ product = 'Inno Setup'; version = $observedCompilerVersion; sha256 = (Get-FileHash -LiteralPath $compiler.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }
+    compiler = [ordered]@{
+        product = 'Inno Setup'; version = $observedCompilerVersion
+        versionSource = 'compiler-engine-banner'; probeExitCode = $probeExitCode
+        engineBanner = $engineBanners[0].Value.TrimEnd([char]13)
+        componentFileVersion = $componentVersion; componentProductVersion = $productVersion
+        sha256 = (Get-FileHash -LiteralPath $compiler.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        engineModule = 'ISCmplr.dll'; engineModuleSha256 = $engineModuleHash
+    }
     appId = $appId; applicationLaunched = $false; hardwareVerified = $false
 }
 [IO.File]::WriteAllText((Join-Path $output 'installer-release.json'), ($receipt | ConvertTo-Json -Depth 6) + "`n", [Text.UTF8Encoding]::new($false))

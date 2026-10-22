@@ -77,7 +77,7 @@ internal sealed class ApplicationController
         var loaded = store.Load();
         settings = loaded.Settings;
         settingsWarning = loaded.Error;
-        if (loaded.Error is not null) diagnostics.Record("settings", loaded.Error);
+        if (loaded.Error is not null) diagnostics.Record("settings", "Preferences could not be loaded; defaults are in use. Detailed errors are displayed locally, not logged.");
         pollTimer = new(TimeSpan.FromSeconds(settings.RefreshIntervalSeconds));
         tray = new(TogglePopup, ShowSettings, RefreshFromMenu, ExitFromMenu);
         popup.RefreshRequested += (_, _) => RefreshFromMenu();
@@ -157,18 +157,18 @@ internal sealed class ApplicationController
                 : snapshot).ToArray();
         displayError = null;
         try { tray.Update(snapshots, settings, now); }
-        catch (Exception exception) { displayError = $"Tray display unavailable: {exception.Message}"; }
+        catch (Exception exception) { diagnostics.RecordException("Tray display", exception); displayError = $"Tray display unavailable: {exception.Message}"; }
         foreach (var alert in notifications.Evaluate(snapshots, settings, now))
         {
             try { tray.ShowLowBattery(alert); }
-            catch (Exception exception) { displayError = $"Notification could not be requested: {exception.Message}"; }
+            catch (Exception exception) { diagnostics.RecordException("Tray notification", exception); displayError = $"Notification could not be requested: {exception.Message}"; }
         }
         var status = warning ?? displayError ?? settingsWarning ?? (refreshing ? "Refreshing…" : lastRefresh is not null
             ? $"Updated {lastRefresh:t}" : "Waiting for devices…");
         if (popup.IsVisible || includeHiddenPopup)
         {
             try { popup.SetDevices(snapshots, settings, now, status); }
-            catch (Exception exception) { displayError = $"Popup display unavailable: {exception.Message}"; }
+            catch (Exception exception) { diagnostics.RecordException("Popup presentation", exception); displayError = $"Popup display unavailable: {exception.Message}"; }
         }
     }
 
@@ -186,7 +186,7 @@ internal sealed class ApplicationController
             popup.ToggleNearTray();
             tray.UpdateDpi(popup.CurrentDpi);
         }
-        catch (Exception exception) { warning = $"The popup could not be opened: {exception.Message}"; }
+        catch (Exception exception) { diagnostics.RecordException("Open popup", exception); warning = $"The popup could not be opened: {exception.Message}"; }
     }
 
     private void ShowSettings()
