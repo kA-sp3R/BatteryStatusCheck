@@ -1,0 +1,234 @@
+{
+  "version": "1.1.0",
+  "tag": "v1.1.0",
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "sourceCommit": "367ea4165c528b6767522764ce7eef97a4744d15",
+  "buildRun": 39858821493,
+  "buildAttempt": 1,
+  "fullTestRun": 39858849245,
+  "fullTestAttempt": 1,
+  "testAutomationCommit": "367ea4165c528b6767522764ce7eef97a4744d15",
+  "testCount": 921,
+  "parserTestCount": 5,
+  "automationTestCount": 18,
+  "appSmoke": true,
+  "appSmokeCheckCount": 8,
+  "packages": {
+    "framework-dependent": {
+      "bytes": 288506,
+      "sha256": "2f52191d5b2a5e501f909f3264bb2d2033684a81ea05b4d11c07bdb401994824"
+    },
+    "self-contained": {
+      "bytes": 76315132,
+      "sha256": "e84c4360ce58bcb1025b53ff4df1ba2028d6ae95ae0d0216dc29ba81de894156"
+    }
+  },
+  "installer": {
+    "bytes": 54827893,
+    "sha256": "6f20facdd3650d2574f786a76f6249ef5a1b1684466fdb29aaf621e45c2a20b8"
+  },
+  "status": "awaiting-publication-decision",
+  "published": false,
+  "repository": "kA-sp3R/BatteryStatusCheck",
+  "reviewedNotesSha256": "db6a1b6f8d162b0d456d0d1bda15b73f3d15b85b853c17be8d151bc26d796edf",
+  "verification": {
+    "build": {
+      "conclusion": "success",
+      "head_sha": "367ea4165c528b6767522764ce7eef97a4744d15",
+      "html_url": "https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39858821493",
+      "id": 39858821493,
+      "path": ".github/workflows/windows-build.yml",
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    "fullSoftware": {
+      "conclusion": "success",
+      "head_sha": "367ea4165c528b6767522764ce7eef97a4744d15",
+      "html_url": "https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39858849245",
+      "id": 39858849245,
+      "path": ".github/workflows/full-software-tests.yml",
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    "tests": {
+      "Debug": {
+        "total": 921,
+        "executed": 921,
+        "passed": 921,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "Release": {
+        "total": 921,
+        "executed": 921,
+        "passed": 921,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "offlineParser": {
+        "passed": 5,
+        "failed": 0,
+        "nativeExit": 0
+      },
+      "releasePolicy": {
+        "passed": 18,
+        "failed": 0,
+        "nativeExit": 0
+      }
+    },
+    "packageInspections": {
+      "framework-dependent": {
+        "name": "DeviceBatteryStatus-1.1.0-win-x64-framework-dependent.zip",
+        "bytes": 288506,
+        "sha256": "2f52191d5b2a5e501f909f3264bb2d2033684a81ea05b4d11c07bdb401994824",
+        "fileCount": 11,
+        "payloadHashesVerified": true,
+        "pe": "win-x64/GUI",
+        "frameworks": [
+          {
+            "name": "Microsoft.NETCore.App",
+            "version": "10.0.0"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App",
+            "version": "10.0.0"
+          }
+        ]
+      },
+      "self-contained": {
+        "name": "DeviceBatteryStatus-1.1.0-win-x64-self-contained.zip",
+        "bytes": 76315132,
+        "sha256": "e84c4360ce58bcb1025b53ff4df1ba2028d6ae95ae0d0216dc29ba81de894156",
+        "fileCount": 482,
+        "payloadHashesVerified": true,
+        "pe": "win-x64/GUI",
+        "frameworks": [
+          {
+            "name": "Microsoft.NETCore.App",
+            "version": "10.0.13"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App",
+            "version": "10.0.13"
+          }
+        ]
+      }
+    },
+    "applicationSmoke": {
+      "framework-dependent": {
+        "total": 8,
+        "executed": 8,
+        "passed": 8,
+        "failed": 0,
+        "applicationLaunched": true,
+        "normalApplicationControllerStarted": false,
+        "hardwareAccessed": false,
+        "networkAccessed": false
+      },
+      "self-contained": {
+        "total": 8,
+        "executed": 8,
+        "passed": 8,
+        "failed": 0,
+        "applicationLaunched": true,
+        "normalApplicationControllerStarted": false,
+        "hardwareAccessed": false,
+        "networkAccessed": false
+      }
+    },
+    "applicationSmokeMetrics": {
+      "framework-dependent": {
+        "taskbarCreatedWindowsMessaged": 5,
+        "gdiBefore": 40,
+        "gdiAfter": 40,
+        "userBefore": 31,
+        "userAfter": 31,
+        "trayLifecycleIterations": 20
+      },
+      "self-contained": {
+        "taskbarCreatedWindowsMessaged": 5,
+        "gdiBefore": 40,
+        "gdiAfter": 40,
+        "userBefore": 31,
+        "userAfter": 31,
+        "trayLifecycleIterations": 20
+      }
+    },
+    "installerSmoke": {
+      "executed": 56,
+      "passed": 56,
+      "failed": 0,
+      "installerExecuted": true,
+      "applicationLaunched": false,
+      "hardwareVerified": false
+    },
+    "installerCompiler": {
+      "product": "Inno Setup",
+      "version": "6.7.1",
+      "versionSource": "compiler-engine-banner",
+      "probeExitCode": 0,
+      "engineBanner": "Compiler engine version: Inno Setup 6.7.1",
+      "componentFileVersion": "0.0.0.0",
+      "componentProductVersion": "0.0.0.0",
+      "sha256": "eb6f4410c8db367a5f74127e8025ad2ccacc0afabbe783959d237df3050f97fb",
+      "engineModule": "ISCmplr.dll",
+      "engineModuleSha256": "1a6ff68241e7f3b18543bb875283788913abbdd7b9d7403ac094598d044def7a"
+    },
+    "normalMonitoringRuntimeVerified": false,
+    "physicalHardwareVerified": false,
+    "liveReleaseUpdateVerified": false,
+    "publicationValidatorsPassed": true,
+    "screenshotsVisuallyReviewed": true
+  },
+  "evidenceFileHashes": {
+    "full-release-automation-tests-1/release-automation.log": "a856f409238770f681c33eefd89ccd98b46552f8b40a7cb400e6a9b2f8bf4567",
+    "package-evidence-self-contained-1/publish-self-contained.log": "0835ea1ecbd95e8dba49b3ed39dd0204b03320a646bc09e2fdb2c728d68185d8",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/blocked-running-application.log": "8482ce23ee913c98f64986bc50f9f94cd213f7110d1325447bf9aecc0002a586",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/install-prior-fixture.log": "c401a757d8053df5388bee591a62bd92f253e10feab7b10aee4941d30c449e9b",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/installer-smoke.json": "95a30ba8b2d92be2724368ad0fefaf9b9de298f1f60447f002371025632b487c",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/reinstall-current.log": "089bb92542f8010be8ea6af77638a6028d9dabc29db0401dd42f77b04804d8dd",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/uninstall-foreign-startup.log": "edcf01f1a1b5eb8d8b3da7da9d745b04d2dbf1661b0acc30e72a1589d13434d1",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/uninstall-owned-startup.log": "6a83d2005c1defffcef45aef88b912eea0a2178c5b3bc2bb0f2af8782cefb822",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/upgrade-to-current.log": "19471724a6cb4ffb656e6bfa1691a299fdfad8493c28867f499b71567e6a6637",
+    "installer-smoke-evidence-1/ci-logs/installer-compile.log": "04c48873bf48ba573631f25767c20038bee23749d79e45b333eef143f9725dc2",
+    "installer-smoke-evidence-1/ci-logs/installer-compiler-probe.log": "23965c9f3325cbfe53b995ac59e7ec1b070f9e793fd205f7be8107ec6469c043",
+    "installer-smoke-evidence-1/ci-logs/installer-upgrade-fixture-compile.log": "f39b5ce34c24779afd7c1f71501104c97a81a11ecf1db74c5cd9d9c75257e37b",
+    "package-evidence-framework-dependent-1/publish-framework-dependent.log": "8b92ac47f1ef9044efd2aaa7449668b8d3eeb4b76c7f6f92e2f104f268fb32c3",
+    "full-software-tests-Debug-1/TestResults/full-Debug.json": "d0bf73c8eaef46dcfc3460b72bcb8714b2a72926aa1d598c412b45a457102e33",
+    "full-software-tests-Debug-1/TestResults/runneradmin_runnervm0xl3a_2026-10-22_21_39_53_net10.0.trx": "bf4f759ca6413424bd3521a4c66bfa7c62ff3a96e19c4fdd84d82d0181e16e1f",
+    "full-software-tests-Debug-1/ci-logs/full-Debug.log": "f30f8a60a295bd5edb514998632b7b5c23579c657f9a3e35c1ebadda6a8a0c84",
+    "application-smoke-evidence-self-contained-1/application-smoke.json": "2c53ccda4de6b677e2885cef2966408ec274c4e731c5d5295c50d83d7f9fb7a9",
+    "application-smoke-evidence-self-contained-1/diagnostics-smoke.zip": "5011cc81937ca354f90c77eb31147d2542524af51de33c05a7650427d88177d6",
+    "application-smoke-evidence-self-contained-1/popup.png": "28d564f827f272a3a5f84e3e0a5229315cd29e5d70a27347ef4aba55f2e63868",
+    "application-smoke-evidence-self-contained-1/settings-selected.png": "73f7c02f08c26a69a9ae15b97c7561ae74804ff7b96dfae2713d193ee9f620b5",
+    "application-smoke-evidence-self-contained-1/settings.png": "b1a41ef720fc82ca05dff16e6a56220de3b019fe62f67dbb8c5328482ca61c49",
+    "application-smoke-evidence-self-contained-1/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "application-smoke-evidence-self-contained-1/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "application-smoke-evidence-self-contained-1/tray-0-48.png": "8f5b8330a9af1cce82eaed7e7f1fbf20981ca3471f2248098d110e779dcd2ff3",
+    "application-smoke-evidence-self-contained-1/tray-100-48.png": "3fc124134bf80b7023150664089f7732842a095f886572eaaa06cea643443357",
+    "application-smoke-evidence-self-contained-1/tray-neutral-48.png": "57352badb44082ecf722b2d47d51a9ec15ccef8d391b81e9e2a8f8bfd4d1e471",
+    "application-smoke-evidence-self-contained-1/updates-off.png": "8b5b4f83d1660cc35303b8031d0f7924ccfeb336f601806fa308e239cfb7e19b",
+    "focused-unit-tests-evidence-1/TestResults/focused.trx": "7851e647e62efc7becbb4ba87956cb9cfff81b83557551f2689f671bae8d778d",
+    "focused-unit-tests-evidence-1/ci-logs/focused.log": "37d9c2100aa796e2ca8b56d0c0ee28e028b7a85884da1efbdd57b6ce7f61f64d",
+    "application-smoke-evidence-framework-dependent-1/application-smoke.json": "4619f089ba77f63c678951e6af22b8869513e330b84d6e433e13230dcb290670",
+    "application-smoke-evidence-framework-dependent-1/diagnostics-smoke.zip": "e80ab112d96a72d36f1e995dd38924d83e71b2b865f847f53a4db34d9ac74cb7",
+    "application-smoke-evidence-framework-dependent-1/popup.png": "28d564f827f272a3a5f84e3e0a5229315cd29e5d70a27347ef4aba55f2e63868",
+    "application-smoke-evidence-framework-dependent-1/settings-selected.png": "73f7c02f08c26a69a9ae15b97c7561ae74804ff7b96dfae2713d193ee9f620b5",
+    "application-smoke-evidence-framework-dependent-1/settings.png": "b1a41ef720fc82ca05dff16e6a56220de3b019fe62f67dbb8c5328482ca61c49",
+    "application-smoke-evidence-framework-dependent-1/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "application-smoke-evidence-framework-dependent-1/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "application-smoke-evidence-framework-dependent-1/tray-0-48.png": "8f5b8330a9af1cce82eaed7e7f1fbf20981ca3471f2248098d110e779dcd2ff3",
+    "application-smoke-evidence-framework-dependent-1/tray-100-48.png": "3fc124134bf80b7023150664089f7732842a095f886572eaaa06cea643443357",
+    "application-smoke-evidence-framework-dependent-1/tray-neutral-48.png": "57352badb44082ecf722b2d47d51a9ec15ccef8d391b81e9e2a8f8bfd4d1e471",
+    "application-smoke-evidence-framework-dependent-1/updates-off.png": "8b5b4f83d1660cc35303b8031d0f7924ccfeb336f601806fa308e239cfb7e19b",
+    "compile-evidence-1/compile.log": "b01805a4c86941fddc722d41a03b866365ab6566dac15606690bad3800bb7be6",
+    "compile-evidence-1/restore.log": "778974aa84aeb8454b988d9fae1c8bdb55a7d876575cc47a937f8a4bdb864bf2",
+    "full-offline-parser-tests-1/offline.log": "55fe93d2c98bd9f7962731fb753d1fd88726da530cf143502395589303b405fc",
+    "full-software-tests-Release-1/TestResults/full-Release.json": "2281f56ae4bd6dcd3495df3b0ddd60e22c15be50d5a2fc5fe650c767cde4b0bc",
+    "full-software-tests-Release-1/TestResults/runneradmin_runnervmdaln5_2026-10-22_21_38_52_net10.0.trx": "cdae3c1d3b89cda25f64d8ad25e7d18522b9bdb1de62b2dd9852859bc1cf0f8c",
+    "full-software-tests-Release-1/ci-logs/full-Release.log": "9efa5e05e297b0a9ff9fe578d39e0f3eacf52b7bae039f33ea0e3faa6f932d42",
+    "windows-installer-win-x64-1/installer-release.json": "4d064d75d44d73401d3a80e47d23a7bb6bce2b8a9b665916b3d7127b07ca1d75"
+  }
+}

@@ -1,32 +1,49 @@
 # Improvements verification and change record
 
-Candidate version: **1.1.0**. Publication awaits the user's decision after verification. The published v1.0.0 release remains unchanged.
+Candidate version: **1.1.0**, tested source `367ea4165c528b6767522764ce7eef97a4744d15`. All final software verification passed. Publication awaits the user's decision; the published v1.0.0 release remains unchanged. The [candidate record](../.github/reviews/1.1.0.json) saves run IDs, counts, package/installer hashes, compiler provenance and evidence-file hashes. [Proposed release notes](../.github/reviews/1.1.0.md) are ready for review.
 
 ## Verification outcomes
 
-Windows compilation, full automated tests, both package inspections, both isolated WPF smoke runs and installer lifecycle smoke are pending for this candidate. Static XML/YAML/Python syntax, whitespace and peer reviews passed. No physical hardware testing has been performed.
+Compilation, automated tests, isolated application runtime, installer execution and physical hardware are separate outcomes. All .NET compilation and application/installer execution occurred in Windows GitHub Actions. No local .NET compilation or physical hardware query was performed.
 
-The Windows application smoke launches only an isolated internal test branch using synthetic current0/category/stale/unsupported data. It exercises rendered WPF/settings actions, selected icons, DPI sizes, process-local shell-message recovery, native resource disposal and redacted exports. It bypasses the normal controller, HID, network and startup registration. Installer smoke separately exercises current-user registration, mutex refusal, upgrades, settings/backup/log preservation, obsolete-owned-file cleanup, unowned-file preservation and clean uninstall with owned/foreign startup commands.
+| Check | Final result | Evidence |
+| --- | --- | --- |
+| Windows WPF solution compilation | Passed; no application launch | [Build run 39858821493](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39858821493). |
+| Focused C# software suite | 921 passed, zero failed/skipped | Same build run; downloaded TRX counters match the source-bound full reports. |
+| Full solution software suite | 921 passed in Debug and 921 in Release; zero failed/skipped | [Full run 39858849245](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39858849245); downloaded TRX and JSON independently agree, exact source and native exit 0 checked. |
+| Offline USB capture parser | 5 passed | Full and build runs; synthetic files only. Downloaded full log confirms native exit 0. |
+| Release policy and interrupted-upload recovery | 18 passed | Full run; fake GitHub only. Downloaded log confirms native exit 0. |
+| Portable package inspection | Both passed | Framework-dependent: 11 files; self-contained: 482 files with bundled .NET/Windows Desktop 10.0.13. Downloaded ZIP checksums, exact source/run provenance, every payload hash and x64 GUI PE headers independently verified. |
+| Isolated Windows application runtime smoke | Eight checks passed for each portable flavor | Actual packaged WPF executable, synthetic data only; normal controller, HID, network, startup registration and saved settings bypassed. JSON provenance and counters passed the publication validator. Popup, settings and update screenshots visually reviewed, including complete footer controls/disclosure. |
+| Native tray resource cycles | Passed within the eight-check smoke | Both flavors: 20 create/update/DPI/dispose cycles, GDI 40→40 and USER 31→31. Sizes 16/48/64 px and process-local TaskbarCreated delivery exercised. This is not an endurance or real Explorer-restart result. |
+| Installer lifecycle smoke | 56 passed, zero failed | Current-user install, mutex refusal, upgrade, reinstall and two uninstall cycles executed. Settings/backup/log bytes, unowned files and foreign startup command preserved; obsolete owned files, owned shortcuts/HKCU registration and exact owned startup removed. Expected mutex-block exit 1; all successful install/uninstall exits 0. Installed payload hashes match the inspected ZIP. |
+| Actual publication-evidence validation | Passed; no publication | Both application reports, installer receipt and all 56 uniquely labelled installer assertions accepted by the publication validators. Downloaded installer SHA-256, sibling checksum, size and self-contained payload provenance agree. Inno Setup engine 6.7.1 and compiler/module hashes recorded. |
+| Physical hardware and normal live monitoring | Unverified/deferred | No receiver, peripheral, vendor application or normal monitor was accessed. [Saved boundaries](deferred-verification.md). |
 
-## Failures found during verification
+The 142 additional C# cases comprise 16 Razer reference/timing/charging cases, 35 diagnostic/redaction cases, 22 tray-selection cases, 4 settings cases and 65 updater cases. Existing battery/polling/model tests remain in the full 921-case suite. The smoke additionally exercised rendered zero/category/stale/unsupported popup rows, settings callbacks and in-memory Save, Off-mode update actions without requests, native icon centring/lifecycle and an actual redacted diagnostic ZIP export.
 
-- Initial source `6294ce9488d6bf1a62de190caa7e55aca51ef5d0` passed Windows compilation, 919 Core tests in each configuration, 5 parser tests, 18 release-policy tests and both package inspections. Its [Windows smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39711867611) failed and is not treated as a completed verification.
-- Both application smoke jobs found a real WPF binding error: the progress bar's default two-way binding tried to write to immutable `ProgressValue`. The popup now explicitly uses a one-way binding; later actual-render smoke runs passed this binding.
-- Installer compilation stopped at compiler-version detection, before installer execution. The build tool's component file version differs from its engine version; detection now uses a no-output compiler probe while retaining the supported-version guard; later Windows runs compiled both the installer and upgrade fixture successfully.
-- Privacy review found a settings JSON error could expose an unregistered canonical Logitech serial/unit ID. Startup logging now omits detailed settings-load errors, and generic canonical-ID redaction has two new regression cases. Local UI errors remain available without exporting saved settings.
+The installer upgrade fixture uses current app bytes with older installer metadata. It verifies installer lifecycle, not compatibility with an actual older app binary. Installer execution never launched the installed app. The isolated app branch did not execute an installer. No new release or draft was created.
 
-- Corrected source `92c5e3dcbc4c29eab68aa789754b96376941f6f2` passed all 921 C# tests in each configuration and both eight-check application smoke runs. Visual review of the produced screenshots found a harness capture bug: parented content margins clipped footer evidence. The initial visual-brush correction still retained the parent layout offset and cropped footer evidence. Capture is being changed to render the live Window root; the UI checks themselves passed.
-- The second installer run compiled and installed successfully, then failed its shortcut-path assertion. The retained setup log shows both shortcuts in the correct current-user default group, while the smoke expected its requested custom group. The smoke now checks the actual registered default per-user group, guards against pre-existing user folders, and retains both shortcut creation/removal assertions.
+## Failures found and fixed
 
-- Source `125c7626a472630a86d85574ae3f51526dc70348` passed all Windows jobs, including both eight-check application smoke runs and 56 installer lifecycle assertions. Independent use of the publication validators against these actual reports caught repeated installer assertion descriptions: lifecycle stages had succeeded, but their evidence was ambiguous to the publication gate. The report now labels initial install, upgrade and reinstall checks separately and rejects duplicate descriptions during smoke. Final source-bound verification will be repeated after the capture/report corrections.
+| Failure | Fix and final verification |
+| --- | --- |
+| Actual popup rendering threw when `ProgressBar.Value` tried a two-way write to immutable `ProgressValue`. | Set the production binding to `OneWay`. Both final rendered popup checks pass with genuine 0%, category, stale and unsupported states. |
+| Settings-load errors could contain an unregistered canonical Logitech serial/unit ID. | Startup diagnostics use a generic error; canonical IDs are also redacted before registration. Two added privacy regressions pass, and the smoke ZIP contains none of its synthetic identifiers. Detailed local UI errors remain available. |
+| Installer build read the loader's component file version instead of the engine version. | Use a no-output compiler probe, retain the supported-version guard, and record loader/module hashes. Both actual installers compiled with engine 6.7.1. |
+| Installer smoke expected a custom Start menu group ignored by Inno when its group page is disabled. | Verify the actual registered current-user default group and both shortcuts, retaining cleanup assertions. All 56 lifecycle checks pass. |
+| Parented-content screenshot capture applied layout offsets twice and cropped footer evidence, including after the initial visual-brush correction. | Capture the live Window root and assert content/footer bounds plus rendered footer pixels. Final screenshots visibly include Save/Cancel and the entire update disclosure. |
+| Successful installer stages reused assertion descriptions, so the actual report failed the publication gate's uniqueness rule. | Label initial-install/upgrade/reinstall assertions by stage and reject duplicates during smoke. The final report has 56 unique successful checks and passes the actual publication validator. |
+
+The initial [smoke run 39711867611](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39711867611) and subsequent [run 39856791097](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39856791097) retain failure evidence. Source `125c762` passed runtime/installer jobs, but independent screenshot and publication-evidence review found the last two harness issues. The final runs above supersede those results for this candidate; they are bound to source `367ea41`.
 
 ## Functions affected
 
 | Area | Change and interactions |
 | --- | --- |
-| Razer monitoring and manual polling | New evidence-backed E6 mouse receiver uses interface3 with explicit mouse kind. Atheris/Orochi wait400ms instead of60ms before replies. Serialized HID operations can therefore take longer on those receivers. Existing BF/C5/B8 association and charging-failure rules remain. |
+| Razer monitoring and manual polling | New evidence-backed E6 mouse receiver uses interface 3 with explicit mouse kind. Atheris/Orochi wait 400 ms instead of 60 ms before replies. Serialized HID operations can therefore take longer on those receivers. Existing BF/C5/B8 association and charging-failure rules remain. This battery mapping adds no native E6 polling-write profile; documented HyperPolling receiver controls retain their existing opt-in/association/readback guards. |
 | Diagnostics | Discovery/transport decorators log metadata without issuing additional commands; snapshots and manual polling outcomes include original timestamps and validation failures. Storage failures stay separate from battery outcomes. Logs/export are bounded and redacted. |
-| Tray and notifications | Single summary remains default. Selected-device mode owns up to16 icons with neutral unknown/category/stale states. Device alerts use a corresponding selected icon or an existing fallback. Existing popup/settings/manual controls remain available from every icon. |
+| Tray and notifications | Single summary remains default. Selected-device mode owns up to 16 icons with neutral unknown/category/stale states. Device alerts use a corresponding selected icon or an existing fallback. Existing popup/settings/manual controls remain available from every icon. |
 | Preferences | New icon selection and update mode fields use backwards-compatible defaults and independent normalized copies; aliases, notifications, preferred device, refresh interval and startup preferences remain persisted. |
 | Updates and shutdown | Notify-only checks stable metadata at startup/daily. Download and install require separate clicks. Off cancels update operations. Staged installers are hash-verified and locked again after graceful shutdown releases the app mutex. |
 | Installation | New per-user self-contained installer owns its payload/shortcuts/HKCU uninstall entry; upgrades and uninstall preserve saved data. Exact matching installed startup entries are removed on uninstall; foreign commands remain. Both portable flavors remain available. |
@@ -34,12 +51,16 @@ The Windows application smoke launches only an isolated internal test branch usi
 
 ## Verification boundaries
 
-Real receivers/firmware and battery accuracy, normal live-monitoring runtime, vendor-software coexistence, notification delivery, actual Explorer restart, physical mixed-monitor DPI, Windows10/11 desktop installation prompts, long-run resource/performance measurements and live release installation remain unverified. Synthetic shell messages do not establish a real Explorer restart. Installer upgrade smoke uses a controlled older-installer fixture with the current app bytes, rather than an actual older executable. The credential-free updater cannot read this private repository's releases anonymously; it reports unavailable and offers the signed-in browser release page. No credentials are embedded or stored.
+Real receivers/firmware and battery accuracy, normal live-monitoring runtime, vendor-software coexistence, notification delivery, actual Explorer restart, physical mixed-monitor DPI, Windows 10/11 desktop installation prompts, long-run resource/performance measurements and live release installation remain unverified. Synthetic shell messages do not establish a real Explorer restart. Installer upgrade smoke uses a controlled older-installer fixture with the current app bytes, rather than an actual older executable. The credential-free updater cannot read this private repository's releases anonymously; it reports unavailable and offers the signed-in browser release page. No credentials are embedded or stored.
 
 CLI status/JSON commands, local API, capture-assisted learning and a G Hub data source remain roadmap items. Logitech categories remain native categories; no voltage estimator was introduced.
 
 ## Edited files
 
+50 files changed relative to the completed v1.0.0 record. Documentation/evidence-only changes after the tested source do not change candidate binaries.
+
+- [.github/reviews/1.1.0.json](../.github/reviews/1.1.0.json)
+- [.github/reviews/1.1.0.md](../.github/reviews/1.1.0.md)
 - [.github/scripts/build-installer.ps1](../.github/scripts/build-installer.ps1)
 - [.github/scripts/publish-verified-preview.py](../.github/scripts/publish-verified-preview.py)
 - [.github/scripts/run-application-smoke.ps1](../.github/scripts/run-application-smoke.ps1)

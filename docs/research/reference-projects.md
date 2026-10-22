@@ -1,6 +1,6 @@
 # Requested reference projects
 
-Research snapshot: 22 October 2026. Sources were inspected as text. No reference application, installer, driver or hardware query was executed, and no reference source, icon asset, binary or voltage lookup table was copied into this project. The implementation independently expresses protocol facts and product behavior. Local compilation and software/runtime test results are recorded separately in [verification](../verification.md); external author/user observations are not local hardware verification.
+Research snapshot: 22 October 2026. Sources were inspected as text. No reference application, installer, driver or hardware query was executed, and no reference source, icon asset, binary or voltage lookup table was copied into this project. The implementation independently expresses protocol facts and product behavior. This project’s Windows compilation and software/runtime test results are recorded separately in [verification](../verification.md); external author/user observations are not local hardware verification.
 
 | Reference | Inspected revision | Licence at that revision | Useful evidence and resulting decision |
 | --- | --- | --- | --- |

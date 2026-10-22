@@ -1,6 +1,6 @@
 # Device Battery Status
 
-Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. The current published release is **1.0.0**, unsigned for personal use. The **1.1.0 development candidate** adds diagnostics, selected device icons, and per-user installation/update support; it has not been published. [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0). Runtime, hardware and performance checks are recorded in the [deferred verification record](docs/deferred-verification.md).
+Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. The current published release is **1.0.0**, unsigned for personal use. The **1.1.0 candidate** adds diagnostics, selected device icons, and per-user installation/update support; it has not been published. [Improvement results and edited files](docs/improvements-verification.md). [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0). Runtime, hardware and performance checks are recorded in the [deferred verification record](docs/deferred-verification.md).
 
 ## Projects
 
