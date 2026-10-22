@@ -3,6 +3,9 @@ using System.Globalization;
 
 namespace DeviceBatteryStatus.Core.Settings;
 
+public enum TrayIconMode { Single, SelectedDevices }
+public enum UpdateCheckMode { NotifyOnly, Manual, Off }
+
 public sealed record AppSettings
 {
     public int RefreshIntervalSeconds { get; init; } = 30;
@@ -10,6 +13,9 @@ public sealed record AppSettings
     public int LowBatteryThreshold { get; init; } = 20;
     public string? PreferredDeviceId { get; init; }
     public bool StartWithWindows { get; init; }
+    public TrayIconMode TrayIconMode { get; init; } = TrayIconMode.Single;
+    public IReadOnlyList<string> TrayDeviceIds { get; init; } = Array.Empty<string>();
+    public UpdateCheckMode UpdateCheckMode { get; init; } = UpdateCheckMode.NotifyOnly;
     public IReadOnlyDictionary<string, string> CustomNames { get; init; } =
         new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(StringComparer.Ordinal));
 
@@ -28,7 +34,12 @@ public sealed record AppSettings
             RefreshIntervalSeconds = Math.Clamp(RefreshIntervalSeconds, 10, 3600),
             LowBatteryThreshold = Math.Clamp(LowBatteryThreshold, 1, 50),
             PreferredDeviceId = NormalizeDeviceId(PreferredDeviceId),
-            CustomNames = new ReadOnlyDictionary<string, string>(names)
+            CustomNames = new ReadOnlyDictionary<string, string>(names),
+            TrayIconMode = Enum.IsDefined(TrayIconMode) ? TrayIconMode : TrayIconMode.Single,
+            TrayDeviceIds = Array.AsReadOnly((TrayDeviceIds ?? Array.Empty<string>())
+                .Select(NormalizeDeviceId).Where(id => id is not null).Cast<string>()
+                .Distinct(StringComparer.Ordinal).Take(16).ToArray()),
+            UpdateCheckMode = Enum.IsDefined(UpdateCheckMode) ? UpdateCheckMode : UpdateCheckMode.NotifyOnly
         };
     }
 

@@ -1,6 +1,9 @@
+using System.Diagnostics;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
 using DeviceBatteryStatus.App.Tray;
+using DeviceBatteryStatus.Core.Diagnostics;
 using DeviceBatteryStatus.Core.Hardware;
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Monitoring;
@@ -8,13 +11,14 @@ using DeviceBatteryStatus.Core.Presentation;
 using DeviceBatteryStatus.Core.Polling;
 using DeviceBatteryStatus.Core.Protocols;
 using DeviceBatteryStatus.Core.Settings;
+using DeviceBatteryStatus.Core.Updates;
 using DeviceBatteryStatus.Windows.Hardware;
 using DeviceBatteryStatus.Windows.Integration;
 using Microsoft.Win32;
 
 namespace DeviceBatteryStatus.App;
 
-/// <summary>Owns one polling loop, one tray icon, and UI state on the WPF dispatcher.</summary>
+/// <summary>Owns the polling loop, optional device tray icons, diagnostics, updates and UI state on the WPF dispatcher.</summary>
 internal sealed class ApplicationController
 {
     private readonly Application application;
@@ -30,7 +34,17 @@ internal sealed class ApplicationController
     private readonly NotificationPolicy notifications = new();
     private readonly PopupWindow popup = new();
     private readonly DispatcherTimer presentationTimer;
-    private readonly TrayIconService tray;
+    private readonly TrayIconManager tray;
+    private readonly DiagnosticLog diagnostics;
+    private readonly GitHubUpdateService updates;
+    private readonly DispatcherTimer updateTimer;
+    private CancellationTokenSource updateCancellation = new();
+    private Task? updateCheck;
+    private AvailableUpdate? availableUpdate;
+    private string? notifiedUpdateVersion;
+    private UpdateWindow? updateWindow;
+    internal static string CurrentVersion => typeof(ApplicationController).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "1.1.0";
     private readonly PeriodicTimer pollTimer;
     private AppSettings settings;
     private IReadOnlyList<DeviceSnapshot> snapshots = [];
@@ -50,8 +64,11 @@ internal sealed class ApplicationController
     public ApplicationController(Application application)
     {
         this.application = application;
-        var discovery = new WindowsHidDiscovery();
-        var transports = new WindowsHidTransportFactory();
+        var dataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeviceBatteryStatus");
+        diagnostics = new(Path.Combine(dataDirectory, "logs"), CurrentVersion);
+        updates = new(Path.Combine(dataDirectory, "updates"));
+        var discovery = new DiagnosticHidDiscovery(new WindowsHidDiscovery(), diagnostics);
+        var transports = new DiagnosticHidTransportFactory(new WindowsHidTransportFactory(), diagnostics);
         var hidOperations = new HidOperationGate();
         monitor = new(discovery, transports,
             [new RazerBatteryProvider(), new LogitechBatteryProvider(), new AlienwareBatteryProvider()], hidOperations);
@@ -60,6 +77,7 @@ internal sealed class ApplicationController
         var loaded = store.Load();
         settings = loaded.Settings;
         settingsWarning = loaded.Error;
+        if (loaded.Error is not null) diagnostics.Record("settings", loaded.Error);
         pollTimer = new(TimeSpan.FromSeconds(settings.RefreshIntervalSeconds));
         tray = new(TogglePopup, ShowSettings, RefreshFromMenu, ExitFromMenu);
         popup.RefreshRequested += (_, _) => RefreshFromMenu();
@@ -70,6 +88,8 @@ internal sealed class ApplicationController
             Interval = TimeSpan.FromSeconds(5)
         };
         presentationTimer.Tick += (_, _) => UpdatePresentation();
+        updateTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromDays(1) };
+        updateTimer.Tick += (_, _) => StartUpdateCheck();
     }
 
     public void Start(bool showPopup)
@@ -79,6 +99,8 @@ internal sealed class ApplicationController
         UpdatePresentation();
         polling = PollAsync();
         if (showPopup) TogglePopup();
+        updateTimer.Start();
+        StartUpdateCheck();
     }
 
     private async Task PollAsync()
@@ -107,10 +129,13 @@ internal sealed class ApplicationController
             snapshots = await Task.Run(() => monitor.RefreshAsync(shutdown.Token), shutdown.Token);
             lastRefresh = DateTimeOffset.Now;
             warning = monitor.DiscoveryError;
+            foreach (var snapshot in snapshots) diagnostics.RecordSnapshot(snapshot);
+            if (warning is not null) diagnostics.Record("discovery", warning);
         }
         catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { throw; }
         catch (Exception exception)
         {
+            diagnostics.RecordException("Battery refresh", exception);
             warning = $"Refresh failed: {exception.Message}";
             MarkCurrentReadingsStale("The latest refresh failed.");
         }
@@ -131,7 +156,7 @@ internal sealed class ApplicationController
                 ? snapshot with { Battery = snapshot.Battery.AsStale("Waiting for a fresh reading."), Connection = ConnectionState.Unknown }
                 : snapshot).ToArray();
         displayError = null;
-        try { tray.Update(BatteryPresentation.CreateTray(snapshots, settings, now)); }
+        try { tray.Update(snapshots, settings, now); }
         catch (Exception exception) { displayError = $"Tray display unavailable: {exception.Message}"; }
         foreach (var alert in notifications.Evaluate(snapshots, settings, now))
         {
@@ -173,7 +198,7 @@ internal sealed class ApplicationController
         string? startupError = null;
         try { enabled = startup.IsEnabled(); }
         catch (Exception exception) { startupError = $"Windows startup could not be read: {exception.Message}"; }
-        settingsWindow = new SettingsWindow(settings, snapshots, startup.CanRegister, enabled, startupError, ApplySettings, ShowPollingControls);
+        settingsWindow = new SettingsWindow(settings, snapshots, startup.CanRegister, enabled, startupError, ApplySettings, ShowPollingControls, ShowUpdates, OpenDiagnosticLogs, ExportDiagnosticLogs);
         if (settingsWarning is not null) settingsWindow.ShowNotice(settingsWarning);
         settingsWindow.Closed += (_, _) => settingsWindow = null;
         settingsWindow.Show();
@@ -204,7 +229,19 @@ internal sealed class ApplicationController
         using var operationLifetime = linked;
         var task = Task.Run(() => operation(linked.Token), linked.Token);
         manualOperations.Add(task);
-        try { return await task; }
+        try
+        {
+            var result = await task;
+            var info = result is PollingRateInfo readInfo ? readInfo : result is PollingApplyResult applied ? applied.Info : null;
+            if (info is not null)
+                diagnostics.Record("polling", result is PollingApplyResult applyResult ? applyResult.Detail : info.Detail, new Dictionary<string, string?>
+                {
+                    ["state"] = info.State.ToString(), ["reportedRateHz"] = info.CurrentRateHz?.ToString(),
+                    ["supportedRatesHz"] = string.Join(",", info.SupportedRatesHz)
+                });
+            return result;
+        }
+        catch (Exception exception) { diagnostics.RecordException("Manual polling operation", exception); throw; }
         finally { manualOperations.Remove(task); }
     }
 
@@ -227,11 +264,104 @@ internal sealed class ApplicationController
             }
             throw;
         }
+        var previousUpdateMode = settings.UpdateCheckMode;
         settings = updated;
+        if (previousUpdateMode != updated.UpdateCheckMode)
+        {
+            updateCancellation.Cancel();
+            updateCancellation.Dispose();
+            updateCancellation = new();
+            updateCheck = null;
+            availableUpdate = null;
+            updateWindow?.Close();
+            if (updated.UpdateCheckMode == UpdateCheckMode.NotifyOnly) StartUpdateCheck();
+        }
+        diagnostics.Record("settings", "Preferences applied", new Dictionary<string, string?>
+        {
+            ["trayMode"] = settings.TrayIconMode.ToString(), ["selectedTrayDevices"] = settings.TrayDeviceIds.Count.ToString(),
+            ["updateMode"] = settings.UpdateCheckMode.ToString()
+        });
         pollTimer.Period = TimeSpan.FromSeconds(settings.RefreshIntervalSeconds);
         warning = null;
         settingsWarning = null;
         UpdatePresentation();
+    }
+
+    private void OpenDiagnosticLogs()
+    {
+        Directory.CreateDirectory(diagnostics.DirectoryPath);
+        Process.Start(new ProcessStartInfo(diagnostics.DirectoryPath) { UseShellExecute = true });
+    }
+
+    private async void ExportDiagnosticLogs()
+    {
+        if (stopping) return;
+        var dialog = new SaveFileDialog
+        {
+            Title = "Export redacted diagnostic report", Filter = "Diagnostic ZIP (*.zip)|*.zip",
+            FileName = $"DeviceBatteryStatus-diagnostics-{DateTime.Now:yyyyMMdd-HHmmss}.zip", AddExtension = true
+        };
+        if (dialog.ShowDialog(settingsWindow) != true) return;
+        try
+        {
+            await Task.Run(() => diagnostics.Export(dialog.FileName));
+            if (!stopping) settingsWindow?.ShowNotice("Redacted diagnostic report exported. Review it before sharing.");
+        }
+        catch (Exception exception)
+        {
+            diagnostics.RecordException("Diagnostic export", exception);
+            if (!stopping) settingsWindow?.ShowNotice($"The diagnostic report could not be exported. {exception.Message}");
+        }
+    }
+
+    private void StartUpdateCheck()
+    {
+        if (stopping || settings.UpdateCheckMode != UpdateCheckMode.NotifyOnly || updateCheck is { IsCompleted: false }) return;
+        updateCheck = CheckUpdatesAutomaticallyAsync(updateCancellation.Token);
+    }
+
+    private async Task CheckUpdatesAutomaticallyAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await updates.CheckAsync(CurrentVersion, settings.UpdateCheckMode, manual: false, cancellationToken);
+            if (stopping || cancellationToken.IsCancellationRequested || settings.UpdateCheckMode != UpdateCheckMode.NotifyOnly) return;
+            diagnostics.Record("updates", result.Detail, new Dictionary<string, string?> { ["state"] = result.State.ToString() });
+            availableUpdate = result.Update;
+            if (availableUpdate is not null && notifiedUpdateVersion != availableUpdate.Version)
+            {
+                notifiedUpdateVersion = availableUpdate.Version;
+                tray.ShowUpdateAvailable(availableUpdate.Version, ShowUpdates);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch (Exception exception) { diagnostics.RecordException("Automatic update check", exception); }
+    }
+
+    private void ShowUpdates()
+    {
+        if (stopping) return;
+        popup.Hide();
+        if (updateWindow is not null) { updateWindow.Activate(); return; }
+        updateWindow = new(updates, CurrentVersion, () => stopping ? UpdateCheckMode.Off : settings.UpdateCheckMode,
+            InstallUpdate, exception => diagnostics.RecordException("Update operation", exception), availableUpdate)
+        { Owner = settingsWindow };
+        updateWindow.Closed += (_, _) => updateWindow = null;
+        updateWindow.Show();
+    }
+
+    private void InstallUpdate(StagedInstaller staged)
+    {
+        if (stopping || settings.UpdateCheckMode == UpdateCheckMode.Off) return;
+        if (application is not App app) throw new InvalidOperationException("Application shutdown cannot start this installer.");
+        // OnExit releases the instance mutex first. Revalidate with a file lease
+        // immediately before CreateProcess; no network, shell association or automatic retry.
+        app.AfterShutdown = () =>
+        {
+            using var verified = updates.VerifyForInstallAsync(staged, CancellationToken.None).GetAwaiter().GetResult();
+            Process.Start(new ProcessStartInfo(verified.Path) { UseShellExecute = false });
+        };
+        ExitFromMenu();
     }
 
     private async void RefreshFromMenu()
@@ -287,9 +417,11 @@ internal sealed class ApplicationController
             var pending = manualOperations.ToList();
             if (polling is not null) pending.Add(polling);
             if (activeRefresh is not null) pending.Add(activeRefresh);
+            if (updateCheck is not null) pending.Add(updateCheck);
             await Task.WhenAll(pending);
         }
         catch (OperationCanceledException) { }
+        catch (Exception exception) { diagnostics.RecordException("Pending operation during exit", exception); }
         finally
         {
             pollTimer.Dispose();
@@ -306,11 +438,22 @@ internal sealed class ApplicationController
         if (cleanedUp) return;
         cleanedUp = true;
         stopping = true;
-        shutdown.Cancel();
-        pollingWindow?.CancelOperations();
-        presentationTimer.Stop();
+        void Cleanup(string operation, Action action)
+        {
+            try { action(); }
+            catch (Exception exception) { diagnostics.RecordException(operation, exception); }
+        }
+        Cleanup("Cancel application operations", shutdown.Cancel);
+        Cleanup("Cancel manual polling", () => pollingWindow?.CancelOperations());
+        Cleanup("Stop presentation timer", presentationTimer.Stop);
+        Cleanup("Stop update timer", updateTimer.Stop);
+        Cleanup("Cancel update operations", updateCancellation.Cancel);
+        Cleanup("Close update window", () => updateWindow?.Close());
+        Cleanup("Dispose update HTTP service", updates.Dispose);
+        diagnostics.Record("application", "Application stopping");
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
-        popup.Hide();
-        tray.Dispose();
+        Cleanup("Hide popup", popup.Hide);
+        Cleanup("Dispose tray icons", tray.Dispose);
+        diagnostics.Dispose();
     }
 }

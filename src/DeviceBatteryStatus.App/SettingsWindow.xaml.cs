@@ -14,15 +14,34 @@ public partial class SettingsWindow : Window
     private readonly Action<AppSettings, bool> save;
     private readonly bool initialStartup;
     private readonly Action? showPolling;
+    private readonly Action? showUpdates;
+    private readonly Action? openLogs;
+    private readonly Action? exportLogs;
+    private readonly List<(string Id, CheckBox Choice)> trayChoices = [];
     private readonly List<(string Id, TextBox Editor)> names = [];
 
     public SettingsWindow(AppSettings settings, IReadOnlyList<DeviceSnapshot> devices, bool canRegister,
-        bool startupEnabled, string? startupError, Action<AppSettings, bool> save, Action? showPolling = null)
+        bool startupEnabled, string? startupError, Action<AppSettings, bool> save, Action? showPolling = null,
+        Action? showUpdates = null, Action? openLogs = null, Action? exportLogs = null)
     {
         InitializeComponent();
         original = settings;
         this.save = save;
         this.showPolling = showPolling;
+        this.showUpdates = showUpdates;
+        this.openLogs = openLogs;
+        this.exportLogs = exportLogs;
+        UpdatesButton.IsEnabled = showUpdates is not null;
+        OpenLogsButton.IsEnabled = openLogs is not null;
+        ExportLogsButton.IsEnabled = exportLogs is not null;
+        var trayModes = new[] { new TrayModeChoice(TrayIconMode.Single, "Single summary icon (default)"),
+            new TrayModeChoice(TrayIconMode.SelectedDevices, "Separate icons for selected devices") };
+        TrayModeBox.ItemsSource = trayModes;
+        TrayModeBox.SelectedItem = trayModes.First(mode => mode.Mode == settings.TrayIconMode);
+        var updateModes = new[] { new UpdateModeChoice(UpdateCheckMode.NotifyOnly, "Notify only (default)"),
+            new UpdateModeChoice(UpdateCheckMode.Manual, "Check manually"), new UpdateModeChoice(UpdateCheckMode.Off, "Off") };
+        UpdateModeBox.ItemsSource = updateModes;
+        UpdateModeBox.SelectedItem = updateModes.First(mode => mode.Mode == settings.UpdateCheckMode);
         PollingButton.IsEnabled = showPolling is not null;
         initialStartup = startupEnabled;
         IntervalBox.Text = settings.RefreshIntervalSeconds.ToString(CultureInfo.InvariantCulture);
@@ -41,6 +60,19 @@ public partial class SettingsWindow : Window
         PreferredBox.SelectedItem = choices.First(choice => choice.Id == settings.PreferredDeviceId);
 
         var identities = devices.Select(device => device.Device).ToDictionary(device => device.Id, StringComparer.Ordinal);
+        foreach (var id in identities.Keys.Concat(settings.TrayDeviceIds).Distinct(StringComparer.Ordinal))
+        {
+            identities.TryGetValue(id, out var identity);
+            var choice = new CheckBox
+            {
+                Content = identity is null ? "Saved device (unavailable)" : BatteryPresentation.GetDisplayName(identity, settings),
+                IsChecked = settings.TrayDeviceIds.Contains(id, StringComparer.Ordinal),
+                Foreground = System.Windows.Media.Brushes.LightGray,
+                Margin = new Thickness(0, 0, 0, 6)
+            };
+            TrayDevicesPanel.Children.Add(choice);
+            trayChoices.Add((id, choice));
+        }
         foreach (var id in identities.Keys.Concat(settings.CustomNames.Keys).Distinct(StringComparer.Ordinal))
         {
             identities.TryGetValue(id, out var identity);
@@ -80,6 +112,12 @@ public partial class SettingsWindow : Window
             ThresholdBox.Focus();
             return;
         }
+        var trayIds = trayChoices.Where(item => item.Choice.IsChecked == true).Select(item => item.Id).ToArray();
+        if (trayIds.Length > 16)
+        {
+            ErrorText.Text = "Choose up to 16 device icons.";
+            return;
+        }
         var customNames = names.ToDictionary(entry => entry.Id, entry => entry.Editor.Text, StringComparer.Ordinal);
         var updated = original with
         {
@@ -88,7 +126,10 @@ public partial class SettingsWindow : Window
             LowBatteryThreshold = threshold,
             PreferredDeviceId = (PreferredBox.SelectedItem as DeviceChoice)?.Id,
             StartWithWindows = StartupBox.IsEnabled ? StartupBox.IsChecked == true : original.StartWithWindows,
-            CustomNames = customNames
+            CustomNames = customNames,
+            TrayIconMode = (TrayModeBox.SelectedItem as TrayModeChoice)?.Mode ?? TrayIconMode.Single,
+            TrayDeviceIds = trayIds,
+            UpdateCheckMode = (UpdateModeBox.SelectedItem as UpdateModeChoice)?.Mode ?? UpdateCheckMode.NotifyOnly
         };
         var changeStartup = StartupBox.IsEnabled && (StartupBox.IsChecked == true) != initialStartup;
         try { save(updated.Normalize(), changeStartup); Close(); }
@@ -101,6 +142,31 @@ public partial class SettingsWindow : Window
         try { showPolling?.Invoke(); }
         catch (Exception exception) { ErrorText.Text = $"Polling-rate control could not open. {exception.Message}"; }
     }
+    private void TrayMode_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (TraySelectionPanel is null || PreferredBox is null) return;
+        var separate = (TrayModeBox.SelectedItem as TrayModeChoice)?.Mode == TrayIconMode.SelectedDevices;
+        TraySelectionPanel.Visibility = separate ? Visibility.Visible : Visibility.Collapsed;
+        PreferredBox.IsEnabled = !separate;
+    }
+
+    private void Updates_Click(object sender, RoutedEventArgs e)
+    {
+        if ((UpdateModeBox.SelectedItem as UpdateModeChoice)?.Mode != original.UpdateCheckMode)
+        {
+            ErrorText.Text = "Save the update preference before checking.";
+            return;
+        }
+        InvokeOptional(showUpdates, "Updates");
+    }
+    private void OpenLogs_Click(object sender, RoutedEventArgs e) => InvokeOptional(openLogs, "Logs");
+    private void ExportLogs_Click(object sender, RoutedEventArgs e) => InvokeOptional(exportLogs, "Diagnostic export");
+    private void InvokeOptional(Action? action, string label)
+    {
+        try { action?.Invoke(); }
+        catch (Exception exception) { ErrorText.Text = $"{label} could not open. {exception.Message}"; }
+    }
+
     public void ShowNotice(string message) => ErrorText.Text = message;
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -109,5 +175,7 @@ public partial class SettingsWindow : Window
         Close();
     }
 
+    private sealed record TrayModeChoice(TrayIconMode Mode, string Name);
+    private sealed record UpdateModeChoice(UpdateCheckMode Mode, string Name);
     private sealed record DeviceChoice(string? Id, string Name);
 }

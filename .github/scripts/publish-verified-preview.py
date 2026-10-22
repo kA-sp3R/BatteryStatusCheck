@@ -46,6 +46,16 @@ def release_policy(manifest, version, notes):
     if "automationTestCount" in manifest:
         require(type(manifest["automationTestCount"]) is int and manifest["automationTestCount"] > 0,
                 "Invalid manifest count: automationTestCount")
+    if "appSmoke" in manifest:
+        require(type(manifest["appSmoke"]) is bool, "Invalid application smoke policy.")
+    if "appSmokeCheckCount" in manifest:
+        require(type(manifest["appSmokeCheckCount"]) is int and manifest["appSmokeCheckCount"] > 0,
+                "Invalid manifest count: appSmokeCheckCount")
+    if "installer" in manifest:
+        installer = manifest["installer"]
+        require(isinstance(installer, dict) and type(installer.get("bytes")) is int and installer["bytes"] > 0 and
+                isinstance(installer.get("sha256"), str) and re.fullmatch(r"[0-9a-f]{64}", installer["sha256"]),
+                "Invalid installer manifest bytes or SHA-256.")
     return {"prerelease": prerelease, "latest": latest, "signed": False}
 
 
@@ -55,6 +65,87 @@ def offline_test_counts(log, expected):
             re.search(r"(?m)^OK\s*$", log) and not re.search(r"(?m)^FAILED\b", log) and
             re.search(r"(?m)^native_exit_code=0\s*$", log), "Offline parser evidence did not pass.")
     return {"executed": expected, "passed": expected, "failed": 0, "skipped": 0}
+
+
+
+def single_json(directory, filename):
+    files = list(directory.rglob(filename))
+    require(len(files) == 1, f"Expected exactly one {filename} evidence file.")
+    return json.loads(files[0].read_text(encoding="utf-8-sig"))
+
+
+def validate_installer_metadata(report, manifest, repository):
+    version, source = manifest["version"], manifest["sourceCommit"]
+    run, attempt = str(manifest["buildRun"]), str(manifest.get("buildAttempt", 1))
+    require(type(report.get("schemaVersion")) is int and report["schemaVersion"] == 1 and
+            report.get("product") == "Device Battery Status" and report.get("version") == version and
+            report.get("runtimeIdentifier") == "win-x64" and report.get("distribution") == "per-user-installer" and
+            report.get("signed") is False and report.get("sourceCommit") == source and
+            report.get("repository") == repository and report.get("workflowRun") == run and
+            report.get("workflowAttempt") == attempt and report.get("applicationLaunched") is False and
+            report.get("hardwareVerified") is False and report.get("appId") == "D38FB615-37DB-4AC0-92CE-BD1F947B9732",
+            "Installer build provenance mismatch.")
+    expected_package = manifest["packages"]["self-contained"]
+    package = report.get("package", {})
+    require(package.get("name") == f"DeviceBatteryStatus-{version}-win-x64-self-contained.zip" and
+            package.get("bytes") == expected_package["bytes"] and package.get("sha256") == expected_package["sha256"] and
+            package.get("workflowRun") == run and package.get("workflowAttempt") == attempt,
+            "Installer payload does not match the verified self-contained package.")
+    installer = report.get("installer", {})
+    require(installer.get("name") == f"DeviceBatteryStatus-{version}-win-x64-setup.exe" and
+            installer.get("bytes") == manifest["installer"]["bytes"] and
+            installer.get("sha256") == manifest["installer"]["sha256"], "Installer artifact metadata mismatch.")
+    compiler = report.get("compiler", {})
+    require(compiler.get("product") == "Inno Setup" and
+            isinstance(compiler.get("version"), str) and re.fullmatch(r"6\.\d+\.\d+(?:\.\d+)?", compiler["version"]) and
+            isinstance(compiler.get("sha256"), str) and re.fullmatch(r"[0-9a-f]{64}", compiler["sha256"]),
+            "Missing installer compiler provenance.")
+
+
+def validate_installer_smoke(report, manifest):
+    require(type(report.get("schemaVersion")) is int and report["schemaVersion"] == 1 and
+            report.get("passed") is True and report.get("sourceCommit") == manifest["sourceCommit"] and
+            report.get("version") == manifest["version"] and report.get("workflowRun") == str(manifest["buildRun"]) and
+            report.get("workflowAttempt") == str(manifest.get("buildAttempt", 1)) and
+            report.get("installerSha256") == manifest["installer"]["sha256"] and
+            report.get("installerBytes") == manifest["installer"]["bytes"], "Installer smoke provenance mismatch.")
+    checks = report.get("checks")
+    count = report.get("checkCount")
+    require(type(count) is int and count > 0 and isinstance(checks, list) and len(checks) == count and
+            all(isinstance(check, str) and check.strip() for check in checks) and len(set(checks)) == count,
+            "Installer smoke has missing or ambiguous checks.")
+    for field in ["initialInstallPassed", "upgradePassed", "ownedStartupUninstallPassed", "foreignStartupUninstallPassed",
+                  "settingsPreserved", "cleanUninstall", "installerExecuted"]:
+        require(report.get(field) is True, f"Installer smoke did not establish {field}.")
+    require(report.get("applicationLaunched") is False and report.get("hardwareVerified") is False,
+            "Unexpected installer smoke application/hardware claim.")
+    return {"executed": count, "passed": count, "failed": 0, "installerExecuted": True,
+            "applicationLaunched": False, "hardwareVerified": False}
+
+
+def validate_application_smoke(report, manifest, repository, flavor):
+    require(type(report.get("schemaVersion")) is int and report["schemaVersion"] == 1 and
+            report.get("mode") == "hardware-free-windows-application-smoke" and report.get("passed") is True and
+            report.get("appVersion") == manifest["version"] and report.get("sourceCommit") == manifest["sourceCommit"] and
+            report.get("repository") == repository and report.get("workflowRun") == str(manifest["buildRun"]) and
+            report.get("workflowAttempt") == str(manifest.get("buildAttempt", 1)) and report.get("flavor") == flavor and
+            report.get("runtimeIdentifier") == "win-x64" and report.get("packagePayloadVerified") is True,
+            "Application smoke provenance or package verification mismatch.")
+    expected = manifest.get("appSmokeCheckCount", 8)
+    counts = {"total": expected, "executed": expected, "passed": expected, "failed": 0}
+    require(isinstance(report.get("counters"), dict) and report["counters"] == counts and
+            all(type(value) is int for value in report["counters"].values()), "Application smoke counters do not match.")
+    checks = report.get("checks")
+    require(isinstance(checks, list) and len(checks) == expected and
+            all(isinstance(check, dict) and isinstance(check.get("name"), str) and check["name"].strip() and
+                check.get("passed") is True for check in checks) and len({check["name"] for check in checks}) == expected,
+            "Application smoke has missing, duplicate or failed checks.")
+    require(report.get("applicationLaunched") is True and report.get("normalApplicationControllerStarted") is False and
+            report.get("hardwareAccessed") is False and report.get("networkAccessed") is False and
+            report.get("startupRegistrationAccessed") is False and report.get("userSettingsPersisted") is False,
+            "Unexpected application smoke scope claim.")
+    return {**counts, "applicationLaunched": True, "normalApplicationControllerStarted": False,
+            "hardwareAccessed": False, "networkAccessed": False}
 
 
 def deterministic_archive(directory, destination):
@@ -164,6 +255,33 @@ def main():
     require(set(manifest["packages"]) == {"framework-dependent", "self-contained"}, "Both package flavors are required.")
 
     test_results = {}
+    if "installer" in manifest:
+        destination = staging / "installer"
+        download(manifest["buildRun"], f"windows-installer-win-x64-{manifest.get('buildAttempt', 1)}", destination)
+        installer = destination / f"DeviceBatteryStatus-{version}-win-x64-setup.exe"
+        checksum = installer.with_suffix(".sha256")
+        expected = manifest["installer"]
+        digest = hashlib.sha256(installer.read_bytes()).hexdigest()
+        require(installer.stat().st_size == expected["bytes"] and digest == expected["sha256"],
+                "Installer bytes differ from the reviewed manifest.")
+        require(checksum.read_text(encoding="utf-8-sig").strip() == f"{digest}  {installer.name}",
+                "Installer checksum mismatch.")
+        installer_metadata = single_json(destination, "installer-release.json")
+        validate_installer_metadata(installer_metadata, manifest, repository)
+        (evidence / "installer").mkdir(parents=True, exist_ok=True)
+        (evidence / "installer" / "installer-release.json").write_text(
+            json.dumps(installer_metadata, indent=2) + "\n", encoding="utf-8", newline="\n")
+        smoke = evidence / "installer-smoke"
+        download(manifest["buildRun"], f"installer-smoke-evidence-{manifest.get('buildAttempt', 1)}", smoke)
+        test_results["installerSmoke"] = validate_installer_smoke(single_json(smoke, "installer-smoke.json"), manifest)
+        assets.extend([installer, checksum])
+    if manifest.get("appSmoke", False):
+        test_results["applicationSmoke"] = {}
+        for flavor in ["framework-dependent", "self-contained"]:
+            destination = evidence / "application-smoke" / flavor
+            download(manifest["buildRun"], f"application-smoke-evidence-{flavor}-{manifest.get('buildAttempt', 1)}", destination)
+            test_results["applicationSmoke"][flavor] = validate_application_smoke(
+                single_json(destination, "application-smoke.json"), manifest, repository, flavor)
     for configuration in ["Debug", "Release"]:
         destination = evidence / configuration
         download(manifest["fullTestRun"], f"full-software-tests-{configuration}-{manifest.get('fullTestAttempt', 1)}", destination)
@@ -197,7 +315,10 @@ def main():
         test_results["releaseAutomation"] = offline_test_counts(automation_log, manifest["automationTestCount"])
     # This bundle is immutable evidence for the reviewed source/tests, not a publication-attempt log.
     summary = {**manifest, "releasePolicy": policy, "testResults": test_results,
-               "applicationLaunched": False, "hardwareVerified": False}
+               "applicationLaunched": bool(test_results.get("applicationSmoke")), "hardwareVerified": False}
+    # Preserve old immutable verification bytes when these extensions are absent.
+    if "installerSmoke" in test_results:
+        summary["installerExecuted"] = True
     (evidence / "verification-summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8", newline="\n")
     (evidence / "VERIFICATION.md").write_text(notes, encoding="utf-8", newline="\n")
     verification_dir = staging / "verification"
@@ -238,12 +359,15 @@ def main():
     receipt = {"releaseUrl": published["html_url"], "releaseId": published["id"], "tag": tag,
                "sourceCommit": source, "publishedAt": published["published_at"], **policy,
                "fullTestRun": manifest["fullTestRun"], "testResults": test_results, "assets": expected_assets,
+               "applicationLaunched": bool(test_results.get("applicationSmoke")), "hardwareVerified": False,
+               "installerExecuted": "installerSmoke" in test_results,
                "publicationWorkflowCommit": os.environ["GITHUB_SHA"], "publicationWorkflowRun": os.environ["GITHUB_RUN_ID"]}
     (staging / "publication-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"::notice title=Published verified release::{published['html_url']}; Source={source}; Assets={len(expected_assets)}; "
           f"Prerelease={str(policy['prerelease']).lower()}; Signed=false; Debug={manifest['testCount']} passed; "
           f"Release={manifest['testCount']} passed; Parser={manifest.get('parserTestCount', 5)} passed; "
-          "ApplicationLaunched=false; HardwareVerified=false")
+          f"ApplicationLaunched={str(bool(test_results.get('applicationSmoke'))).lower()}; "
+          f"InstallerExecuted={str('installerSmoke' in test_results).lower()}; HardwareVerified=false")
 
 
 if __name__ == "__main__":

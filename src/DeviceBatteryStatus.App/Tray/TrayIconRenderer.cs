@@ -11,7 +11,7 @@ namespace DeviceBatteryStatus.App.Tray;
 /// <summary>Creates owned icon copies; callers dispose them when replacing a tray image.</summary>
 internal static class TrayIconRenderer
 {
-    // Visual reference only: EZ2.4G 025f829d, my_devices.py make_battery_icon uses a circular
+    // Visual reference only: EZ2.4G 5db7a8b1, my_devices.py make_battery_icon uses a circular
     // indicator. This filled circle and centered percentage are independently rendered in C#;
     // no Python/GDI implementation or assets were copied from the unlicensed reference.
     internal static Drawing.Icon Render(int width, int height, int? percentage, BatteryColor color)

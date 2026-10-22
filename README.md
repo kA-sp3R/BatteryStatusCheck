@@ -1,6 +1,6 @@
 # Device Battery Status
 
-Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. Version **1.0.0** is an unsigned personal-use Windows x64 release. [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0). Runtime, hardware and performance checks are recorded in the [deferred verification record](docs/deferred-verification.md).
+Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. The current published release is **1.0.0**, unsigned for personal use. The **1.1.0 development candidate** adds diagnostics, selected device icons, and per-user installation/update support; it has not been published. [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0). Runtime, hardware and performance checks are recorded in the [deferred verification record](docs/deferred-verification.md).
 
 ## Projects
 
@@ -21,6 +21,16 @@ Notifications default to 20%, suppress known charging/full states, and require a
 
 Freshness is checked every five seconds independently of hardware polling. Samples older than twice the refresh interval plus five seconds turn stale, and readings from before sleep stay stale until refreshed. The icon is rendered for the notification area's DPI, including centered `0` and `100`; rendered behavior is part of the deferred runtime checks.
 
+## Device icons, diagnostics and updates
+
+Settings defaults to the existing single summary icon. Choose **Separate icons for selected devices** to show up to 16 device icons. Genuine percentages retain their circular background and centred text; categories, unknown and stale readings use neutral icons with honest tooltip text and sample times. A missing selected device retains an unavailable icon. With no devices selected, the summary icon remains accessible.
+
+Use **Settings → Open logs** or **Export diagnostic report** for bounded, redacted diagnostics. Reports include version, selected HID collections, protocol metadata/capabilities, validation failures and reading timestamps. Serial numbers, identifying paths and device identities are redacted; raw HID packets, settings and aliases are excluded. See [diagnostics](docs/diagnostics.md).
+
+The candidate provides a per-user installer, while both portable ZIP flavors remain available. Upgrades preserve saved settings; uninstall removes installed files, shortcuts and owned startup registration while retaining preferences/logs. See [installation](docs/installation.md).
+
+Update checks default to **Notify only**; **Check manually** and **Off** are also available. Checks never download or install automatically. **Check for updates → Download and verify → Install verified update** are separate actions. Downloads must match the GitHub asset digest, sibling checksum and expected size, and are checked again immediately before launching the installer after graceful shutdown. Private repositories can return unavailable to the credential-free checker; the release page remains available in your signed-in browser. See [updates](docs/updates.md).
+
 ## Manual polling-rate control
 
 Open **Settings → Polling rate**. Controls start disabled each time the window opens. Enable them, select a mouse or receiver and click **Detect** to read its current configuration and rate options. Select a rate and click **Apply** to request a change. Saving preferences, battery refresh, device selection and startup never change polling rate.
@@ -40,7 +50,7 @@ An ordinary 1000 Hz HyperSpeed receiver does not gain higher rates through softw
 
 ## Build and verification
 
-Use the **Windows compilation and focused unit tests** GitHub Actions workflow with the .NET 10 SDK. Separate Windows jobs compile the solution, run focused C# tests and test the offline capture parser. They upload logs and TRX results. Following those checks, packaging jobs publish and inspect two portable x64 ZIPs without launching the app:
+Use the **Windows compilation and focused unit tests** GitHub Actions workflow with the .NET 10 SDK. Separate Windows jobs compile the solution, run focused C# tests and test the offline capture parser. Additional isolated jobs render the WPF UI with synthetic data and smoke-test installer install/upgrade/uninstall; hardware is never queried by those jobs. They upload logs and TRX results. Following those checks, packaging jobs publish and inspect two portable x64 ZIPs without launching the app:
 
 - **Framework-dependent:** smaller package; requires Microsoft .NET 10 Windows Desktop Runtime x64.
 - **Self-contained:** bundles its .NET/Windows Desktop Runtime and notices; requires no separate .NET installation.
@@ -64,3 +74,7 @@ Windows compilation, automated tests, application runtime and physical hardware 
 Source-backed implementation does not certify every receiver/firmware combination. Physical compatibility is recorded as deferred work. Discovery failures preserve uncertainty instead of implying disconnection; unknown device fields remain explicit.
 
 For a later Alienware capture, use the [manual capture and offline analysis procedure](docs/research/alienware-capture.md). Its Python helper reads existing files only; it never starts AWCC or sends HID commands. The [AWCC-derived protocol evidence](docs/research/alienware-awcc.md) and [third-party notice](THIRD_PARTY_NOTICES.md) are retained in the repository and notice is included in the application build output.
+
+## Optional roadmap
+
+Read-only status/JSON/diagnostic CLI commands, a local battery API, capture-assisted protocol learning and an optional Logitech G Hub data source remain roadmap items, pending a separate request. No listener or G Hub integration is enabled. [Reference research and licences](docs/research/reference-projects.md) records how the requested projects informed this work.

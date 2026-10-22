@@ -116,3 +116,78 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
+
+  application-smoke:
+    name: Windows application smoke (${{ matrix.flavor }}, synthetic data only)
+    needs: [package]
+    runs-on: windows-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [framework-dependent, self-contained]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-preview-win-x64-${{ matrix.flavor }}-${{ github.run_attempt }}
+          path: artifacts/smoke-input
+      - name: Extract inspected portable package
+        run: |
+          $archive = @(Get-ChildItem artifacts/smoke-input -Filter '*-${{ matrix.flavor }}.zip')
+          if ($archive.Count -ne 1) { throw 'Expected one inspected application ZIP.' }
+          Expand-Archive -LiteralPath $archive[0].FullName -DestinationPath smoke-app
+      - name: Launch isolated software smoke branch (no HID or network)
+        run: ./.github/scripts/run-application-smoke.ps1 -ApplicationPath smoke-app/DeviceBatteryStatus.exe -ReportDirectory artifacts/application-smoke -RequirePackageManifest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: application-smoke-evidence-${{ matrix.flavor }}-${{ github.run_attempt }}
+          path: artifacts/application-smoke/
+          if-no-files-found: error
+          retention-days: 30
+
+  installer:
+    name: Per-user installer build and install/upgrade/uninstall smoke (no app launch)
+    needs: [package]
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-preview-win-x64-self-contained-${{ github.run_attempt }}
+          path: artifacts/installer-input
+      - name: Build per-user installer from inspected self-contained ZIP
+        run: |
+          $archive = @(Get-ChildItem artifacts/installer-input -Filter '*-self-contained.zip')
+          if ($archive.Count -ne 1) { throw 'Expected one inspected self-contained application ZIP.' }
+          ./.github/scripts/build-installer.ps1 -PackagePath $archive[0].FullName -CreateUpgradeFixture
+      - name: Smoke install, upgrade and uninstall without launching application
+        run: |
+          $setup = @(Get-ChildItem artifacts/installer -Filter '*-win-x64-setup.exe')
+          $fixture = @(Get-ChildItem artifacts/installer/upgrade-fixture -Filter '*-win-x64-setup.exe')
+          if ($setup.Count -ne 1 -or $fixture.Count -ne 1) { throw 'Expected the candidate installer and one upgrade fixture.' }
+          ./.github/scripts/test-installer.ps1 -InstallerPath $setup[0].FullName -UpgradeFixturePath $fixture[0].FullName
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: installer-smoke-evidence-${{ github.run_attempt }}
+          path: |
+            artifacts/installer-smoke/
+            ci-logs/
+          if-no-files-found: error
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-win-x64-${{ github.run_attempt }}
+          path: |
+            artifacts/installer/*-win-x64-setup.exe
+            artifacts/installer/*.sha256
+            artifacts/installer/installer-release.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30

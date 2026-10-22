@@ -17,7 +17,13 @@
                 <Label Content="_Refresh interval (seconds)" Target="{Binding ElementName=IntervalBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
                 <TextBox x:Name="IntervalBox" MaxLength="4" AutomationProperties.Name="Refresh interval in seconds" />
                 <TextBlock Text="10–3600 seconds" FontSize="11" Foreground="#888888" Margin="0,4,0,15" />
-                <Label Content="_Tray icon device" Target="{Binding ElementName=PreferredBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
+                <Label Content="Tray icon mode" Target="{Binding ElementName=TrayModeBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
+                <ComboBox x:Name="TrayModeBox" DisplayMemberPath="Name" SelectionChanged="TrayMode_Changed" MinHeight="30" Margin="0,0,0,10" />
+                <StackPanel x:Name="TraySelectionPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                    <TextBlock Text="Choose up to 16 devices for separate icons. With none selected, the summary icon remains available." Foreground="#999999" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8" />
+                    <StackPanel x:Name="TrayDevicesPanel" />
+                </StackPanel>
+                <Label Content="_Single-icon device" Target="{Binding ElementName=PreferredBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
                 <ComboBox x:Name="PreferredBox" DisplayMemberPath="Name" MinHeight="30" Margin="0,0,0,5" AutomationProperties.Name="Tray icon device" />
                 <TextBlock Text="A selected device turns neutral when its reading is unavailable." FontSize="11" Foreground="#999999" TextWrapping="Wrap" Margin="0,0,0,15" />
                 <CheckBox x:Name="NotifyBox" Content="Low-battery notifications" Foreground="#EEEEEE" Margin="0,0,0,8" />
@@ -29,6 +35,16 @@
                 <TextBlock x:Name="StartupNote" TextWrapping="Wrap" Foreground="#999999" FontSize="11" Margin="0,0,0,16" />
                 <Button x:Name="PollingButton" Content="Open polling-rate control…" HorizontalAlignment="Left"
                         Click="Polling_Click" Margin="0,0,0,18" />
+                <TextBlock Text="Updates" FontWeight="SemiBold" Foreground="#44D62C" Margin="0,0,0,8" />
+                <ComboBox x:Name="UpdateModeBox" DisplayMemberPath="Name" MinHeight="30" Margin="0,0,0,8" AutomationProperties.Name="Update checking mode" />
+                <TextBlock Text="Notify only checks once a day. Downloading and installing always require separate actions. Save mode changes before checking." Foreground="#999999" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8" />
+                <Button x:Name="UpdatesButton" Content="Check for updates…" Click="Updates_Click" HorizontalAlignment="Left" Margin="0,0,0,18" />
+                <TextBlock Text="Diagnostics" FontWeight="SemiBold" Foreground="#44D62C" Margin="0,0,0,8" />
+                <TextBlock Text="Logs have bounded storage. Serial numbers and identifying device paths are redacted. Review an export before sharing it." Foreground="#999999" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8" />
+                <WrapPanel Margin="0,0,0,18">
+                    <Button x:Name="OpenLogsButton" Content="Open logs" Click="OpenLogs_Click" Margin="0,0,8,0" />
+                    <Button x:Name="ExportLogsButton" Content="Export diagnostic report…" Click="ExportLogs_Click" />
+                </WrapPanel>
                 <TextBlock Text="Device names" FontWeight="SemiBold" Foreground="#44D62C" Margin="0,0,0,8" />
                 <StackPanel x:Name="AliasPanel" />
                 <TextBlock x:Name="EmptyNames" Text="Names will appear here after a device is detected." Foreground="#999999" TextWrapping="Wrap" />

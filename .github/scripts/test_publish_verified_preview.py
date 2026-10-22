@@ -64,6 +64,16 @@ class ReleasePolicyTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             publisher.release_policy({**self.stable(), "tag": "v2.0.0"}, "1.0.0", "Unsigned release")
 
+    def test_optional_smoke_and_installer_policies_reject_ambiguous_values(self):
+        for extra in [{"appSmoke": "true"}, {"appSmoke": 1}, {"appSmokeCheckCount": 0},
+                      {"appSmokeCheckCount": True}, {"installer": True}, {"installer": {}},
+                      {"installer": {"bytes": True, "sha256": "a" * 64}},
+                      {"installer": {"bytes": 42, "sha256": "A" * 64}}]:
+            with self.subTest(extra=extra), self.assertRaises(SystemExit):
+                publisher.release_policy({**self.stable(), **extra}, "1.0.0", "Unsigned release")
+        publisher.release_policy({**self.stable(), "appSmoke": True, "appSmokeCheckCount": 8,
+                                  "installer": {"bytes": 42, "sha256": "a" * 64}}, "1.0.0", "Unsigned release")
+
     def test_offline_result_count_is_configurable_and_exact(self):
         self.assertEqual({"executed": 3, "passed": 3, "failed": 0, "skipped": 0},
                          publisher.offline_test_counts("Ran 3 tests in 0.01s\n\nOK\n\nnative_exit_code=0\n", 3))
@@ -105,6 +115,78 @@ class ReleasePolicyTests(unittest.TestCase):
             publisher.validate_assets([matching, matching], expected)
 
 
+class SmokeEvidenceValidationTests(unittest.TestCase):
+    def manifest(self):
+        return {"version": "1.0.0", "sourceCommit": "a" * 40, "buildRun": 11,
+                "installer": {"bytes": 42, "sha256": "b" * 64},
+                "packages": {"self-contained": {"bytes": 84, "sha256": "c" * 64}}}
+
+    def installer_metadata(self):
+        manifest = self.manifest()
+        return {"schemaVersion": 1, "product": "Device Battery Status", "version": "1.0.0", "runtimeIdentifier": "win-x64",
+                "distribution": "per-user-installer", "signed": False, "sourceCommit": "a" * 40, "repository": "owner/repo",
+                "workflowRun": "11", "workflowAttempt": "1", "applicationLaunched": False, "hardwareVerified": False,
+                "appId": "D38FB615-37DB-4AC0-92CE-BD1F947B9732",
+                "package": {"name": "DeviceBatteryStatus-1.0.0-win-x64-self-contained.zip", "bytes": 84, "sha256": "c" * 64,
+                            "workflowRun": "11", "workflowAttempt": "1"},
+                "installer": {"name": "DeviceBatteryStatus-1.0.0-win-x64-setup.exe", **manifest["installer"]},
+                "compiler": {"product": "Inno Setup", "version": "6.7.1", "sha256": "d" * 64}}
+
+    def installer_smoke(self):
+        return {"schemaVersion": 1, "passed": True, "sourceCommit": "a" * 40, "version": "1.0.0", "workflowRun": "11",
+                "workflowAttempt": "1", "installerSha256": "b" * 64, "installerBytes": 42,
+                "checks": ["Initial install", "Upgrade", "Settings preserved", "Clean uninstall"], "checkCount": 4,
+                "initialInstallPassed": True, "upgradePassed": True, "ownedStartupUninstallPassed": True,
+                "foreignStartupUninstallPassed": True, "settingsPreserved": True, "cleanUninstall": True,
+                "installerExecuted": True, "applicationLaunched": False, "hardwareVerified": False}
+
+    def application_smoke(self):
+        return {"schemaVersion": 1, "mode": "hardware-free-windows-application-smoke", "passed": True,
+                "appVersion": "1.0.0", "sourceCommit": "a" * 40, "repository": "owner/repo", "workflowRun": "11",
+                "workflowAttempt": "1", "flavor": "self-contained", "runtimeIdentifier": "win-x64",
+                "packagePayloadVerified": True, "counters": {"total": 8, "executed": 8, "passed": 8, "failed": 0},
+                "checks": [{"name": f"check-{index}", "passed": True} for index in range(8)],
+                "applicationLaunched": True, "normalApplicationControllerStarted": False, "hardwareAccessed": False,
+                "networkAccessed": False, "startupRegistrationAccessed": False, "userSettingsPersisted": False}
+
+    def test_installer_source_payload_and_unsigned_provenance_must_match(self):
+        manifest, report = self.manifest(), self.installer_metadata()
+        publisher.validate_installer_metadata(report, manifest, "owner/repo")
+        for field, bad in [("sourceCommit", "e" * 40), ("workflowAttempt", "2"), ("signed", True),
+                           ("applicationLaunched", True), ("appId", "different")]:
+            with self.subTest(field=field), self.assertRaises(SystemExit):
+                publisher.validate_installer_metadata({**report, field: bad}, manifest, "owner/repo")
+        for field in ["package", "installer", "compiler"]:
+            altered = copy.deepcopy(report)
+            altered[field]["sha256"] = "wrong"
+            with self.subTest(field=field), self.assertRaises(SystemExit):
+                publisher.validate_installer_metadata(altered, manifest, "owner/repo")
+
+    def test_installer_smoke_requires_each_lifecycle_result_and_exact_installer(self):
+        manifest, report = self.manifest(), self.installer_smoke()
+        self.assertTrue(publisher.validate_installer_smoke(report, manifest)["installerExecuted"])
+        for field in ["initialInstallPassed", "upgradePassed", "ownedStartupUninstallPassed", "foreignStartupUninstallPassed",
+                      "settingsPreserved", "cleanUninstall", "installerExecuted"]:
+            with self.subTest(field=field), self.assertRaises(SystemExit):
+                publisher.validate_installer_smoke({**report, field: False}, manifest)
+        for extra in [{"checkCount": 5}, {"installerSha256": "e" * 64}, {"workflowRun": "12"},
+                      {"applicationLaunched": True}, {"hardwareVerified": True}, {"checks": ["same"] * 4}]:
+            with self.subTest(extra=extra), self.assertRaises(SystemExit):
+                publisher.validate_installer_smoke({**report, **extra}, manifest)
+
+    def test_application_smoke_requires_real_passed_checks_and_explicit_isolation(self):
+        manifest, report = self.manifest(), self.application_smoke()
+        self.assertTrue(publisher.validate_application_smoke(report, manifest, "owner/repo", "self-contained")["applicationLaunched"])
+        for extra in [{"sourceCommit": "e" * 40}, {"flavor": "framework-dependent"}, {"packagePayloadVerified": False},
+                      {"applicationLaunched": False}, {"normalApplicationControllerStarted": True},
+                      {"hardwareAccessed": True}, {"networkAccessed": True}, {"startupRegistrationAccessed": True},
+                      {"userSettingsPersisted": True}, {"counters": {"total": 8, "executed": 8, "passed": 7, "failed": 1}},
+                      {"checks": [{"name": "same", "passed": True}] * 8},
+                      {"checks": [{"name": f"check-{i}", "passed": i != 3} for i in range(8)]}]:
+            with self.subTest(extra=extra), self.assertRaises(SystemExit):
+                publisher.validate_application_smoke({**report, **extra}, manifest, "owner/repo", "self-contained")
+
+
 class OfficialPublicationIntegrationTests(unittest.TestCase):
     def test_partial_upload_and_published_retry_preserve_assets_and_immutable_evidence(self):
         self.exercise_publication()
@@ -112,7 +194,16 @@ class OfficialPublicationIntegrationTests(unittest.TestCase):
     def test_optional_release_automation_evidence_is_checked_and_bundled(self):
         self.exercise_publication(automation_count=7)
 
-    def exercise_publication(self, automation_count=None):
+    def test_optional_installer_and_application_runtime_evidence_are_checked_and_bundled(self):
+        self.exercise_publication(with_installer=True, with_app_smoke=True)
+
+    def test_failed_installer_lifecycle_cannot_upload_or_publish(self):
+        self.exercise_publication(with_installer=True, corrupt_optional="installer")
+
+    def test_failed_application_smoke_cannot_upload_or_publish(self):
+        self.exercise_publication(with_app_smoke=True, corrupt_optional="application")
+
+    def exercise_publication(self, automation_count=None, with_installer=False, with_app_smoke=False, corrupt_optional=None):
         source, automation = "a" * 40, "b" * 40
         repository, notes = "owner/repo", "Unsigned official release. Runtime and hardware checks are deferred.\n"
         manifest = {"version": "1.0.0", "tag": "v1.0.0", "releaseId": 101, "sourceCommit": source,
@@ -145,6 +236,29 @@ class OfficialPublicationIntegrationTests(unittest.TestCase):
             fixtures["full-release-automation-tests-1"] = {
                 "ci-logs/release-automation.log":
                     f"Ran {automation_count} tests in 0.01s\n\nOK\n\nnative_exit_code=0\n".encode()}
+        helper = SmokeEvidenceValidationTests()
+        if with_installer:
+            data = b"MZ synthetic installer fixture; never executed"
+            digest = hashlib.sha256(data).hexdigest()
+            name = "DeviceBatteryStatus-1.0.0-win-x64-setup.exe"
+            manifest["installer"] = {"bytes": len(data), "sha256": digest}
+            metadata = helper.installer_metadata()
+            metadata["package"] = {"name": "DeviceBatteryStatus-1.0.0-win-x64-self-contained.zip",
+                                   **manifest["packages"]["self-contained"], "workflowRun": "11", "workflowAttempt": "1"}
+            metadata["installer"] = {"name": name, **manifest["installer"]}
+            fixtures["windows-installer-win-x64-1"] = {name: data, name.removesuffix(".exe") + ".sha256": f"{digest}  {name}\n".encode(),
+                                                        "installer-release.json": json.dumps(metadata).encode()}
+            smoke = {**helper.installer_smoke(), "installerSha256": digest, "installerBytes": len(data)}
+            if corrupt_optional == "installer":
+                smoke["foreignStartupUninstallPassed"] = False
+            fixtures["installer-smoke-evidence-1"] = {"installer-smoke.json": json.dumps(smoke).encode(), "install.log": b"Synthetic fixture"}
+        if with_app_smoke:
+            manifest["appSmoke"] = True
+            for flavor in ["framework-dependent", "self-contained"]:
+                smoke = {**helper.application_smoke(), "flavor": flavor}
+                if corrupt_optional == "application":
+                    smoke["checks"][0]["passed"] = False
+                fixtures[f"application-smoke-evidence-{flavor}-1"] = {"application-smoke.json": json.dumps(smoke).encode()}
         release = {"id": 101, "tag_name": "v1.0.0", "target_commitish": source, "prerelease": False,
                    "draft": True, "body": notes, "assets": [], "html_url": "https://github.com/owner/repo/releases/tag/v1.0.0"}
         # Start from an interrupted attempt with one verified application asset already present.
@@ -202,9 +316,15 @@ class OfficialPublicationIntegrationTests(unittest.TestCase):
                 (directory / "1.0.0.md").write_text(notes)
                 env = {"GITHUB_REPOSITORY": repository, "RELEASE_VERSION": "1.0.0", "GITHUB_SHA": "c" * 40, "GITHUB_RUN_ID": "33"}
                 with patch.dict(os.environ, env), patch.object(publisher, "gh", side_effect=fake_gh), contextlib.redirect_stdout(io.StringIO()):
+                    if corrupt_optional is not None:
+                        with self.assertRaises(SystemExit):
+                            publisher.main()
+                        self.assertEqual([], mutations)
+                        self.assertTrue(release["draft"])
+                        return
                     publisher.main()
                     first_digest = next(asset["digest"] for asset in release["assets"] if asset["name"].endswith("-verification.zip"))
-                    self.assertEqual(6, len(release["assets"]))
+                    self.assertEqual(8 if with_installer else 6, len(release["assets"]))
                     self.assertEqual([("release", "upload"), ("release", "edit")], mutations)
                     shutil.rmtree("release-staging")
                     os.environ["GITHUB_RUN_ID"] = "34"
@@ -216,6 +336,25 @@ class OfficialPublicationIntegrationTests(unittest.TestCase):
                     self.assertFalse(receipt["signed"])
                     self.assertEqual("34", receipt["publicationWorkflowRun"])
                     self.assertEqual(first_digest, receipt["assets"]["DeviceBatteryStatus-1.0.0-verification.zip"]["digest"])
+                    self.assertEqual(with_app_smoke, receipt["applicationLaunched"])
+                    self.assertFalse(receipt["hardwareVerified"])
+                    self.assertEqual(with_installer, receipt["installerExecuted"])
+                    with ZipFile("release-staging/verification/DeviceBatteryStatus-1.0.0-verification.zip") as archive:
+                        summary = json.loads(archive.read("verification-summary.json"))
+                        self.assertEqual(with_app_smoke, summary["applicationLaunched"])
+                        if not with_installer:
+                            self.assertNotIn("installerExecuted", summary)
+                        if not with_installer and not with_app_smoke:
+                            self.assertEqual({**manifest, "releasePolicy": {"prerelease": False, "latest": True, "signed": False},
+                                              "testResults": receipt["testResults"], "applicationLaunched": False, "hardwareVerified": False}, summary)
+                        if with_installer:
+                            self.assertIn("installer/installer-release.json", archive.namelist())
+                            self.assertIn("installer-smoke/installer-smoke.json", archive.namelist())
+                            self.assertTrue(receipt["testResults"]["installerSmoke"]["installerExecuted"])
+                        if with_app_smoke:
+                            self.assertIn("application-smoke/self-contained/application-smoke.json", archive.namelist())
+                            self.assertIn("application-smoke/framework-dependent/application-smoke.json", archive.namelist())
+                            self.assertTrue(receipt["testResults"]["applicationSmoke"]["self-contained"]["applicationLaunched"])
                     if automation_count is None:
                         self.assertNotIn("releaseAutomation", receipt["testResults"])
                     else:

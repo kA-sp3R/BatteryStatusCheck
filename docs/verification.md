@@ -1,5 +1,11 @@
 # Verification
 
+## 1.1.0 candidate
+
+The current development candidate adds Razer reference mappings/timing, bounded redacted diagnostics, optional selected-device icons, per-user installation and explicit update checks/download/install. It has not been published. Windows CI results for this candidate are pending; the passing v1.0.0 evidence below applies only to its recorded source.
+
+Compilation, Core automated tests, isolated application runtime smoke, installer lifecycle smoke and physical hardware are separate outcomes. The new runtime smoke launches the real WPF executable only through an internal test branch using synthetic data; it bypasses the normal application controller, HID discovery, network requests and startup registration. Installer smoke executes install/upgrade/uninstall in an isolated Windows runner and verifies preserved settings and cleanup without starting the installed app. Neither establishes real receiver compatibility or interactive desktop behavior.
+
 The v1.0.0 release separates compilation, automated software tests, static package inspection, application runtime and physical hardware verification. Runtime, hardware and performance work is saved in the [deferred verification record](deferred-verification.md) and is not an active release gate at the user's request. Deferral is not a passing result.
 
 ## V1.0.0 release checks

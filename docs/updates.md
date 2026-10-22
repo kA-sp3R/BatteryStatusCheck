@@ -1,0 +1,11 @@
+# Update checks and installation
+
+**Notify only** is the default: the app checks published stable GitHub releases at startup and daily while it stays open, then requests a tray notification for a newer version. It never downloads in the background. **Check manually** performs no automatic requests. **Off** disables app update checks, downloads and install actions; changing mode cancels pending update work. Save a mode change in Settings before checking.
+
+Open **Settings → Check for updates**. Checking, **Download and verify**, and **Install verified update** are separate actions. The app accepts only a newer canonical stable version from this repository. It validates repository/tag/asset names, HTTPS redirect destinations, response bounds and installer/checksum sizes. The executable SHA-256 must match both the GitHub release-asset digest and its authenticated sibling checksum. Missing digests, ambiguity, malformed data, tampering or incomplete downloads stop the operation.
+
+Install rehashes the staged file, closes the app gracefully, releases its single-instance mutex and revalidates under a read lease immediately before starting the installer. No shell association, elevated updater service, automatic execution, downgrade or write to a portable folder is used. The installer is per-user and preserves saved preferences; portable users may instead open the release page and download a ZIP. A canceled or failed download never installs anything.
+
+The checker uses no GitHub token, cookies or saved credentials. This repository is private, so unauthenticated checks/downloads may be unavailable. Open the release page in your signed-in browser when needed. Failure to retrieve a release never claims the app is up to date. No update is offered unless all required stable-release metadata is valid.
+
+Checksums and API digests establish consistency with the selected GitHub release, not a publisher signature. The candidate and current personal-use packages remain unsigned. Real release delivery, interactive installer prompts, notification delivery and third-party network conditions remain separate from fake-HTTP/unit and isolated Windows smoke tests. No new release is published until the user approves it.

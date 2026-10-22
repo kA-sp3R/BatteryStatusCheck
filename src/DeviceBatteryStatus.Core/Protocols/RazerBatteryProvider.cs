@@ -91,7 +91,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
             {
                 try
                 {
-                    byte discoveryTransaction = model.InterfaceNumber == 0 ? (byte)0x01 : (byte)0x81;
+                    byte discoveryTransaction = model.DeviceKind == RazerDeviceKind.Mouse ? (byte)0x01 : (byte)0x81;
                     var peers = await QueryAssociationAsync(transport, cancellationToken, discoveryTransaction);
                     if (peers.Status == RazerReplyStatus.Success)
                         return await ReadAssociatedReceiverAsync(endpoint, transport, observedAt, cancellationToken,
@@ -154,7 +154,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
             }
             if (connected.Length != 1 || endpoint.ProductId != 0x00B3 ||
                 !RazerDeviceCatalog.TryGet(connected[0].ProductId, out var onlyChild) ||
-                !onlyChild!.IdentifiesPeripheralModel || onlyChild.InterfaceNumber != 0)
+                !onlyChild!.IdentifiesPeripheralModel || onlyChild.DeviceKind != RazerDeviceKind.Mouse)
             {
                 return await ReadRoutedReceiverAsync(endpoint, transport, initial, observedAt, cancellationToken,
                     discoveryTransaction ?? 0x1F);
@@ -245,7 +245,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
             foreach (var paired in initial.Devices)
             {
                 byte? knownKind = RazerDeviceCatalog.TryGet(paired.ProductId, out var pairedProfile) && pairedProfile!.IdentifiesPeripheralModel
-                    ? pairedProfile.InterfaceNumber == 0 ? (byte)1 : (byte)2 : null;
+                    ? (byte)pairedProfile.DeviceKind : null;
                 byte? reportedKind = paired.ProductId == primary.ProductId ? primary.DeviceType : knownKind;
                 if (reportedKind is not (1 or 2) || (knownKind is not null && knownKind != reportedKind)) valid = false;
                 else pairedKinds.Add(reportedKind.Value);
@@ -255,7 +255,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
         foreach (var device in connected)
         {
             byte? catalogKind = RazerDeviceCatalog.TryGet(device.ProductId, out var profile) && profile!.IdentifiesPeripheralModel
-                ? profile.InterfaceNumber == 0 ? (byte)1 : (byte)2 : null;
+                ? (byte)profile.DeviceKind : null;
             byte? kind = device.ProductId == primary.ProductId ? primary.DeviceType : catalogKind;
             if (legacySingle) kind = catalogKind;
             if (kind is not (1 or 2) || (catalogKind is not null && kind != catalogKind)) valid = false;
@@ -420,7 +420,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
         for (var attempt = 0; attempt < 3; attempt++)
         {
             await transport.SetFeatureAsync(RazerWirelessProtocol.CreatePrimaryDeviceRequest(transactionId), cancellationToken);
-            await Task.Delay(TimeSpan.FromMilliseconds(60), cancellationToken);
+            await Task.Delay(RazerDeviceCatalog.GetResponseDelay(transport.Endpoint.ProductId), cancellationToken);
             var report = await transport.GetFeatureAsync(new byte[RazerProtocol.ReportLength], cancellationToken);
             reply = RazerWirelessProtocol.ParsePrimaryDeviceReply(report, transactionId);
             if (reply.Status != RazerReplyStatus.Busy) return reply;
@@ -432,7 +432,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
         byte transactionId, CancellationToken cancellationToken)
     {
         await transport.SetFeatureAsync(RazerWirelessProtocol.CreateConnectionRequest(transactionId), cancellationToken);
-        await Task.Delay(TimeSpan.FromMilliseconds(60), cancellationToken);
+        await Task.Delay(RazerDeviceCatalog.GetResponseDelay(transport.Endpoint.ProductId), cancellationToken);
         var report = await transport.GetFeatureAsync(new byte[RazerProtocol.ReportLength], cancellationToken);
         return RazerWirelessProtocol.ParseConnectionReply(report, transactionId);
     }
@@ -453,7 +453,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
         for (var attempt = 0; attempt < 3; attempt++)
         {
             await transport.SetFeatureAsync(RazerWirelessProtocol.CreateDeviceListRequest(legacy, transactionId), cancellationToken);
-            await Task.Delay(TimeSpan.FromMilliseconds(60), cancellationToken);
+            await Task.Delay(RazerDeviceCatalog.GetResponseDelay(transport.Endpoint.ProductId), cancellationToken);
             var response = await transport.GetFeatureAsync(new byte[RazerProtocol.ReportLength], cancellationToken);
             reply = RazerWirelessProtocol.ParseDeviceListReply(response, legacy, transactionId);
             if (!legacy && transactionId is null && reply.Status == RazerReplyStatus.Unsupported)
@@ -473,7 +473,7 @@ public sealed class RazerBatteryProvider : IBatteryProvider
         for (var attempt = 0; attempt < 3; attempt++)
         {
             await transport.SetFeatureAsync(RazerProtocol.CreateRequest(transactionId, command), cancellationToken);
-            await Task.Delay(TimeSpan.FromMilliseconds(60), cancellationToken);
+            await Task.Delay(RazerDeviceCatalog.GetResponseDelay(transport.Endpoint.ProductId), cancellationToken);
             var response = await transport.GetFeatureAsync(new byte[RazerProtocol.ReportLength], cancellationToken);
             reply = RazerProtocol.ParseReply(response, transactionId, command);
             if (reply.Status != RazerReplyStatus.Busy) return reply;

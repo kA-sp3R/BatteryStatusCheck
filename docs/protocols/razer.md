@@ -1,16 +1,16 @@
 # Razer battery and receiver association
 
-The software implements 46 explicit USB 2.4 GHz endpoint profiles: 36 mouse paths, six keyboard paths and four receiver masters. This includes 18 additional source-documented mouse paths and the Mouse Dock Pro, HyperFlux V2 and Mouse Dock V2 Pro masters. These are source-backed implementations, not a hardware-tested compatibility list. The complete mapping is maintained in [RazerDeviceCatalog.cs](../../src/DeviceBatteryStatus.Core/Protocols/RazerDeviceCatalog.cs).
+The software implements 47 explicit USB 2.4 GHz endpoint profiles: 37 mouse paths, six keyboard paths and four receiver masters. This includes the Viper V4 Pro receiver `00E6`, 18 previously added source-documented mouse paths and the Mouse Dock Pro, HyperFlux V2 and Mouse Dock V2 Pro masters. These are source-backed implementations, not a hardware-tested compatibility list. The complete mapping is maintained in [RazerDeviceCatalog.cs](../../src/DeviceBatteryStatus.Core/Protocols/RazerDeviceCatalog.cs).
 
 Protocol facts were independently implemented from [OpenRazer `477f4d6d3ab7e9deb6310d5bd3742560c5cbe80d`](https://github.com/openrazer/openrazer/tree/477f4d6d3ab7e9deb6310d5bd3742560c5cbe80d), static manufacturer Synapse middleware and published receiver captures. Relevant OpenRazer files are GPL-2.0-or-later; source was inspected, not copied or redistributed. Manufacturer code was inspected as text, never executed or included in this repository. Exact sources, hashes and interpretation limits are recorded in [Razer wireless research](../research/razer-wireless.md) and its [evidence manifest](../research/razer-native-evidence.json).
 
 ## Framing and values
 
-A Windows feature report contains report ID `00` followed by a 90-byte Razer message. The selected collection must support a 91-byte feature report. XOR covers message offsets 2–87, corresponding to Windows-report offsets 3–88; the checksum is at Windows offset 89. Replies must match transaction, class, command, framing, payload length and checksum. Busy replies receive bounded retries. A timeout ends the affected session's further queries.
+A Windows feature report contains report ID `00` followed by a 90-byte Razer message. The selected collection must support a 91-byte feature report. XOR covers message offsets 2–87, corresponding to Windows-report offsets 3–88; the checksum is at Windows offset 89. Replies must match transaction, class, command, framing, payload length and checksum. Busy replies receive bounded retries. A timeout ends the affected session's further queries. Atheris `0062` and Orochi V2 `0094` use the source-documented 400 ms response wait for battery, discovery/link and manual polling exchanges; the other profiles retain a conservative 60 ms wait. The shorter universal wait could fetch these slow receivers' responses before they were ready.
 
 Battery uses class `07`, command `80`, payload length `02`. Argument 1 is the reported 0–255 value, converted to 0–100%. A validated zero is **0%**. Charging uses class `07`, command `84`, payload length `02`: argument 1 of `0` means discharging, `1` means charging and other values remain unknown. A charging failure preserves an independently completed battery reading with unknown charging state. Profiles without a documented charging query skip it; missing charging support never becomes an invented discharging state.
 
-The protocol provides no battery sample timestamp or nonce. `Current` means a successful report was received during this observation; it does not prove firmware sampled its physical battery at that moment. Unknown link state can accompany a genuine reported percentage. `Disconnected`, `Unsupported` and `Failed` are separate outcomes. The monitoring service retains previous successful samples as stale after uncertain failures, preserving the original observation time.
+The protocol provides no device-side battery sample timestamp or proof of a new physical measurement. `Current` means a successful report was received during this observation; it does not prove firmware sampled its physical battery at that moment. Unknown link state can accompany a genuine reported percentage. `Disconnected`, `Unsupported` and `Failed` are separate outcomes. The monitoring service retains previous successful samples as stale after uncertain failures, preserving the original observation time.
 
 ## Endpoint selection
 
@@ -28,6 +28,7 @@ The following are legacy battery transactions. Routed DualLink reads use separat
 | `009F`, `00A6`, `00A8`, `00AB`, `00B0`, `00B4` | Viper Mini Signature Edition; Viper V2 Pro; Naga V2 Pro; Basilisk V3 Pro; Cobra Pro; Naga V2 HyperSpeed | `1F` | `00` |
 | `00B7`, `00B8`, `00B9`, `00BF`, `00C1`, `00C3`, `00C5` | DeathAdder V3 Pro; Viper V3 HyperSpeed; Basilisk V3 X HyperSpeed; DeathAdder V4 Pro; Viper V3 Pro; alternate DeathAdder V3 Pro; DeathAdder V3 HyperSpeed | `1F` | `00` |
 | `00C8`, `00CD`, `00D1`, `00D4`, `00D7`, `00DB`, `00DF` | Pro Click V2 Vertical Edition; Basilisk V3 Pro 35K; Pro Click V2; Basilisk Mobile; Basilisk V3 Pro 35K Phantom Green Edition; Cobra HyperSpeed; Viper V3 Pro SE | `1F` | `00` |
+| `00E6` | Viper V4 Pro wireless receiver | `1F` | `03` |
 | `025C`, `0290`, `0296`, `02D5` | BlackWidow V3 Pro; DeathStalker V2 Pro; DeathStalker V2 Pro TKL; BlackWidow V4 Tenkeyless HyperSpeed | `9F` | `02` |
 | `0271`, `02BA` | BlackWidow V3 Mini HyperSpeed; BlackWidow V4 Mini HyperSpeed | `9F` | `03` |
 
@@ -40,7 +41,9 @@ The four master profiles identify receivers, not the dock's own battery or an in
 | `00CF` | HyperFlux V2 | `E1` | `00` |
 | `00F1` | Mouse Dock V2 Pro | `E1` | `03` |
 
-Composite Windows HID paths must have the matching case-insensitive `&mi_XX` interface component. Non-composite paths without an MI component are accepted. Interface number and report ID are distinct: interface `03` still uses raw report ID `00`. Static manufacturer transport evidence supports this distinction; actual Windows routing remains physically unverified.
+The Viper V4 Pro mapping is independently corroborated by [razer-battery-report `4abf90c2`](https://github.com/xzeldon/razer-battery-report/tree/4abf90c280a35fe9c451c17589bedaf237204ec9) and [OpenRazer PR 2751 head `1f25202a`](https://github.com/openrazer/openrazer/tree/1f25202a06fc9d37a2475ce71cc0b68fa6bff96c). The PR remains unmerged; its interface-3 correction and battery/charging command mappings are explicit, with external user reports. These establish source evidence, not local hardware validation. Wired companion `00E5` stays excluded. See the [reference comparison](../research/reference-projects.md).
+
+Composite Windows HID paths must have the matching case-insensitive `&mi_XX` interface component. Non-composite paths without an MI component are accepted. Device type is explicit catalog metadata rather than inferred from interface number: `00E6` is a **mouse on interface 03**, while some keyboards and receiver masters also use interface 03. Mouse/keyboard transaction namespaces follow that type. Interface number and report ID are distinct: interface `03` still uses raw report ID `00`. Static manufacturer transport evidence supports this distinction; actual Windows routing remains physically unverified.
 
 The 18 added mouse paths are `0025`, `003F`, `0045`, `005A`, `0062`, `006F`, `0072`, `0077`, `0090`, `0094`, `009A`, `00A8`, `00B4`, `00C8`, `00CD`, `00D1`, `00D4` and `00D7`. Source ambiguity is not resolved by admitting wired companions. The inspected Huntsman family entries are wired USB devices without the wireless battery interface; they are **outside this project's 2.4 GHz scope**, not an unfinished wireless implementation.
 

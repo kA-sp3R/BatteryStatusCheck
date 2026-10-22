@@ -19,6 +19,7 @@ public sealed class TrayIconService : IDisposable
     private uint dpi;
     private uint taskbarDpi;
     private bool disposed;
+    private Action? notificationClick;
 
     public TrayIconService(Action togglePopup, Action showSettings, Action refresh, Action exit)
     {
@@ -44,7 +45,14 @@ public sealed class TrayIconService : IDisposable
         {
             if (!disposed && args.Button == Forms.MouseButtons.Left) togglePopup();
         };
-        notifyIcon.BalloonTipClicked += (_, _) => { if (!disposed) togglePopup(); };
+        notifyIcon.BalloonTipClicked += (_, _) =>
+        {
+            if (disposed) return;
+            var action = notificationClick;
+            notificationClick = null;
+            if (action is null) togglePopup();
+            else action();
+        };
         try
         {
             taskbarDpi = ReadTaskbarDpi();
@@ -59,7 +67,8 @@ public sealed class TrayIconService : IDisposable
         }
         catch
         {
-            Dispose();
+            try { Dispose(); }
+            catch { /* Preserve the original construction failure. */ }
             throw;
         }
         // NotifyIcon handles Explorer's TaskbarCreated message and restores its icon itself.
@@ -122,8 +131,28 @@ public sealed class TrayIconService : IDisposable
         dispatcher.VerifyAccess();
         if (disposed || alert.Percentage is < 0 or > 100) return;
         var text = LimitText($"{alert.Name}: {alert.Percentage}% battery remaining.", 255, "Low battery");
+        notificationClick = null;
         notifyIcon.ShowBalloonTip(5000, "Device Battery Status", text, Forms.ToolTipIcon.Warning);
         // Windows notification preferences may suppress this request; delivery is not guaranteed.
+    }
+
+    public void ShowInformation(string title, string message, Action onClick)
+    {
+        dispatcher.VerifyAccess();
+        if (disposed) return;
+        ArgumentNullException.ThrowIfNull(onClick);
+        notificationClick = onClick;
+        try
+        {
+            notifyIcon.ShowBalloonTip(5000,
+                LimitText(title, 63, "Device Battery Status"),
+                LimitText(message, 255, "Open Settings for details."), Forms.ToolTipIcon.Info);
+        }
+        catch
+        {
+            notificationClick = null;
+            throw;
+        }
     }
 
     private static string LimitText(string? text, int maximum, string fallback)
@@ -168,13 +197,26 @@ public sealed class TrayIconService : IDisposable
         dispatcher.VerifyAccess();
         if (disposed) return;
         disposed = true;
-        notifyIcon.Visible = false;
-        notifyIcon.Dispose();
-        menu.Dispose();
-        ownedIcon?.Dispose();
+        notificationClick = null;
+        // Detach every owned resource even when a shell call fails during shutdown.
+        var image = ownedIcon;
+        var fallback = fallbackIcon;
         ownedIcon = null;
-        fallbackIcon?.Dispose();
         fallbackIcon = null;
+        try { notifyIcon.Visible = false; }
+        finally
+        {
+            try { notifyIcon.Dispose(); }
+            finally
+            {
+                try { menu.Dispose(); }
+                finally
+                {
+                    try { image?.Dispose(); }
+                    finally { fallback?.Dispose(); }
+                }
+            }
+        }
     }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]

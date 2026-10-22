@@ -1,6 +1,6 @@
-# Device Battery Status 1.0.0
+# Device Battery Status 1.1.0 candidate
 
-Unsigned personal-use stable release for Windows 10/11 **x64**. [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0).
+Unsigned personal-use candidate for Windows 10/11 **x64**. Publication requires a separate user decision after verification. The linked release remains the published 1.0.0 version until that decision. [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0).
 
 Windows compilation, automated software tests and package inspection are separate release checks. Their exact source, outcomes and counts are recorded in the release verification ZIP and the [verification record](https://github.com/kA-sp3R/BatteryStatusCheck/blob/main/docs/verification.md). Application runtime, hardware compatibility and resource measurements are saved in the [deferred verification record](https://github.com/kA-sp3R/BatteryStatusCheck/blob/main/docs/deferred-verification.md). This release does not certify physical hardware behavior.
 
@@ -40,4 +40,12 @@ Each application ZIP includes `THIRD_PARTY_NOTICES.md` and `package-manifest.jso
 
 Each ZIP has a sibling `.sha256` asset. In PowerShell, `Get-FileHash .\DeviceBatteryStatus-*.zip -Algorithm SHA256` lets you compare a downloaded archive with that checksum. The release verification ZIP contains the software test reports, logs and release/package provenance. Checksums establish consistency; these packages have no Authenticode signature.
 
-The Windows build workflow inspects archive paths, payload hashes, PE architecture/subsystem, runtime metadata and license provenance without launching the app. The separate manual publisher checks the reviewed release policy, successful build and full-test evidence, exact package bytes and uploaded asset digests before publishing. Stable version 1.0.0 is the personal-use release channel; the saved runtime/hardware deferrals remain applicable.
+The Windows build workflow inspects archive paths, payload hashes, PE architecture/subsystem, runtime metadata and license provenance without launching the app. The separate manual publisher checks the reviewed release policy, successful build and full-test evidence, exact package bytes and uploaded asset digests before publishing. The published stable channel remains 1.0.0 until a new release is approved; the saved runtime/hardware deferrals remain applicable.
+
+## Per-user installer, diagnostics and device icons
+
+The candidate also includes `DeviceBatteryStatus-1.1.0-win-x64-setup.exe` with a sibling SHA-256 file. It installs the self-contained package for the current user, with no driver/service/admin requirement and no automatic app launch. Close the running app before installing or uninstalling. Saved preferences and diagnostic logs in `%LOCALAPPDATA%\DeviceBatteryStatus` remain through upgrades and uninstall; installed files, owned shortcuts and an exact matching installed-copy startup entry are removed on uninstall.
+
+Settings retains one summary icon by default; separate selected-device icons are optional. Category/unknown/stale icons stay neutral. Open logs/export diagnostics from Settings; local storage is bounded and serials/identifying paths are redacted, with raw reports and saved settings excluded.
+
+Update checks default to notify-only and support manual/off modes. Download and Install are separate explicit actions. Installer size, API SHA-256 digest and checksum must agree; the app rechecks a staged file under a read lease before starting it after shutdown. This establishes asset integrity, not an Authenticode signature. A private repository may require opening its release page in a signed-in browser instead of in-app downloading; credentials are not stored by this app.

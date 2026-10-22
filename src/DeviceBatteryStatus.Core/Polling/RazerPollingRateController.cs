@@ -183,7 +183,7 @@ public sealed class RazerPollingRateController : IPollingRateController
         var request = profile.HighRate ? RazerPollingProtocol.CreateHighRateReadRequest(profile.Read)
             : RazerPollingProtocol.CreateReadRequest(profile.Read);
         await transport.SetFeatureAsync(request, cancellationToken).ConfigureAwait(false);
-        await Task.Delay(TimeSpan.FromMilliseconds(60), cancellationToken).ConfigureAwait(false);
+        await Task.Delay(RazerDeviceCatalog.GetResponseDelay(transport.Endpoint.ProductId), cancellationToken).ConfigureAwait(false);
         var reply = await transport.GetFeatureAsync(new byte[RazerPollingProtocol.ReportLength], cancellationToken)
             .ConfigureAwait(false);
         return profile.HighRate ? RazerPollingProtocol.ParseHighRateReadReply(reply, profile.Read)
@@ -195,7 +195,7 @@ public sealed class RazerPollingRateController : IPollingRateController
     {
         cancellationToken.ThrowIfCancellationRequested();
         await transport.SetFeatureAsync(request, cancellationToken).ConfigureAwait(false);
-        await Task.Delay(TimeSpan.FromMilliseconds(60), cancellationToken).ConfigureAwait(false);
+        await Task.Delay(RazerDeviceCatalog.GetResponseDelay(transport.Endpoint.ProductId), cancellationToken).ConfigureAwait(false);
         var acknowledgement = await transport.GetFeatureAsync(new byte[RazerPollingProtocol.ReportLength], cancellationToken)
             .ConfigureAwait(false);
         if (highRate) RazerPollingProtocol.ValidateHighRateWriteReply(acknowledgement, transactionId);
@@ -250,7 +250,7 @@ public sealed class RazerPollingRateController : IPollingRateController
                suffix == productId.ToString("X4", CultureInfo.InvariantCulture) &&
                string.Equals(device.ModelId, $"1532:{productId:X4}", StringComparison.OrdinalIgnoreCase))) return false;
         bool knownMouse = RazerDeviceCatalog.TryGet(productId, out var profile) &&
-                          profile!.IdentifiesPeripheralModel && profile.InterfaceNumber == 0;
+                          profile!.IdentifiesPeripheralModel && profile.DeviceKind == RazerDeviceKind.Mouse;
         return endpoint.ProductId == 0x00B3
             ? !RazerDeviceCatalog.TryGet(productId, out _) || knownMouse
             : productId == endpoint.ProductId && Models.ContainsKey(endpoint.ProductId) && knownMouse;
@@ -308,7 +308,7 @@ public sealed class RazerPollingRateController : IPollingRateController
         {
             await transport.SetFeatureAsync(RazerWirelessProtocol.CreatePrimaryDeviceRequest(transaction), cancellationToken)
                 .ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromMilliseconds(60), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(RazerDeviceCatalog.GetResponseDelay(transport.Endpoint.ProductId), cancellationToken).ConfigureAwait(false);
             var response = await transport.GetFeatureAsync(new byte[RazerPollingProtocol.ReportLength], cancellationToken)
                 .ConfigureAwait(false);
             reply = RazerWirelessProtocol.ParsePrimaryDeviceReply(response, transaction);
@@ -325,7 +325,7 @@ public sealed class RazerPollingRateController : IPollingRateController
         {
             await transport.SetFeatureAsync(RazerWirelessProtocol.CreateDeviceListRequest(legacy, transactionId), cancellationToken)
                 .ConfigureAwait(false);
-            await Task.Delay(TimeSpan.FromMilliseconds(60), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(RazerDeviceCatalog.GetResponseDelay(transport.Endpoint.ProductId), cancellationToken).ConfigureAwait(false);
             var response = await transport.GetFeatureAsync(new byte[RazerPollingProtocol.ReportLength], cancellationToken)
                 .ConfigureAwait(false);
             reply = RazerWirelessProtocol.ParseDeviceListReply(response, legacy, transactionId);
