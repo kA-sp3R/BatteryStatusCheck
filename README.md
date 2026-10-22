@@ -6,7 +6,7 @@ Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circu
 
 - `Core`: battery state model, refresh/reconnection coordination, read-only battery protocols, independent manual polling-rate controllers, settings and presentation/notification policies.
 - `Windows`: native SetupAPI/HID discovery and cancellable I/O, plus opt-in Windows startup. USB ancestry excludes Bluetooth.
-- `App`: one tray icon, a 300-DIP popup, settings, automatic refresh and clean cancellation.
+- `App`: a default summary icon or selected-device icons, a 300-DIP popup, settings, automatic refresh and clean cancellation.
 - `Tests`: focused hardware-free state, framing, association, settings and presentation tests. They never enumerate HID or launch the app.
 
 ## Tray and preferences
@@ -19,7 +19,7 @@ Settings are stored at `%LOCALAPPDATA%\DeviceBatteryStatus\settings.json`: refre
 
 Notifications default to 20%, suppress known charging/full states, and require a fresh measured percentage. A new alert requires a fresh recovery at least five percentage points above the threshold. Unknown charging state stays unknown. Windows notification preferences can suppress delivery. Startup is off unless explicitly enabled in Settings and registers only the current `DeviceBatteryStatus.exe` apphost for the current user.
 
-Freshness is checked every five seconds independently of hardware polling. Samples older than twice the refresh interval plus five seconds turn stale, and readings from before sleep stay stale until refreshed. The icon is rendered for the notification area's DPI, including centered `0` and `100`; rendered behavior is part of the deferred runtime checks.
+Freshness is checked every five seconds independently of hardware polling. Samples older than twice the refresh interval plus five seconds turn stale, and readings from before sleep stay stale until refreshed. The icon is rendered for the notification area's DPI, including centered `0` and `100`. Isolated Windows smoke exercises native rendering at several sizes; physical mixed-monitor behavior remains unverified.
 
 ## Device icons, diagnostics and updates
 
@@ -59,7 +59,7 @@ Download an application ZIP from the [v1.0.0 release page](https://github.com/kA
 
 The manual **Full software suite (no application or hardware launch)** workflow tests an exact source commit without filters in Debug and Release on Windows and runs all offline parser tests. The exact checked source, test counts and outcomes are recorded in [verification status](docs/verification.md) and the release evidence bundle. Publication uses a separate manual workflow that checks the reviewed release manifest, successful build/full-test runs, package provenance, payload hashes and uploaded asset digests before publishing the release.
 
-Windows compilation, automated tests, application runtime and physical hardware are tracked separately. Runtime, hardware and resource measurements are deferred for this personal-use release; resume those checks only with explicit permission. See [verification status](docs/verification.md) and [deferred work](docs/deferred-verification.md).
+Windows compilation, automated tests, isolated application runtime smoke, installer lifecycle smoke and physical hardware are tracked separately. The improvement smoke uses synthetic data and never starts normal monitoring or accesses HID. Normal monitoring, physical hardware and endurance measurements remain deferred; resume those checks only with explicit permission. See [verification status](docs/verification.md) and [deferred work](docs/deferred-verification.md).
 
 ## Battery accuracy and support
 

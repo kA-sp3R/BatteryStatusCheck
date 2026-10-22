@@ -11,12 +11,14 @@ The Windows application smoke launches only an isolated internal test branch usi
 ## Failures found during verification
 
 - Initial source `6294ce9488d6bf1a62de190caa7e55aca51ef5d0` passed Windows compilation, 919 Core tests in each configuration, 5 parser tests, 18 release-policy tests and both package inspections. Its [Windows smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39711867611) failed and is not treated as a completed verification.
-- Both application smoke jobs found a real WPF binding error: the progress bar's default two-way binding tried to write to immutable `ProgressValue`. The popup now explicitly uses a one-way binding; the same actual-render smoke will be repeated.
-- Installer compilation stopped at compiler-version detection, before installer execution. The build tool's component file version differs from its engine version; detection now uses a no-output compiler probe while retaining the supported-version guard; Windows CI will verify it.
+- Both application smoke jobs found a real WPF binding error: the progress bar's default two-way binding tried to write to immutable `ProgressValue`. The popup now explicitly uses a one-way binding; later actual-render smoke runs passed this binding.
+- Installer compilation stopped at compiler-version detection, before installer execution. The build tool's component file version differs from its engine version; detection now uses a no-output compiler probe while retaining the supported-version guard; later Windows runs compiled both the installer and upgrade fixture successfully.
 - Privacy review found a settings JSON error could expose an unregistered canonical Logitech serial/unit ID. Startup logging now omits detailed settings-load errors, and generic canonical-ID redaction has two new regression cases. Local UI errors remain available without exporting saved settings.
 
-- Corrected source `92c5e3dcbc4c29eab68aa789754b96376941f6f2` passed all 921 C# tests in each configuration and both eight-check application smoke runs. Visual review of the produced screenshots found a harness capture bug: parented content margins clipped footer evidence. Capture now renders through an origin-normalized visual brush, retaining the full margins; the UI itself passed.
+- Corrected source `92c5e3dcbc4c29eab68aa789754b96376941f6f2` passed all 921 C# tests in each configuration and both eight-check application smoke runs. Visual review of the produced screenshots found a harness capture bug: parented content margins clipped footer evidence. The initial visual-brush correction still retained the parent layout offset and cropped footer evidence. Capture is being changed to render the live Window root; the UI checks themselves passed.
 - The second installer run compiled and installed successfully, then failed its shortcut-path assertion. The retained setup log shows both shortcuts in the correct current-user default group, while the smoke expected its requested custom group. The smoke now checks the actual registered default per-user group, guards against pre-existing user folders, and retains both shortcut creation/removal assertions.
+
+- Source `125c7626a472630a86d85574ae3f51526dc70348` passed all Windows jobs, including both eight-check application smoke runs and 56 installer lifecycle assertions. Independent use of the publication validators against these actual reports caught repeated installer assertion descriptions: lifecycle stages had succeeded, but their evidence was ambiguous to the publication gate. The report now labels initial install, upgrade and reinstall checks separately and rejects duplicate descriptions during smoke. Final source-bound verification will be repeated after the capture/report corrections.
 
 ## Functions affected
 
@@ -48,6 +50,7 @@ CLI status/JSON commands, local API, capture-assisted learning and a G Hub data 
 - [README.md](../README.md)
 - [docs/deferred-verification.md](../docs/deferred-verification.md)
 - [docs/diagnostics.md](../docs/diagnostics.md)
+- [docs/improvements-verification.md](../docs/improvements-verification.md)
 - [docs/installation.md](../docs/installation.md)
 - [docs/protocols/razer-polling.md](../docs/protocols/razer-polling.md)
 - [docs/protocols/razer.md](../docs/protocols/razer.md)
@@ -57,9 +60,11 @@ CLI status/JSON commands, local API, capture-assisted learning and a G Hub data 
 - [docs/updates.md](../docs/updates.md)
 - [docs/verification.md](../docs/verification.md)
 - [installer/DeviceBatteryStatus.iss](../installer/DeviceBatteryStatus.iss)
+- [installer/compiler-probe.iss](../installer/compiler-probe.iss)
 - [src/DeviceBatteryStatus.App/App.xaml.cs](../src/DeviceBatteryStatus.App/App.xaml.cs)
 - [src/DeviceBatteryStatus.App/ApplicationController.cs](../src/DeviceBatteryStatus.App/ApplicationController.cs)
 - [src/DeviceBatteryStatus.App/DeviceBatteryStatus.App.csproj](../src/DeviceBatteryStatus.App/DeviceBatteryStatus.App.csproj)
+- [src/DeviceBatteryStatus.App/PopupWindow.xaml](../src/DeviceBatteryStatus.App/PopupWindow.xaml)
 - [src/DeviceBatteryStatus.App/SettingsWindow.xaml](../src/DeviceBatteryStatus.App/SettingsWindow.xaml)
 - [src/DeviceBatteryStatus.App/SettingsWindow.xaml.cs](../src/DeviceBatteryStatus.App/SettingsWindow.xaml.cs)
 - [src/DeviceBatteryStatus.App/Testing/SoftwareSmokeTest.cs](../src/DeviceBatteryStatus.App/Testing/SoftwareSmokeTest.cs)
@@ -83,4 +88,3 @@ CLI status/JSON commands, local API, capture-assisted learning and a G Hub data 
 - [tests/DeviceBatteryStatus.Tests/SettingsExtensionsTests.cs](../tests/DeviceBatteryStatus.Tests/SettingsExtensionsTests.cs)
 - [tests/DeviceBatteryStatus.Tests/TrayIconSelectionTests.cs](../tests/DeviceBatteryStatus.Tests/TrayIconSelectionTests.cs)
 - [tests/DeviceBatteryStatus.Tests/UpdateServiceTests.cs](../tests/DeviceBatteryStatus.Tests/UpdateServiceTests.cs)
-- [docs/improvements-verification.md](improvements-verification.md) (this record)

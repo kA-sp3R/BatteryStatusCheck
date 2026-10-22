@@ -46,6 +46,7 @@ $foreignStartupUninstallPassed = $false
 
 function Assert-InstallerCheck([bool]$Condition, [string]$Description) {
     if (!$Condition) { throw $Description }
+    if ($checks.Contains($Description)) { throw "Ambiguous repeated installer smoke check: $Description" }
     $checks.Add($Description)
 }
 function Read-UninstallValue([string]$Name) {
@@ -95,9 +96,9 @@ function Assert-SettingsPreserved([string]$Stage) {
     Assert-InstallerCheck ((Get-FileHash -LiteralPath (Join-Path $dataDirectory 'settings.json.bak') -Algorithm SHA256).Hash -ceq $script:backupHash) "Settings backup preserved after $Stage"
     Assert-InstallerCheck ((Get-FileHash -LiteralPath (Join-Path $dataDirectory 'logs/smoke-preservation.jsonl') -Algorithm SHA256).Hash -ceq $script:logHash) "Diagnostic log preserved after $Stage"
 }
-function Assert-InstalledPayload([string]$ExpectedVersion) {
+function Assert-InstalledPayload([string]$ExpectedVersion, [string]$Stage) {
     $marker = Get-Content -LiteralPath (Join-Path $installDirectory 'installation.json') -Raw | ConvertFrom-Json
-    Assert-InstallerCheck ($marker.kind -ceq 'per-user' -and $marker.scope -ceq 'currentUser' -and $marker.version -ceq $ExpectedVersion -and $marker.sourceCommit -ceq $receipt.sourceCommit) "Per-user installation marker and source match $ExpectedVersion"
+    Assert-InstallerCheck ($marker.kind -ceq 'per-user' -and $marker.scope -ceq 'currentUser' -and $marker.version -ceq $ExpectedVersion -and $marker.sourceCommit -ceq $receipt.sourceCommit) "Per-user installation marker and source match $ExpectedVersion during $Stage"
     $manifest = Get-Content -LiteralPath (Join-Path $installDirectory 'package-manifest.json') -Raw | ConvertFrom-Json -AsHashtable
     foreach ($name in $manifest.files.Keys) {
         $path = Join-Path $installDirectory $name
@@ -106,12 +107,12 @@ function Assert-InstalledPayload([string]$ExpectedVersion) {
             throw "Installed application payload differs from its source-bound manifest: $name"
         }
     }
-    Assert-InstallerCheck ($manifest.sourceCommit -ceq $receipt.sourceCommit -and $manifest.flavor -ceq 'self-contained') "Every installed payload hash matches the inspected self-contained ZIP"
-    Assert-InstallerCheck ((Read-UninstallValue 'DisplayVersion') -ceq $ExpectedVersion) "HKCU uninstall registration reports $ExpectedVersion"
-    Assert-InstallerCheck ([IO.Path]::GetFullPath((Read-UninstallValue 'InstallLocation')).TrimEnd([char]92) -ieq [IO.Path]::GetFullPath($installDirectory)) 'Uninstall registration points to the chosen per-user directory'
-    Assert-InstallerCheck ((Read-UninstallValue 'Inno Setup: Icon Group') -ceq $groupName) 'Installer registration records the fixed per-user Start menu group'
-    Assert-InstallerCheck (Test-Path -LiteralPath (Join-Path $shortcutDirectory 'Device Battery Status.lnk') -PathType Leaf) 'Per-user application shortcut exists'
-    Assert-InstallerCheck (Test-Path -LiteralPath (Join-Path $shortcutDirectory 'Uninstall Device Battery Status.lnk') -PathType Leaf) 'Per-user uninstall shortcut exists'
+    Assert-InstallerCheck ($manifest.sourceCommit -ceq $receipt.sourceCommit -and $manifest.flavor -ceq 'self-contained') "Every installed payload hash matches the inspected self-contained ZIP during $Stage"
+    Assert-InstallerCheck ((Read-UninstallValue 'DisplayVersion') -ceq $ExpectedVersion) "HKCU uninstall registration reports $ExpectedVersion during $Stage"
+    Assert-InstallerCheck ([IO.Path]::GetFullPath((Read-UninstallValue 'InstallLocation')).TrimEnd([char]92) -ieq [IO.Path]::GetFullPath($installDirectory)) "Uninstall registration points to the chosen per-user directory during $Stage"
+    Assert-InstallerCheck ((Read-UninstallValue 'Inno Setup: Icon Group') -ceq $groupName) "Installer registration records the fixed per-user Start menu group during $Stage"
+    Assert-InstallerCheck (Test-Path -LiteralPath (Join-Path $shortcutDirectory 'Device Battery Status.lnk') -PathType Leaf) "Per-user application shortcut exists during $Stage"
+    Assert-InstallerCheck (Test-Path -LiteralPath (Join-Path $shortcutDirectory 'Uninstall Device Battery Status.lnk') -PathType Leaf) "Per-user uninstall shortcut exists during $Stage"
 }
 function Invoke-SmokeUninstall([string]$Label) {
     $uninstallers = @(Get-ChildItem -LiteralPath $installDirectory -Filter 'unins*.exe' -File)
@@ -155,7 +156,7 @@ try {
     $logHash = (Get-FileHash -LiteralPath (Join-Path $dataDirectory 'logs/smoke-preservation.jsonl') -Algorithm SHA256).Hash
 
     Invoke-SmokeInstaller $fixture.FullName 'install-prior-fixture'
-    Assert-InstalledPayload '0.0.0-smoke-fixture'
+    Assert-InstalledPayload '0.0.0-smoke-fixture' 'initial installation'
     Assert-InstallerCheck ($null -eq (Read-StartupValue)) 'Fresh installation does not create Windows startup registration'
     Assert-InstallerCheck (Test-Path -LiteralPath (Join-Path $installDirectory 'obsolete-upgrade-fixture.txt')) 'Controlled previous-installer fixture contains its obsolete owned file'
     Assert-SettingsPreserved 'initial install'
@@ -173,7 +174,7 @@ try {
     finally { if ($created) { $mutex.ReleaseMutex() }; $mutex.Dispose() }
 
     Invoke-SmokeInstaller $installer.FullName 'upgrade-to-current'
-    Assert-InstalledPayload $receipt.version
+    Assert-InstalledPayload $receipt.version 'upgrade'
     Assert-InstallerCheck (!(Test-Path -LiteralPath (Join-Path $installDirectory 'obsolete-upgrade-fixture.txt'))) 'Upgrade removes obsolete files owned by the previous installer'
     Assert-InstallerCheck (Test-Path -LiteralPath (Join-Path $installDirectory 'user-notes.smoke.txt')) 'Upgrade preserves unowned files in the installation directory'
     Assert-InstallerCheck ((Read-StartupValue) -ceq $ownedCommand) 'Upgrade preserves an existing deliberate startup selection'
@@ -187,7 +188,7 @@ try {
 
     Set-SmokeStartupValue $foreignCommand
     Invoke-SmokeInstaller $installer.FullName 'reinstall-current'
-    Assert-InstalledPayload $receipt.version
+    Assert-InstalledPayload $receipt.version 'reinstallation'
     Assert-InstallerCheck ((Read-StartupValue) -ceq $foreignCommand) 'Install preserves startup registration belonging to another copy'
     $ownedPayloadNames = @(Get-Content -LiteralPath (Join-Path $installDirectory '.installed-files.txt'))
     Invoke-SmokeUninstall 'uninstall-foreign-startup'

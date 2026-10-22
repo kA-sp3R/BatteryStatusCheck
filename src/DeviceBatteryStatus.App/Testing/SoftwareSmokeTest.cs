@@ -399,29 +399,53 @@ internal static class SoftwareSmokeTest
         window.UpdateLayout();
         var content = window.Content as FrameworkElement ?? throw new InvalidOperationException("Window content is unavailable.");
         Require(content.ActualWidth > 0 && content.ActualHeight > 0, "The window did not complete WPF layout.");
-        // A parented visual retains its layout offset. Rendering it directly into
-        // ActualWidth/Height clips the right/bottom margin and hides footer controls.
-        var margin = content.Margin;
-        var width = content.ActualWidth + margin.Left + margin.Right;
-        var height = content.ActualHeight + margin.Top + margin.Bottom;
-        var drawing = new DrawingVisual();
-        using (var context = drawing.RenderOpen())
-        {
-            var brush = new VisualBrush(content)
-            {
-                ViewboxUnits = BrushMappingMode.Absolute,
-                Viewbox = new Rect(0, 0, content.ActualWidth, content.ActualHeight),
-                Stretch = Stretch.Fill
-            };
-            context.DrawRectangle(Brushes.Black, null, new Rect(0, 0, width, height));
-            context.DrawRectangle(brush, null, new Rect(margin.Left, margin.Top, content.ActualWidth, content.ActualHeight));
-        }
+        // Render the live root, which has no parent layout offset. Rendering or
+        // brushing its parented content applies the content's margin offset again
+        // and can clip the bottom/right even when the bitmap includes that margin.
+        var width = window.ActualWidth;
+        var height = window.ActualHeight;
+        var captureBounds = new Rect(0, 0, width, height);
+        Require(width > 0 && height > 0 && captureBounds.Contains(
+            content.TransformToAncestor(window).TransformBounds(new Rect(content.RenderSize))),
+            "The capture canvas must contain the complete window content.");
         var bitmap = new RenderTargetBitmap((int)Math.Ceiling(width), (int)Math.Ceiling(height), 96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(drawing);
+        bitmap.Render(window);
+        if (window is SettingsWindow)
+        {
+            foreach (var label in new[] { "Save", "Cancel" })
+                AssertCaptured(Descendants<Button>(window).Single(button => button.Content is string text && text == label), label);
+        }
+        else if (window is UpdateWindow)
+        {
+            AssertCaptured(Descendants<TextBlock>(window).Single(text => text.Text.StartsWith(
+                "Install closes this app", StringComparison.Ordinal)), "update installation disclosure");
+        }
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using var stream = File.Create(path);
         encoder.Save(stream);
+
+        void AssertCaptured(FrameworkElement element, string description)
+        {
+            var bounds = element.TransformToAncestor(window).TransformBounds(new Rect(element.RenderSize));
+            Require(element.IsVisible && bounds.Width > 0 && bounds.Height > 0 && captureBounds.Contains(bounds),
+                $"The {description} footer must fit completely inside the captured window.");
+            var x = (int)Math.Floor(bounds.X);
+            var y = (int)Math.Floor(bounds.Y);
+            var pixelWidth = (int)Math.Ceiling(bounds.Right) - x;
+            var pixelHeight = (int)Math.Ceiling(bounds.Bottom) - y;
+            var stride = pixelWidth * 4;
+            var pixels = new byte[stride * pixelHeight];
+            bitmap.CopyPixels(new Int32Rect(x, y, pixelWidth, pixelHeight), pixels, stride, 0);
+            var foregroundFound = false;
+            for (var index = 0; index < pixels.Length; index += 4)
+                if (pixels[index + 3] > 0 && (pixels[index] > 100 || pixels[index + 1] > 100 || pixels[index + 2] > 100))
+                {
+                    foregroundFound = true;
+                    break;
+                }
+            Require(foregroundFound, $"The captured {description} footer must contain rendered foreground pixels.");
+        }
     }
 
     private static void CheckGlyphCentered(Drawing.Bitmap bitmap, bool lightGlyph)
