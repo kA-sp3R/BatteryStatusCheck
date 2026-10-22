@@ -22,7 +22,10 @@ $checks = [Collections.Generic.List[string]]::new()
 $processResults = [Collections.Generic.List[object]]::new()
 $instance = [Guid]::NewGuid().ToString('N')
 $installDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) "Programs/DeviceBatteryStatus-Smoke-$instance"
-$groupName = "Device Battery Status smoke $instance"
+# DisableProgramGroupPage=yes intentionally fixes the production Start menu
+# group. Inno ignores /GROUP in that mode, so verify the actual default group
+# in this fresh isolated profile rather than requesting an unsupported override.
+$groupName = 'Device Battery Status'
 $shortcutDirectory = Join-Path ([Environment]::GetFolderPath('Programs')) $groupName
 $dataDirectory = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'DeviceBatteryStatus'
 $uninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{D38FB615-37DB-4AC0-92CE-BD1F947B9732}_is1'
@@ -71,7 +74,7 @@ function Invoke-SmokeInstaller([string]$Executable, [string]$Label, [bool]$Expec
     }
     $logPath = Join-Path $reportRoot "$Label.log"
     $arguments = @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=`"$logPath`"")
-    if (!$Uninstall) { $arguments += @('/SP-', "/DIR=`"$installDirectory`"", "/GROUP=`"$groupName`"") }
+    if (!$Uninstall) { $arguments += @('/SP-', "/DIR=`"$installDirectory`"") }
     $process = Start-Process -FilePath $Executable -ArgumentList $arguments -PassThru
     $script:installerExecuted = $true
     try {
@@ -106,6 +109,7 @@ function Assert-InstalledPayload([string]$ExpectedVersion) {
     Assert-InstallerCheck ($manifest.sourceCommit -ceq $receipt.sourceCommit -and $manifest.flavor -ceq 'self-contained') "Every installed payload hash matches the inspected self-contained ZIP"
     Assert-InstallerCheck ((Read-UninstallValue 'DisplayVersion') -ceq $ExpectedVersion) "HKCU uninstall registration reports $ExpectedVersion"
     Assert-InstallerCheck ([IO.Path]::GetFullPath((Read-UninstallValue 'InstallLocation')).TrimEnd([char]92) -ieq [IO.Path]::GetFullPath($installDirectory)) 'Uninstall registration points to the chosen per-user directory'
+    Assert-InstallerCheck ((Read-UninstallValue 'Inno Setup: Icon Group') -ceq $groupName) 'Installer registration records the fixed per-user Start menu group'
     Assert-InstallerCheck (Test-Path -LiteralPath (Join-Path $shortcutDirectory 'Device Battery Status.lnk') -PathType Leaf) 'Per-user application shortcut exists'
     Assert-InstallerCheck (Test-Path -LiteralPath (Join-Path $shortcutDirectory 'Uninstall Device Battery Status.lnk') -PathType Leaf) 'Per-user uninstall shortcut exists'
 }
@@ -133,6 +137,7 @@ try {
     Assert-InstallerCheck ((Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash.ToLowerInvariant() -ceq $receipt.installer.sha256) 'Installer executable hash matches its build receipt'
     Assert-InstallerCheck ((Get-Content -LiteralPath ([IO.Path]::ChangeExtension($installer.FullName, '.sha256')) -Raw).Trim() -ceq "$($receipt.installer.sha256)  $($installer.Name)") 'Installer sibling checksum matches its bytes'
     if ((Test-Path -LiteralPath $installDirectory) -or (Test-Path -LiteralPath $dataDirectory) -or
+        (Test-Path -LiteralPath $shortcutDirectory) -or
         $null -ne (Read-UninstallValue 'DisplayName') -or $null -ne (Read-StartupValue)) {
         throw 'Installer smoke requires a fresh isolated runner user profile; existing user data or registration was preserved.'
     }

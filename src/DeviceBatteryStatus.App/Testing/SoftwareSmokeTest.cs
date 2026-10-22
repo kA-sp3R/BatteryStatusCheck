@@ -399,9 +399,25 @@ internal static class SoftwareSmokeTest
         window.UpdateLayout();
         var content = window.Content as FrameworkElement ?? throw new InvalidOperationException("Window content is unavailable.");
         Require(content.ActualWidth > 0 && content.ActualHeight > 0, "The window did not complete WPF layout.");
-        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(content.ActualWidth), (int)Math.Ceiling(content.ActualHeight),
-            96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(content);
+        // A parented visual retains its layout offset. Rendering it directly into
+        // ActualWidth/Height clips the right/bottom margin and hides footer controls.
+        var margin = content.Margin;
+        var width = content.ActualWidth + margin.Left + margin.Right;
+        var height = content.ActualHeight + margin.Top + margin.Bottom;
+        var drawing = new DrawingVisual();
+        using (var context = drawing.RenderOpen())
+        {
+            var brush = new VisualBrush(content)
+            {
+                ViewboxUnits = BrushMappingMode.Absolute,
+                Viewbox = new Rect(0, 0, content.ActualWidth, content.ActualHeight),
+                Stretch = Stretch.Fill
+            };
+            context.DrawRectangle(Brushes.Black, null, new Rect(0, 0, width, height));
+            context.DrawRectangle(brush, null, new Rect(margin.Left, margin.Top, content.ActualWidth, content.ActualHeight));
+        }
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(width), (int)Math.Ceiling(height), 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(drawing);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using var stream = File.Create(path);

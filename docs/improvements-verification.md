@@ -15,6 +15,9 @@ The Windows application smoke launches only an isolated internal test branch usi
 - Installer compilation stopped at compiler-version detection, before installer execution. The build tool's component file version differs from its engine version; detection now uses a no-output compiler probe while retaining the supported-version guard; Windows CI will verify it.
 - Privacy review found a settings JSON error could expose an unregistered canonical Logitech serial/unit ID. Startup logging now omits detailed settings-load errors, and generic canonical-ID redaction has two new regression cases. Local UI errors remain available without exporting saved settings.
 
+- Corrected source `92c5e3dcbc4c29eab68aa789754b96376941f6f2` passed all 921 C# tests in each configuration and both eight-check application smoke runs. Visual review of the produced screenshots found a harness capture bug: parented content margins clipped footer evidence. Capture now renders through an origin-normalized visual brush, retaining the full margins; the UI itself passed.
+- The second installer run compiled and installed successfully, then failed its shortcut-path assertion. The retained setup log shows both shortcuts in the correct current-user default group, while the smoke expected its requested custom group. The smoke now checks the actual registered default per-user group, guards against pre-existing user folders, and retains both shortcut creation/removal assertions.
+
 ## Functions affected
 
 | Area | Change and interactions |
