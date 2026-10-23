@@ -1,6 +1,6 @@
 # Improvements verification and change record
 
-Candidate version: **1.1.0**, tested source `367ea4165c528b6767522764ce7eef97a4744d15`. All final software verification passed. Publication awaits the user's decision; the published v1.0.0 release remains unchanged. The [candidate record](../.github/reviews/1.1.0.json) saves run IDs, counts, package/installer hashes, compiler provenance and evidence-file hashes. [Proposed release notes](../.github/reviews/1.1.0.md) are ready for review.
+Published version: **1.1.0**, tested source `367ea4165c528b6767522764ce7eef97a4744d15`. The user approved publication after reviewing the software verification. [v1.1.0](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.1.0) is stable/latest and unsigned. [Publication run 39875565589](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39875565589) passed, and all eight downloaded release assets were independently verified. The [review record](../.github/reviews/1.1.0.json) preserves source/run/count/hash provenance; [release notes](../.github/releases/1.1.0.md) and the [publication receipt](../.github/releases/1.1.0-publication.json) record the final release. The v1.0.0 release remains available as history.
 
 ## Verification outcomes
 
@@ -17,12 +17,13 @@ Compilation, automated tests, isolated application runtime, installer execution 
 | Isolated Windows application runtime smoke | Eight checks passed for each portable flavor | Actual packaged WPF executable, synthetic data only; normal controller, HID, network, startup registration and saved settings bypassed. JSON provenance and counters passed the publication validator. Popup, settings and update screenshots visually reviewed, including complete footer controls/disclosure. |
 | Native tray resource cycles | Passed within the eight-check smoke | Both flavors: 20 create/update/DPI/dispose cycles, GDI 40→40 and USER 31→31. Sizes 16/48/64 px and process-local TaskbarCreated delivery exercised. This is not an endurance or real Explorer-restart result. |
 | Installer lifecycle smoke | 56 passed, zero failed | Current-user install, mutex refusal, upgrade, reinstall and two uninstall cycles executed. Settings/backup/log bytes, unowned files and foreign startup command preserved; obsolete owned files, owned shortcuts/HKCU registration and exact owned startup removed. Expected mutex-block exit 1; all successful install/uninstall exits 0. Installed payload hashes match the inspected ZIP. |
-| Actual publication-evidence validation | Passed; no publication | Both application reports, installer receipt and all 56 uniquely labelled installer assertions accepted by the publication validators. Downloaded installer SHA-256, sibling checksum, size and self-contained payload provenance agree. Inno Setup engine 6.7.1 and compiler/module hashes recorded. |
+| Actual publication-evidence validation | Passed | Both application reports, installer receipt and all 56 uniquely labelled installer assertions accepted by the publication validators. Downloaded installer SHA-256, sibling checksum, size and self-contained payload provenance agree. Inno Setup engine 6.7.1 and compiler/module hashes recorded. |
+| Stable release publication | Published; latest; all eight asset sizes/digests verified | [v1.1.0](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.1.0), [publication run 39875565589](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39875565589) and [permanent receipt](../.github/releases/1.1.0-publication.json). Downloaded verification ZIP independently matches actual reports and reviewed images. |
 | Physical hardware and normal live monitoring | Unverified/deferred | No receiver, peripheral, vendor application or normal monitor was accessed. [Saved boundaries](deferred-verification.md). |
 
 The 142 additional C# cases comprise 16 Razer reference/timing/charging cases, 35 diagnostic/redaction cases, 22 tray-selection cases, 4 settings cases and 65 updater cases. Existing battery/polling/model tests remain in the full 921-case suite. The smoke additionally exercised rendered zero/category/stale/unsupported popup rows, settings callbacks and in-memory Save, Off-mode update actions without requests, native icon centring/lifecycle and an actual redacted diagnostic ZIP export.
 
-The installer upgrade fixture uses current app bytes with older installer metadata. It verifies installer lifecycle, not compatibility with an actual older app binary. Installer execution never launched the installed app. The isolated app branch did not execute an installer. No new release or draft was created.
+The installer upgrade fixture uses current app bytes with older installer metadata. It verifies installer lifecycle, not compatibility with an actual older app binary. Installer execution never launched the installed app. The isolated app branch did not execute an installer. Publication subsequently used exactly these tested packages and installer; no application or hardware was launched during publication.
 
 ## Failures found and fixed
 
@@ -47,7 +48,7 @@ The initial [smoke run 39711867611](https://github.com/kA-sp3R/BatteryStatusChec
 | Preferences | New icon selection and update mode fields use backwards-compatible defaults and independent normalized copies; aliases, notifications, preferred device, refresh interval and startup preferences remain persisted. |
 | Updates and shutdown | Notify-only checks stable metadata at startup/daily. Download and install require separate clicks. Off cancels update operations. Staged installers are hash-verified and locked again after graceful shutdown releases the app mutex. |
 | Installation | New per-user self-contained installer owns its payload/shortcuts/HKCU uninstall entry; upgrades and uninstall preserve saved data. Exact matching installed startup entries are removed on uninstall; foreign commands remain. Both portable flavors remain available. |
-| Release automation | Optional installer and application-smoke evidence can gate a future approved release. Legacy v1.0.0 manifests remain supported. This task does not publish a release. |
+| Release automation | Optional installer and application-smoke evidence can gate a future approved release. Legacy v1.0.0 manifests remain supported. The approved publication is recorded in the permanent receipt; published binaries still match the tested source. |
 
 ## Verification boundaries
 
@@ -55,10 +56,15 @@ Real receivers/firmware and battery accuracy, normal live-monitoring runtime, ve
 
 CLI status/JSON commands, local API, capture-assisted learning and a G Hub data source remain roadmap items. Logitech categories remain native categories; no voltage estimator was introduced.
 
+The README bundled in the immutable v1.1.0 packages is the pre-publication snapshot and still links to v1.0.0. The current [v1.1.0 release page](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.1.0) and [online distribution guide](release.md) provide current downloads/status; published assets were not rebuilt or modified.
+
 ## Edited files
 
-50 files changed relative to the completed v1.0.0 record. Documentation/evidence-only changes after the tested source do not change candidate binaries.
+53 files changed relative to the completed v1.0.0 record: 50 implementation/review files and 3 release manifest/notes/receipt files. Documentation/evidence-only changes after the tested source do not change released binaries.
 
+- [.github/releases/1.1.0-publication.json](../.github/releases/1.1.0-publication.json)
+- [.github/releases/1.1.0.json](../.github/releases/1.1.0.json)
+- [.github/releases/1.1.0.md](../.github/releases/1.1.0.md)
 - [.github/reviews/1.1.0.json](../.github/reviews/1.1.0.json)
 - [.github/reviews/1.1.0.md](../.github/reviews/1.1.0.md)
 - [.github/scripts/build-installer.ps1](../.github/scripts/build-installer.ps1)

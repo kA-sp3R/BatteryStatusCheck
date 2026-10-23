@@ -1,0 +1,108 @@
+{
+  "releaseUrl": "https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.1.0",
+  "releaseId": 421316386,
+  "tag": "v1.1.0",
+  "sourceCommit": "367ea4165c528b6767522764ce7eef97a4744d15",
+  "publishedAt": "2026-10-23T00:02:28Z",
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "fullTestRun": 39858849245,
+  "testResults": {
+    "installerSmoke": {
+      "executed": 56,
+      "passed": 56,
+      "failed": 0,
+      "installerExecuted": true,
+      "applicationLaunched": false,
+      "hardwareVerified": false
+    },
+    "applicationSmoke": {
+      "framework-dependent": {
+        "total": 8,
+        "executed": 8,
+        "passed": 8,
+        "failed": 0,
+        "applicationLaunched": true,
+        "normalApplicationControllerStarted": false,
+        "hardwareAccessed": false,
+        "networkAccessed": false
+      },
+      "self-contained": {
+        "total": 8,
+        "executed": 8,
+        "passed": 8,
+        "failed": 0,
+        "applicationLaunched": true,
+        "normalApplicationControllerStarted": false,
+        "hardwareAccessed": false,
+        "networkAccessed": false
+      }
+    },
+    "Debug": {
+      "total": 921,
+      "executed": 921,
+      "passed": 921,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "Release": {
+      "total": 921,
+      "executed": 921,
+      "passed": 921,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "offlineParser": {
+      "executed": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0
+    },
+    "releaseAutomation": {
+      "executed": 18,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "assets": {
+    "DeviceBatteryStatus-1.1.0-win-x64-framework-dependent.zip": {
+      "size": 288506,
+      "digest": "sha256:2f52191d5b2a5e501f909f3264bb2d2033684a81ea05b4d11c07bdb401994824"
+    },
+    "DeviceBatteryStatus-1.1.0-win-x64-framework-dependent.sha256": {
+      "size": 124,
+      "digest": "sha256:a88c0fa0e5b73096a8125dfee8620369e624565f84b72e234c1d5c84387f5d01"
+    },
+    "DeviceBatteryStatus-1.1.0-win-x64-self-contained.zip": {
+      "size": 76315132,
+      "digest": "sha256:e84c4360ce58bcb1025b53ff4df1ba2028d6ae95ae0d0216dc29ba81de894156"
+    },
+    "DeviceBatteryStatus-1.1.0-win-x64-self-contained.sha256": {
+      "size": 119,
+      "digest": "sha256:5ad70230d62c939d0832ad29c2c6eb8b1bf04bfdfa949ee096084a81c85afcde"
+    },
+    "DeviceBatteryStatus-1.1.0-win-x64-setup.exe": {
+      "size": 54827893,
+      "digest": "sha256:6f20facdd3650d2574f786a76f6249ef5a1b1684466fdb29aaf621e45c2a20b8"
+    },
+    "DeviceBatteryStatus-1.1.0-win-x64-setup.sha256": {
+      "size": 110,
+      "digest": "sha256:0a9897201ee5b3cdc3ac681b9aada311b8ede2e010bf1f94c8014567002a9aa4"
+    },
+    "DeviceBatteryStatus-1.1.0-verification.zip": {
+      "size": 741327,
+      "digest": "sha256:017bf307512f30feca398d9509120a680a3b8a1ec2bff38d686cb811fae51de3"
+    },
+    "DeviceBatteryStatus-1.1.0-verification.sha256": {
+      "size": 109,
+      "digest": "sha256:b58bfe42a9e8a6fbc46f445d55e1d81312ff588921aab34ac28c73e8590a885b"
+    }
+  },
+  "applicationLaunched": true,
+  "hardwareVerified": false,
+  "installerExecuted": true,
+  "publicationWorkflowCommit": "95f7fea9c5fb22dc4e9a8ab45fdb03f15e6929a3",
+  "publicationWorkflowRun": "39875565589"
+}

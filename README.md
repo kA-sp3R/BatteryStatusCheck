@@ -1,6 +1,6 @@
 # Device Battery Status
 
-Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. The current published release is **1.0.0**, unsigned for personal use. The **1.1.0 candidate** adds diagnostics, selected device icons, and per-user installation/update support; it has not been published. [Improvement results and edited files](docs/improvements-verification.md). [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0). Runtime, hardware and performance checks are recorded in the [deferred verification record](docs/deferred-verification.md).
+Windows 10/11 WPF tray battery monitor for USB 2.4 GHz peripherals, with a circular percentage icon, compact popup, background refresh, notifications, preferences and manual polling-rate controls for supported mice. The current published release is **1.1.0**, unsigned for personal use. It adds diagnostics, selected-device icons and per-user installation/update support. [Improvement results and edited files](docs/improvements-verification.md). [Release page and downloads](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.1.0). Runtime, hardware and performance checks are recorded in the [deferred verification record](docs/deferred-verification.md).
 
 ## Projects
 
@@ -27,9 +27,9 @@ Settings defaults to the existing single summary icon. Choose **Separate icons f
 
 Use **Settings → Open logs** or **Export diagnostic report** for bounded, redacted diagnostics. Reports include version, selected HID collections, protocol metadata/capabilities, validation failures and reading timestamps. Serial numbers, identifying paths and device identities are redacted; raw HID packets, settings and aliases are excluded. See [diagnostics](docs/diagnostics.md).
 
-The candidate provides a per-user installer, while both portable ZIP flavors remain available. Upgrades preserve saved settings; uninstall removes installed files, shortcuts and owned startup registration while retaining preferences/logs. See [installation](docs/installation.md).
+The release provides a per-user installer, while both portable ZIP flavors remain available. Upgrades preserve saved settings; uninstall removes installed files, shortcuts and owned startup registration while retaining preferences/logs. See [installation](docs/installation.md).
 
-Update checks default to **Notify only**; **Check manually** and **Off** are also available. Checks never download or install automatically. **Check for updates → Download and verify → Install verified update** are separate actions. Downloads must match the GitHub asset digest, sibling checksum and expected size, and are checked again immediately before launching the installer after graceful shutdown. Private repositories can return unavailable to the credential-free checker; the release page remains available in your signed-in browser. See [updates](docs/updates.md).
+Update checks default to **Notify only**; **Check manually** and **Off** are also available. Checks never download or install automatically. **Check for updates → Download and verify → Install verified update** are separate actions. Downloads must match the GitHub asset digest, sibling checksum and expected size, and are checked again immediately before launching the installer after graceful shutdown. This repository is private, so credential-free in-app checks and downloads are unavailable; open the release page in your signed-in browser. See [updates](docs/updates.md).
 
 ## Manual polling-rate control
 
@@ -55,9 +55,13 @@ Use the **Windows compilation and focused unit tests** GitHub Actions workflow w
 - **Framework-dependent:** smaller package; requires Microsoft .NET 10 Windows Desktop Runtime x64.
 - **Self-contained:** bundles its .NET/Windows Desktop Runtime and notices; requires no separate .NET installation.
 
-Download an application ZIP from the [v1.0.0 release page](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.0.0), extract it and keep all files together. Release assets include sibling SHA-256 checksums and the full test evidence bundle. Each application ZIP has an embedded source/run manifest with payload hashes. Alternatively, download a `windows-preview-win-x64-…` Actions artifact and extract its wrapper ZIP first. See [package instructions and limitations](docs/release.md). The separate `windows-build` artifact is the development compilation output.
+Download an application ZIP from the [v1.1.0 release page](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.1.0), extract it and keep all files together. Release assets include sibling SHA-256 checksums and the full test evidence bundle. Each application ZIP has an embedded source/run manifest with payload hashes. Alternatively, download a `windows-preview-win-x64-…` Actions artifact and extract its wrapper ZIP first. See [package instructions and limitations](docs/release.md). The separate `windows-build` artifact is the development compilation output.
+
+The README bundled in the v1.1.0 packages is the immutable pre-publication snapshot and still links to v1.0.0. Use the [v1.1.0 release page](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.1.0) and this online guide for current downloads and publication status. Published assets have not been rebuilt or modified.
 
 The manual **Full software suite (no application or hardware launch)** workflow tests an exact source commit without filters in Debug and Release on Windows and runs all offline parser tests. The exact checked source, test counts and outcomes are recorded in [verification status](docs/verification.md) and the release evidence bundle. Publication uses a separate manual workflow that checks the reviewed release manifest, successful build/full-test runs, package provenance, payload hashes and uploaded asset digests before publishing the release.
+
+The published v1.1.0 source passed Windows compilation, 921 C# tests in each Debug/Release configuration, 5 parser tests, 18 release-policy tests, eight isolated application-smoke checks per portable flavor and 56 installer lifecycle checks.
 
 Windows compilation, automated tests, isolated application runtime smoke, installer lifecycle smoke and physical hardware are tracked separately. The improvement smoke uses synthetic data and never starts normal monitoring or accesses HID. Normal monitoring, physical hardware and endurance measurements remain deferred; resume those checks only with explicit permission. See [verification status](docs/verification.md) and [deferred work](docs/deferred-verification.md).
 

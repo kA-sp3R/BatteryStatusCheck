@@ -29,8 +29,8 @@
     "bytes": 54827893,
     "sha256": "6f20facdd3650d2574f786a76f6249ef5a1b1684466fdb29aaf621e45c2a20b8"
   },
-  "status": "awaiting-publication-decision",
-  "published": false,
+  "status": "published",
+  "published": true,
   "repository": "kA-sp3R/BatteryStatusCheck",
   "reviewedNotesSha256": "db6a1b6f8d162b0d456d0d1bda15b73f3d15b85b853c17be8d151bc26d796edf",
   "verification": {
@@ -230,5 +230,8 @@
     "full-software-tests-Release-1/TestResults/runneradmin_runnervmdaln5_2026-10-22_21_38_52_net10.0.trx": "cdae3c1d3b89cda25f64d8ad25e7d18522b9bdb1de62b2dd9852859bc1cf0f8c",
     "full-software-tests-Release-1/ci-logs/full-Release.log": "9efa5e05e297b0a9ff9fe578d39e0f3eacf52b7bae039f33ea0e3faa6f932d42",
     "windows-installer-win-x64-1/installer-release.json": "4d064d75d44d73401d3a80e47d23a7bb6bce2b8a9b665916b3d7127b07ca1d75"
-  }
+  },
+  "releaseId": 421316386,
+  "releaseUrl": "https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.1.0",
+  "publicationReceipt": "../releases/1.1.0-publication.json"
 }
