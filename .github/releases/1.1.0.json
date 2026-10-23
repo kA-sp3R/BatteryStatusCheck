@@ -1,0 +1,33 @@
+{
+  "version": "1.1.0",
+  "tag": "v1.1.0",
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "sourceCommit": "367ea4165c528b6767522764ce7eef97a4744d15",
+  "buildRun": 39858821493,
+  "buildAttempt": 1,
+  "fullTestRun": 39858849245,
+  "fullTestAttempt": 1,
+  "testAutomationCommit": "367ea4165c528b6767522764ce7eef97a4744d15",
+  "testCount": 921,
+  "parserTestCount": 5,
+  "automationTestCount": 18,
+  "packages": {
+    "framework-dependent": {
+      "bytes": 288506,
+      "sha256": "2f52191d5b2a5e501f909f3264bb2d2033684a81ea05b4d11c07bdb401994824"
+    },
+    "self-contained": {
+      "bytes": 76315132,
+      "sha256": "e84c4360ce58bcb1025b53ff4df1ba2028d6ae95ae0d0216dc29ba81de894156"
+    }
+  },
+  "installer": {
+    "bytes": 54827893,
+    "sha256": "6f20facdd3650d2574f786a76f6249ef5a1b1684466fdb29aaf621e45c2a20b8"
+  },
+  "appSmoke": true,
+  "appSmokeCheckCount": 8,
+  "releaseId": 421316386
+}
