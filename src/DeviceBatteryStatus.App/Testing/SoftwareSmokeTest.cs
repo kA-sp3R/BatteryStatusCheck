@@ -30,7 +30,7 @@ namespace DeviceBatteryStatus.App.Testing;
 /// </summary>
 internal static class SoftwareSmokeTest
 {
-    private const int ExpectedChecks = 12;
+    private const int ExpectedChecks = 18;
     private sealed record Check(string Name, bool Passed, string Detail);
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -56,6 +56,7 @@ internal static class SoftwareSmokeTest
         var flavor = "unknown";
         var metrics = new Dictionary<string, int>();
         object? efficiency = null;
+        object? gaming = null;
         try
         {
             Application.Current.Dispatcher.VerifyAccess();
@@ -321,6 +322,11 @@ internal static class SoftwareSmokeTest
             }
             artifacts.Add("efficiency-workload.json");
             checks.Add(new(currentCheck, true, "Equal synthetic healthy/non-responsive receiver traces retained every healthy poll while reducing discovery, failed queries and opens; short process CPU/memory/allocation/handle observations recorded without physical or endurance claims."));
+
+            gaming = await GamingAlertSmoke.RunAsync(output, windows,
+                name => currentCheck = name,
+                (name, detail) => checks.Add(new(name, true, detail)));
+            artifacts.AddRange(["runtime-popup.png", "gaming-alert-settings.png", "gaming-alert.png"]);
         }
         catch (Exception exception)
         {
@@ -369,6 +375,7 @@ internal static class SoftwareSmokeTest
                         checks,
                         metrics,
                         efficiency,
+                        gaming,
                         artifacts,
                         failure,
                         verificationBoundary = new[]
@@ -381,6 +388,8 @@ internal static class SoftwareSmokeTest
                             "Capacity storage belongs only to synthetic fixtures inside this report directory, not real user capacity history.",
                             "Synthetic device-change requests exercise coalescing; actual USB plug/unplug, Windows sleep/resume and real Explorer restart remain unverified.",
                             "The short fake-HID workload reports process-wide observations and deterministic query counts, not physical-device battery drain or extended performance/endurance."
+                            , "Gaming checks use synthetic percentages, fake fullscreen/monitor/sound inputs and this process's ordinary desktop windows; no real game, audio hardware, physical device or exclusive-fullscreen compatibility was tested."
+                            , "Native no-activation/click-through styles and self-window message hooks are checked in CI; actual input routing during gameplay and physical monitor/DPI transitions remain unverified."
                         }
                     };
                     await File.WriteAllTextAsync(Path.Combine(output, "application-smoke.json"),

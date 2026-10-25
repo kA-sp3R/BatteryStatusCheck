@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
+using DeviceBatteryStatus.App.Alerts;
 using DeviceBatteryStatus.App.Tray;
+using DeviceBatteryStatus.Core.Alerts;
 using DeviceBatteryStatus.Core.Diagnostics;
 using DeviceBatteryStatus.Core.Hardware;
 using DeviceBatteryStatus.Core.Health;
@@ -11,6 +13,7 @@ using DeviceBatteryStatus.Core.Monitoring;
 using DeviceBatteryStatus.Core.Presentation;
 using DeviceBatteryStatus.Core.Polling;
 using DeviceBatteryStatus.Core.Protocols;
+using DeviceBatteryStatus.Core.Runtime;
 using DeviceBatteryStatus.Core.Settings;
 using DeviceBatteryStatus.Core.Updates;
 using DeviceBatteryStatus.Windows.Hardware;
@@ -36,9 +39,10 @@ internal sealed class ApplicationController
     private readonly FileSettingsStore store = new(Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeviceBatteryStatus", "settings.json"));
     private readonly StartupRegistration startup = new();
-    private readonly NotificationPolicy notifications = new();
-    private IReadOnlyList<DeviceSnapshot>? notificationInputs;
-    private AppSettings? notificationSettings;
+    private readonly RuntimeEstimator runtime = new();
+    private readonly GamingAlertPolicy gamingAlerts = new();
+    private readonly GamingAlertPresenter alertPresenter;
+    private IReadOnlyDictionary<string, RuntimeEstimate> runtimeEstimates = new Dictionary<string, RuntimeEstimate>();
     private readonly PopupWindow popup = new();
     private readonly DispatcherTimer presentationTimer;
     private readonly TrayIconManager tray;
@@ -56,6 +60,7 @@ internal sealed class ApplicationController
     private AppSettings settings;
     private IReadOnlyList<DeviceSnapshot> snapshots = [];
     private SettingsWindow? settingsWindow;
+    private AlertSettingsWindow? alertSettingsWindow;
     private PollingWindow? pollingWindow;
     private Task? activeRefresh;
     private DateTimeOffset? invalidBefore;
@@ -76,6 +81,8 @@ internal sealed class ApplicationController
         this.application = application;
         var dataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeviceBatteryStatus");
         diagnostics = new(Path.Combine(dataDirectory, "logs"), CurrentVersion);
+        alertPresenter = new(reportError: exception => diagnostics.RecordException("Gaming alert display", exception));
+        alertPresenter.Shown += (alert, at) => gamingAlerts.Acknowledge(alert, at);
         updates = new(Path.Combine(dataDirectory, "updates"));
         health = new(Path.Combine(dataDirectory, "capacity-health.json"));
         var discovery = new DiagnosticHidDiscovery(new WindowsHidDiscovery(), diagnostics);
@@ -174,6 +181,8 @@ internal sealed class ApplicationController
             ExpireCurrentReadings(DateTimeOffset.UtcNow);
             try { health.Observe(snapshots, DateTimeOffset.UtcNow); }
             catch (Exception exception) { diagnostics.RecordException("Capacity collection", exception); }
+            try { runtime.Observe(snapshots, settings, DateTimeOffset.UtcNow); }
+            catch (Exception exception) { diagnostics.RecordException("Runtime estimate collection", exception); runtime.Interrupt(); }
             lastRefresh = DateTimeOffset.Now;
             warning = monitor.DiscoveryError;
             foreach (var snapshot in snapshots)
@@ -193,6 +202,7 @@ internal sealed class ApplicationController
             diagnostics.RecordException("Battery refresh", exception);
             warning = $"Refresh failed: {exception.Message}";
             InterruptCapacity("Battery refresh failed.");
+            runtime.Interrupt("Battery refresh failed.");
             MarkCurrentReadingsStale("The latest refresh failed.");
         }
         finally
@@ -228,21 +238,29 @@ internal sealed class ApplicationController
         try { health.CheckContinuity(now); }
         catch (Exception exception) { diagnostics.RecordException("Capacity freshness", exception); }
         ExpireCurrentReadings(now);
-        displayError = null;
-        try { tray.Update(snapshots, settings, now); }
-        catch (Exception exception) { diagnostics.RecordException("Tray display", exception); displayError = $"Tray display unavailable: {exception.Message}"; }
-        // NotificationPolicy only processes new sample times. Re-evaluating the
-        // same immutable publication on every freshness tick adds no behavior.
-        if (!ReferenceEquals(notificationInputs, snapshots) || !ReferenceEquals(notificationSettings, settings))
+        var estimates = new Dictionary<string, RuntimeEstimate>(StringComparer.Ordinal);
+        foreach (var snapshot in snapshots)
         {
-            foreach (var alert in notifications.Evaluate(snapshots, settings, now))
-            {
-                try { tray.ShowLowBattery(alert); }
-                catch (Exception exception) { diagnostics.RecordException("Tray notification", exception); displayError = $"Notification could not be requested: {exception.Message}"; }
-            }
-            notificationInputs = snapshots;
-            notificationSettings = settings;
+            try { estimates[snapshot.Device.Id] = runtime.Get(snapshot, settings, now); }
+            catch (Exception exception) { diagnostics.RecordException("Runtime estimate presentation", exception); }
         }
+        runtimeEstimates = estimates;
+        displayError = null;
+        try { tray.Update(snapshots, settings, now, runtimeEstimates); }
+        catch (Exception exception) { diagnostics.RecordException("Tray display", exception); displayError = $"Tray display unavailable: {exception.Message}"; }
+        // Gaming alerts replace legacy low-battery balloons. The independent
+        // freshness tick also rechecks queued warnings, cooldown and snoozing.
+        try
+        {
+            if (suspended) alertPresenter.Clear();
+            else
+            {
+                foreach (var alert in gamingAlerts.Evaluate(snapshots, settings, runtimeEstimates, now))
+                    alertPresenter.Queue(alert, now);
+                alertPresenter.Tick(now, alert => gamingAlerts.Revalidate(alert, snapshots, settings, runtimeEstimates, now));
+            }
+        }
+        catch (Exception exception) { diagnostics.RecordException("Gaming battery alerts", exception); displayError = $"Battery alert unavailable: {exception.Message}"; }
         foreach (var pair in detailsWindows)
         {
             if (!pair.Value.IsVisible) continue;
@@ -257,7 +275,7 @@ internal sealed class ApplicationController
             ? $"Updated {lastRefresh:t}" : "Waiting for devices…");
         if (popup.IsVisible || includeHiddenPopup)
         {
-            try { popup.SetDevices(snapshots, settings, now, status); }
+            try { popup.SetDevices(snapshots, settings, now, status, runtimeEstimates); }
             catch (Exception exception) { diagnostics.RecordException("Popup presentation", exception); displayError = $"Popup display unavailable: {exception.Message}"; }
         }
     }
@@ -302,6 +320,8 @@ internal sealed class ApplicationController
     {
         if (stopping) return;
         InterruptCapacity("Windows device topology changed; battery continuity must be established again.");
+        runtime.Interrupt("Windows device topology changed; peripheral association must be established again.");
+        alertPresenter.Clear();
         invalidBefore = DateTimeOffset.UtcNow;
         MarkCurrentReadingsStale("Device change detected; refreshing association.");
         if (!suspended) RefreshFromMenu();
@@ -316,10 +336,42 @@ internal sealed class ApplicationController
         string? startupError = null;
         try { enabled = startup.IsEnabled(); }
         catch (Exception exception) { startupError = $"Windows startup could not be read: {exception.Message}"; }
-        settingsWindow = new SettingsWindow(settings, snapshots, startup.CanRegister, enabled, startupError, ApplySettings, ShowPollingControls, ShowUpdates, OpenDiagnosticLogs, ExportDiagnosticLogs);
+        if (alertSettingsWindow is not null) { alertSettingsWindow.Activate(); return; }
+        settingsWindow = new SettingsWindow(settings, snapshots, startup.CanRegister, enabled, startupError, ApplySettings, ShowPollingControls, ShowUpdates, OpenDiagnosticLogs, ExportDiagnosticLogs, ShowGamingAlerts, () => PreviewGamingAlert(settings));
         if (settingsWarning is not null) settingsWindow.ShowNotice(settingsWarning);
         settingsWindow.Closed += (_, _) => settingsWindow = null;
         settingsWindow.Show();
+    }
+
+    private void ShowGamingAlerts()
+    {
+        if (stopping) return;
+        popup.Hide();
+        if (alertSettingsWindow is not null) { alertSettingsWindow.Activate(); return; }
+        if (pollingWindow is not null || updateWindow is not null)
+        {
+            settingsWindow?.ShowNotice("Close the polling-rate or update window before editing gaming alerts.");
+            return;
+        }
+        // The main preferences editor guards unsaved changes before invoking
+        // this callback. Close its captured settings snapshot before saving here.
+        settingsWindow?.Close();
+        alertSettingsWindow = new(settings, snapshots, updated => ApplySettings(updated, false), PreviewGamingAlert);
+        alertSettingsWindow.Closed += (_, _) => alertSettingsWindow = null;
+        alertSettingsWindow.Show();
+    }
+
+    private void PreviewGamingAlert(AppSettings previewSettings)
+    {
+        if (stopping || suspended) return;
+        var rule = GamingAlertSettings.FromLegacy(previewSettings).GlobalRule;
+        var estimate = new RuntimeEstimate(RuntimeEstimateState.Available, "About 2 hours remaining",
+            "Synthetic preview data; no physical device was queried.", TimeSpan.FromHours(2),
+            TimeSpan.FromHours(1.5), TimeSpan.FromHours(2.5), true);
+        var candidate = new GamingBatteryAlert("synthetic-preview", "Viper V3 Pro · synthetic preview", 15, null,
+            estimate.Text, GamingAlertSeverity.Low, rule, [GamingAlertCondition.Percentage], DateTimeOffset.UtcNow)
+            { Runtime = estimate, IsPreview = true };
+        alertPresenter.Preview(candidate, DateTimeOffset.UtcNow);
     }
 
     private void ShowPollingControls()
@@ -343,6 +395,7 @@ internal sealed class ApplicationController
     {
         if (stopping || suspended) throw new OperationCanceledException("Manual controls are suspended.");
         InterruptCapacity("Manual polling-rate operation interrupted capacity collection.");
+        runtime.Interrupt("Manual polling-rate operation may change consumption; starting a new discharge trend.");
         CancellationTokenSource linked;
         lock (powerGate)
             linked = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, cancellationToken, powerCancellation.Token);
@@ -526,6 +579,8 @@ internal sealed class ApplicationController
         presentationTimer.Stop();
         pollingWindow?.CancelOperations();
         InterruptCapacity("System sleep interrupted capacity collection.");
+        runtime.Interrupt("System sleep interrupted discharge observations.");
+        alertPresenter.Clear();
         invalidBefore = DateTimeOffset.UtcNow;
         MarkCurrentReadingsStale("System sleeping; waiting for a new reading.");
         UpdatePresentation();
@@ -545,6 +600,7 @@ internal sealed class ApplicationController
         invalidBefore = DateTimeOffset.UtcNow;
         MarkCurrentReadingsStale("Refreshing after sleep.");
         InterruptCapacity("System resumed; a new complete capacity cycle is required.");
+        runtime.Interrupt("System resumed; starting a new observed discharge trend.");
         presentationTimer.Start();
         pollTimer.Start();
         UpdatePresentation();
@@ -572,6 +628,7 @@ internal sealed class ApplicationController
             lock (powerGate) powerCancellation.Dispose();
             popup.CloseForShutdown();
             settingsWindow?.Close();
+            alertSettingsWindow?.Close();
             application.Shutdown();
         }
     }
@@ -590,6 +647,9 @@ internal sealed class ApplicationController
         Cleanup("Cancel manual polling", () => pollingWindow?.CancelOperations());
         Cleanup("Stop battery timer", pollTimer.Stop);
         Cleanup("Stop presentation timer", presentationTimer.Stop);
+        Cleanup("Dispose gaming alerts", alertPresenter.Dispose);
+        Cleanup("Close alert preferences", () => alertSettingsWindow?.Close());
+        Cleanup("Interrupt runtime estimates", () => runtime.Interrupt("Application stopped."));
         Cleanup("Dispose device notifications", () => deviceChanges?.Dispose());
         Cleanup("Interrupt capacity collection", () => health.Interrupt("Application stopped before a complete cycle.", DateTimeOffset.UtcNow));
         Cleanup("Close device details", () => { foreach (var window in detailsWindows.Values.ToArray()) window.Close(); });

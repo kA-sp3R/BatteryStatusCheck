@@ -1,3 +1,4 @@
+using DeviceBatteryStatus.Core.Alerts;
 using System.Collections.ObjectModel;
 using System.Globalization;
 
@@ -10,6 +11,7 @@ public sealed record AppSettings
 {
     public int RefreshIntervalSeconds { get; init; } = 30;
     public bool LowBatteryNotifications { get; init; } = true;
+    public GamingAlertSettings? GamingAlerts { get; init; }
     public int LowBatteryThreshold { get; init; } = 20;
     public string? PreferredDeviceId { get; init; }
     public bool StartWithWindows { get; init; }
@@ -39,7 +41,8 @@ public sealed record AppSettings
             TrayDeviceIds = Array.AsReadOnly((TrayDeviceIds ?? Array.Empty<string>())
                 .Select(NormalizeDeviceId).Where(id => id is not null).Cast<string>()
                 .Distinct(StringComparer.Ordinal).Take(16).ToArray()),
-            UpdateCheckMode = Enum.IsDefined(UpdateCheckMode) ? UpdateCheckMode : UpdateCheckMode.NotifyOnly
+            UpdateCheckMode = Enum.IsDefined(UpdateCheckMode) ? UpdateCheckMode : UpdateCheckMode.NotifyOnly,
+            GamingAlerts = GamingAlerts?.Normalize()
         };
     }
 

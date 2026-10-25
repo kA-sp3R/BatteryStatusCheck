@@ -26,11 +26,16 @@
                 <Label Content="_Single-icon device" Target="{Binding ElementName=PreferredBox}" Foreground="#EEEEEE" Padding="0,0,0,5" />
                 <ComboBox x:Name="PreferredBox" DisplayMemberPath="Name" MinHeight="30" Margin="0,0,0,5" AutomationProperties.Name="Tray icon device" />
                 <TextBlock Text="A selected device turns neutral when its reading is unavailable." FontSize="11" Foreground="#999999" TextWrapping="Wrap" Margin="0,0,0,15" />
-                <CheckBox x:Name="NotifyBox" Content="Low-battery notifications" Foreground="#EEEEEE" Margin="0,0,0,8" />
-                <DockPanel Margin="0,0,0,17">
+                <CheckBox x:Name="NotifyBox" Content="Enable battery alerts" Foreground="#EEEEEE" Margin="0,0,0,8" />
+                <DockPanel Margin="0,0,0,5">
                     <TextBox x:Name="ThresholdBox" Width="50" MaxLength="2" DockPanel.Dock="Right" AutomationProperties.Name="Low battery threshold percentage" />
                     <TextBlock Text="Notify at or below (%)" VerticalAlignment="Center" Foreground="#BBBBBB" />
                 </DockPanel>
+                <TextBlock x:Name="AlertThresholdNote" FontSize="11" Foreground="#999999" TextWrapping="Wrap" Margin="0,0,0,8" />
+                <WrapPanel Margin="0,0,0,17">
+                    <Button x:Name="GamingAlertsButton" Content="Gaming alerts…" Click="GamingAlerts_Click" Margin="0,0,8,6" />
+                    <Button x:Name="PreviewGamingAlertButton" Content="Preview gaming alert" Click="PreviewGamingAlert_Click" Margin="0,0,0,6" />
+                </WrapPanel>
                 <CheckBox x:Name="StartupBox" Content="Start with Windows" Foreground="#EEEEEE" Margin="0,0,0,6" />
                 <TextBlock x:Name="StartupNote" TextWrapping="Wrap" Foreground="#999999" FontSize="11" Margin="0,0,0,16" />
                 <Button x:Name="PollingButton" Content="Open polling-rate control…" HorizontalAlignment="Left"

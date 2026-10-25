@@ -1,0 +1,31 @@
+# Remaining runtime and gaming alerts
+
+This work extends the unpublished 1.2.0 candidate. The published release remains v1.1.0. Runtime estimates describe observed discharge; capacity-based battery health remains a separate calculation with its existing telemetry requirements.
+
+## Runtime behavior
+
+The estimator observes the monitor's existing publications. It never enumerates HID, sends commands, starts another hardware timer or increases query frequency. A display/freshness tick uses the same five-second presentation timer as before. History is transient and bounded to 64 devices, 24 hours and 2048 stored samples per device; restarting the app starts a new estimation period. Capacity-health history is unchanged and remains persistent.
+
+Only valid, fresh, timestamped percentages with a confirmed connected peripheral and known discharging state enter the trend. Categories never become percentages or estimates. Charging/full/unknown charging, unknown association, stale/invalid/future samples, disconnection, missing devices, conflicting or non-advancing samples, changed receiver/model identity and substantial monitoring gaps invalidate continuity. Windows device changes, sleep/resume and manual polling-rate operations also interrupt the trend. The gap budget follows battery freshness: twice the configured refresh interval plus five seconds. A rise exceeding two points above the period's low or an implausibly abrupt large drop starts a new period.
+
+An estimate requires at least 20 minutes, two separate downward steps and three percentage points lost. Flat and coarse gauges can require considerably longer. Elapsed-time coverage weights handle irregular samples; an exponentially weighted regression smooths short fluctuations. Recent consumption receives more weight, retaining at least a meaningful window and enough coarse drops. Gauge step size and changes between early/late rates widen the uncertainty range. Confident estimates additionally require at least 30 minutes, three drops, three observed step widths and bounded rate/quantization uncertainty. These are operational confidence rules, not a statistical guarantee.
+
+The main popup and relevant tray tooltips show rounded text or ranges, **Calculating…** while evidence accumulates, and **Unavailable** with explanatory popup detail when unsupported. Estimates are anchored to the latest actual sample and never count down through missing observations. Workload changes, firmware-cached percentages and future radio/gaming use can change actual runtime. Protocol-reported identity is not proof of a unique chemical battery: some supported receivers cannot distinguish an undetected swap between identical peripherals.
+
+## Alert settings and delivery
+
+Open **Settings → Gaming alerts**. The existing notification switch is the global master. Older settings retain their percentage threshold; new global defaults use low 20%, critical 10%, eight seconds, a 15-minute cooldown, five-point recovery and sound off. Saving the new editor uses the existing atomic settings store. Main preferences continue to preserve all alert rules.
+
+Global defaults and up to 64 optional device overrides provide percentage/runtime/both triggers, independent native Low/Critical category warnings, low/critical ordering, duration, monitor, sound, snoozing, cooldown and recovery. Low percentage accepts 1–50% and critical accepts 0% below low. Runtime low accepts 2–1440 minutes and critical accepts 1 minute below low. Display duration accepts 3–30 seconds. The editor rejects invalid ordering before saving. Category-only devices explain why percentage/runtime options are unavailable. A global snooze applies to overrides too. The synthetic preview can use unsaved rules without saving preferences or consuming real alert cooldowns.
+
+Percentage and category warnings require fresh current readings; an unknown charging state remains unknown, while confirmed charging/full suppresses alerts. Runtime thresholds additionally require a confident estimate and compare its conservative upper bound, so an optimistic midpoint cannot trigger an early runtime warning. An alert includes the genuine percentage or native category and honest runtime text even if no estimate exists.
+
+One compact black-and-green desktop window shows at a time, with yellow/red severity. It uses `ShowActivated=false`, non-focusable controls, `WS_EX_NOACTIVATE`, `WS_EX_TOOLWINDOW`, `WS_EX_TRANSPARENT`, `WS_EX_LAYERED`, no-activation positioning and explicit mouse-activation/hit-test responses. It never injects into games, captures input, requests foreground focus or minimizes another window. Alerts are click-through and automatically dismissed. No background service is added.
+
+The selected monitor's work area determines bottom-right placement; a missing saved monitor falls back to the primary display. Native DPI and window DPI changes control sizing. Windows fullscreen/busy notification state and foreground-window bounds can defer presentation conservatively, including some borderless fullscreen applications. Pending events are bounded to 32 devices and retained for up to ten minutes; ongoing fresh low conditions can qualify again after an expired pending entry. Repeated events coalesce, and unchanged content does not extend a visible alert. Queued and visible alerts are revalidated against current samples, charging, snooze and settings; only actual display acknowledges delivery. Legacy low-battery balloons are no longer invoked; update-available notifications are preserved.
+
+## Verification
+
+Windows compilation, automated tests, isolated application runtime smoke and physical compatibility are separate outcomes. Verification for this expanded candidate is pending; the earlier capacity-only candidate's results do not verify these additions. The final source/run/count/hash record and smoke screenshots will be linked here after the Windows checks complete.
+
+Physical battery behavior, real-game/exclusive fullscreen compatibility, actual cross-process click routing, physical monitor hotplug/mixed-DPI behavior, normal live HID monitoring, OS power/Explorer events and extended endurance remain unverified. Synthetic estimates and simulated fullscreen conditions are not evidence of compatibility with real games.

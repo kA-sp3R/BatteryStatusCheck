@@ -12,10 +12,11 @@ $app = (Resolve-Path -LiteralPath $ApplicationPath).Path
 $appDirectory = Split-Path -Parent $app
 $output = [IO.Path]::GetFullPath($ReportDirectory)
 New-Item -ItemType Directory -Force $output | Out-Null
-$expectedChecks = 12
+$expectedChecks = 18
 $requiredArtifacts = @('popup.png', 'settings.png', 'settings-selected.png', 'updates-off.png',
     'tray-0-48.png', 'tray-100-48.png', 'tray-neutral-48.png', 'diagnostics-smoke.zip',
-    'capacity-details.png', 'capacity-unavailable.png', 'efficiency-workload.json')
+    'capacity-details.png', 'capacity-unavailable.png', 'efficiency-workload.json',
+    'runtime-popup.png', 'gaming-alert-settings.png', 'gaming-alert.png')
 # Only this harness's fixed output names are removed. Prior evidence cannot make
 # a later run pass; unrelated files in a caller-selected directory are preserved.
 foreach ($name in @('application-smoke.json', 'stdout.log', 'stderr.log') + $requiredArtifacts) {
@@ -109,6 +110,16 @@ try {
         throw "Isolated Windows application smoke did not pass; inspect application-smoke.json (exit $code)."
     }
     $efficiency = Get-Content -LiteralPath (Join-Path $output 'efficiency-workload.json') -Raw | ConvertFrom-Json
+    if ($report.gaming.mode -cne 'synthetic-desktop-gaming-alert-smoke' -or
+        $report.gaming.physicalDevicesAccessed -ne $false -or $report.gaming.gamesLaunched -ne $false -or
+        $report.gaming.audioHardwareAccessed -ne $false -or
+        $report.gaming.nativeSafety.noActivate -ne $true -or $report.gaming.nativeSafety.clickThrough -ne $true -or
+        $report.gaming.nativeSafety.foregroundUnchanged -ne $true -or
+        $report.gaming.nativeSafety.mouseActivateResult -ne 3 -or $report.gaming.nativeSafety.hitTestResult -ne -1 -or
+        $report.gaming.repeatedEvents -ne 20 -or $report.gaming.coalescedDeliveries -ne 1 -or
+        $report.gaming.previewAcknowledged -ne 0) {
+        throw 'Synthetic gaming-alert evidence has invalid scope, native safety or delivery results.'
+    }
     if ($efficiency.schemaVersion -ne 1 -or $efficiency.mode -cne 'synthetic-software-efficiency-smoke' -or
         $efficiency.sourceCommit -cne $report.sourceCommit -or $efficiency.appVersion -cne $report.appVersion -or
         $efficiency.flavor -cne $report.flavor -or $efficiency.physicalDevicesAccessed -ne $false -or

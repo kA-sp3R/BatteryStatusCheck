@@ -1,6 +1,7 @@
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Presentation;
 using DeviceBatteryStatus.Core.Settings;
+using DeviceBatteryStatus.Core.Runtime;
 using Dispatcher = System.Windows.Threading.Dispatcher;
 
 namespace DeviceBatteryStatus.App.Tray;
@@ -18,6 +19,8 @@ public sealed class TrayIconManager : IDisposable
     private AppSettings? previousSettings;
     private IReadOnlyList<TrayIconItem>? previousSelection;
     private DateTimeOffset previousPresentationTime;
+    private bool previousRuntimeEnabled;
+    private readonly Dictionary<string, string> previousRuntimeTexts = new(StringComparer.Ordinal);
     private DateTimeOffset nextFreshnessChange;
     private uint observedTaskbarDpi;
     private long lastDpiProbe;
@@ -50,7 +53,8 @@ public sealed class TrayIconManager : IDisposable
         get { dispatcher.VerifyAccess(); return icons.Count; }
     }
 
-    public void Update(IReadOnlyList<DeviceSnapshot> devices, AppSettings settings, DateTimeOffset now)
+    public void Update(IReadOnlyList<DeviceSnapshot> devices, AppSettings settings, DateTimeOffset now,
+        IReadOnlyDictionary<string, RuntimeEstimate>? runtimeMap = null)
     {
         dispatcher.VerifyAccess();
         if (disposed) return;
@@ -61,17 +65,18 @@ public sealed class TrayIconManager : IDisposable
         // collection. Keep a small copy so mutation cannot hide a presentation change.
         if (previousDevices is not null && previousSettings is not null && previousSelection is not null &&
             now >= previousPresentationTime && now < nextFreshnessChange &&
-            SameDisplaySettings(settings, previousSettings) && SameDevices(devices, previousDevices))
+            SameDisplaySettings(settings, previousSettings) && SameDevices(devices, previousDevices) &&
+            SameRuntimeInputs(devices, settings, now, runtimeMap))
         {
             unchangedSelections++;
             return;
         }
         selectionReconciliations++;
-        var selected = TrayIconSelection.Create(devices, settings, now);
+        var selected = WithRuntimeTooltips(TrayIconSelection.Create(devices, settings, now), devices, settings, now, runtimeMap);
         if (previousSelection is not null && selected.SequenceEqual(previousSelection))
         {
             unchangedSelections++;
-            RememberInputs(devices, settings, selected, now);
+            RememberInputs(devices, settings, selected, now, runtimeMap);
             return;
         }
         var desired = selected.Select(item => item.Key).ToHashSet(StringComparer.Ordinal);
@@ -130,7 +135,7 @@ public sealed class TrayIconManager : IDisposable
             InvalidatePresentationCache();
             throw new InvalidOperationException("One or more tray icons could not be updated.", failure);
         }
-        RememberInputs(devices, settings, selected, now);
+        RememberInputs(devices, settings, selected, now, runtimeMap);
     }
 
     internal TrayActivityMetrics Metrics
@@ -160,7 +165,7 @@ public sealed class TrayIconManager : IDisposable
     }
 
     private void RememberInputs(IReadOnlyList<DeviceSnapshot> devices, AppSettings settings,
-        IReadOnlyList<TrayIconItem> selection, DateTimeOffset now)
+        IReadOnlyList<TrayIconItem> selection, DateTimeOffset now, IReadOnlyDictionary<string, RuntimeEstimate>? runtimeMap)
     {
         previousDevices = devices.ToArray();
         previousSettings = settings with
@@ -171,6 +176,11 @@ public sealed class TrayIconManager : IDisposable
         };
         previousSelection = selection;
         previousPresentationTime = now;
+        previousRuntimeEnabled = runtimeMap is not null;
+        previousRuntimeTexts.Clear();
+        if (runtimeMap is not null)
+            foreach (var snapshot in devices)
+                previousRuntimeTexts[snapshot.Device.Id] = RuntimeText(snapshot, settings, now, runtimeMap);
         nextFreshnessChange = DateTimeOffset.MaxValue;
         var age = TimeSpan.FromSeconds(2 * Math.Clamp(settings.RefreshIntervalSeconds, 10, 3600) + 5);
         foreach (var snapshot in devices)
@@ -183,6 +193,54 @@ public sealed class TrayIconManager : IDisposable
             if (transition > now && transition < nextFreshnessChange) nextFreshnessChange = transition;
         }
     }
+
+    internal IReadOnlyList<TrayIconItem> DisplayedPresentations => previousSelection ?? Array.Empty<TrayIconItem>();
+
+    private bool SameRuntimeInputs(IReadOnlyList<DeviceSnapshot> devices, AppSettings settings, DateTimeOffset now,
+        IReadOnlyDictionary<string, RuntimeEstimate>? runtimeMap)
+    {
+        if (previousRuntimeEnabled != (runtimeMap is not null)) return false;
+        if (runtimeMap is null) return true;
+        foreach (var snapshot in devices)
+            if (!previousRuntimeTexts.TryGetValue(snapshot.Device.Id, out var text) ||
+                text != RuntimeText(snapshot, settings, now, runtimeMap)) return false;
+        return true;
+    }
+
+    private static IReadOnlyList<TrayIconItem> WithRuntimeTooltips(IReadOnlyList<TrayIconItem> items,
+        IReadOnlyList<DeviceSnapshot> devices, AppSettings settings, DateTimeOffset now,
+        IReadOnlyDictionary<string, RuntimeEstimate>? runtimeMap)
+    {
+        if (runtimeMap is null) return items;
+        var result = new TrayIconItem[items.Count];
+        for (var index = 0; index < items.Count; index++)
+        {
+            var item = items[index];
+            var id = item.Presentation.DeviceId;
+            var matches = id is null ? Array.Empty<DeviceSnapshot>()
+                : devices.Where(device => device.Device.Id == id).Take(2).ToArray();
+            var snapshot = matches.Length == 1 ? matches[0] : null;
+            if (snapshot is null) { result[index] = item; continue; }
+            var name = BatteryPresentation.GetDisplayName(snapshot.Device, settings);
+            if (name.Length > 32) name = name[..(char.IsHighSurrogate(name[30]) ? 30 : 31)] + "…";
+            var runtime = RuntimeText(snapshot, settings, now, runtimeMap);
+            var disconnected = snapshot.Connection == ConnectionState.Disconnected ||
+                snapshot.Battery.State == ReadingState.Disconnected;
+            var value = disconnected ? "Disconnected" : BatteryPresentation.GetBatteryValueText(snapshot, settings, now);
+            var sampled = snapshot.Battery.SampledAt?.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss'Z'",
+                System.Globalization.CultureInfo.InvariantCulture);
+            var state = disconnected ? "" : $" · {BatteryPresentation.GetStatusText(snapshot, settings, now)}";
+            var tooltip = $"{name}: {value} · Runtime: {runtime}{state}" + (sampled is null ? "" : $" · {sampled}");
+            result[index] = item with { Presentation = item.Presentation with { Tooltip = tooltip } };
+        }
+        return Array.AsReadOnly(result);
+    }
+
+    private static string RuntimeText(DeviceSnapshot snapshot, AppSettings settings, DateTimeOffset now,
+        IReadOnlyDictionary<string, RuntimeEstimate> runtimeMap) =>
+        !BatteryPresentation.IsFreshPercentage(snapshot, settings, now) ||
+        snapshot.Connection != ConnectionState.Connected || snapshot.Battery.Charging != ChargingState.Discharging
+            ? "Unavailable" : runtimeMap.GetValueOrDefault(snapshot.Device.Id)?.Text ?? "Unavailable";
 
     private static bool SameDevices(IReadOnlyList<DeviceSnapshot> left, DeviceSnapshot[] right)
     {
@@ -219,6 +277,8 @@ public sealed class TrayIconManager : IDisposable
         previousDevices = null;
         previousSettings = null;
         previousSelection = null;
+        previousRuntimeTexts.Clear();
+        previousRuntimeEnabled = false;
     }
 
     private void RemoveIcon(string key, ref Exception? failure)

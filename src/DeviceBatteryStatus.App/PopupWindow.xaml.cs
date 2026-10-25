@@ -7,6 +7,7 @@ using System.Windows.Interop;
 using DeviceBatteryStatus.App.ViewModels;
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Settings;
+using DeviceBatteryStatus.Core.Runtime;
 
 namespace DeviceBatteryStatus.App;
 
@@ -28,7 +29,7 @@ public partial class PopupWindow : Window
     public PopupWindow() => InitializeComponent();
 
     public void SetDevices(IReadOnlyList<DeviceSnapshot> devices, AppSettings settings,
-        DateTimeOffset now, string? status)
+        DateTimeOffset now, string? status, IReadOnlyDictionary<string, RuntimeEstimate>? runtimeMap = null)
     {
         Dispatcher.VerifyAccess();
         ArgumentNullException.ThrowIfNull(devices);
@@ -36,13 +37,13 @@ public partial class PopupWindow : Window
         var rowsChanged = displayedRows.Count != devices.Count;
         if (!rowsChanged)
             for (var index = 0; index < devices.Count; index++)
-                if (!displayedRows[index].Matches(devices[index], settings, now)) { rowsChanged = true; break; }
+                if (!displayedRows[index].Matches(devices[index], settings, now, runtimeMap?.GetValueOrDefault(devices[index].Device.Id))) { rowsChanged = true; break; }
         if (rowsChanged)
         {
             var rows = new DeviceRowViewModel[devices.Count];
             for (var index = 0; index < devices.Count; index++)
-                rows[index] = index < displayedRows.Count && displayedRows[index].Matches(devices[index], settings, now)
-                    ? displayedRows[index] : new DeviceRowViewModel(devices[index], settings, now);
+                rows[index] = index < displayedRows.Count && displayedRows[index].Matches(devices[index], settings, now, runtimeMap?.GetValueOrDefault(devices[index].Device.Id))
+                    ? displayedRows[index] : new DeviceRowViewModel(devices[index], settings, now, runtimeMap?.GetValueOrDefault(devices[index].Device.Id));
             displayedRows = rows;
             DeviceList.ItemsSource = rows;
             PresentationUpdateCount++;

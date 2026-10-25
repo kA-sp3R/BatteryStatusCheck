@@ -4,6 +4,7 @@ using System.Windows.Media;
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Presentation;
 using DeviceBatteryStatus.Core.Settings;
+using DeviceBatteryStatus.Core.Runtime;
 
 namespace DeviceBatteryStatus.App.ViewModels;
 
@@ -19,11 +20,14 @@ public sealed class DeviceRowViewModel
     private readonly BatteryReading reading;
     private readonly ConnectionState connectionState;
     private readonly bool fresh;
+    private readonly string runtimeDetail;
 
     public string DeviceId => identity.Id;
     public string Name { get; }
     public string PercentageText { get; }
     public string StatusText { get; }
+    public string RuntimeText { get; }
+    public string RuntimeDisplayText => $"Runtime: {RuntimeText}";
     public string ToolTip { get; }
     public string VendorName { get; }
     public string DeviceGlyph { get; }
@@ -35,7 +39,7 @@ public sealed class DeviceRowViewModel
     public double ProgressValue { get; }
     public Visibility ProgressVisibility { get; }
 
-    public DeviceRowViewModel(DeviceSnapshot snapshot, AppSettings settings, DateTimeOffset now)
+    public DeviceRowViewModel(DeviceSnapshot snapshot, AppSettings settings, DateTimeOffset now, RuntimeEstimate? runtime = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(settings);
@@ -43,6 +47,7 @@ public sealed class DeviceRowViewModel
         reading = snapshot.Battery;
         connectionState = snapshot.Connection;
         var battery = snapshot.Battery;
+        (RuntimeText, runtimeDetail) = GetRuntimePresentation(snapshot, settings, now, runtime);
         Name = BatteryPresentation.GetDisplayName(snapshot.Device, settings);
         VendorName = snapshot.Device.Vendor.ToString();
         (DeviceGlyph, DeviceKind) = GetDeviceIcon(snapshot.Device);
@@ -102,19 +107,37 @@ public sealed class DeviceRowViewModel
                 : $"Reported battery category: {category}");
         if (battery.SampledAt is { } sampledAt)
             lines.Add($"Last sample: {sampledAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.CurrentCulture)}");
+        lines.Add($"Estimated remaining runtime: {RuntimeText}");
+        if (!string.IsNullOrWhiteSpace(runtimeDetail)) lines.Add(runtimeDetail);
         if (!string.IsNullOrWhiteSpace(battery.Detail)) lines.Add(battery.Detail);
         if (battery.State == ReadingState.Current && !fresh)
             lines.Add("This sample is no longer current. Refresh to request a new reading.");
         if (!string.Equals(Name, snapshot.Device.Name, StringComparison.Ordinal))
             lines.Add($"Device name: {snapshot.Device.Name}");
         ToolTip = string.Join(Environment.NewLine, lines);
-        AccessibilityText = $"{Name}, {VendorName} {DeviceKind}, {PercentageText}, {readingText}, {connection}, {charging}";
+        AccessibilityText = $"{Name}, {VendorName} {DeviceKind}, {PercentageText}, {readingText}, {connection}, {charging}, runtime {RuntimeText}";
     }
 
-    internal bool Matches(DeviceSnapshot snapshot, AppSettings settings, DateTimeOffset now) =>
+    internal bool Matches(DeviceSnapshot snapshot, AppSettings settings, DateTimeOffset now, RuntimeEstimate? runtime = null) =>
         identity == snapshot.Device && reading == snapshot.Battery && connectionState == snapshot.Connection &&
         fresh == BatteryPresentation.IsFreshCurrent(snapshot, settings, now) &&
+        (RuntimeText, runtimeDetail) == GetRuntimePresentation(snapshot, settings, now, runtime) &&
         string.Equals(Name, BatteryPresentation.GetDisplayName(snapshot.Device, settings), StringComparison.Ordinal);
+
+    private static (string Text, string Detail) GetRuntimePresentation(DeviceSnapshot snapshot, AppSettings settings,
+        DateTimeOffset now, RuntimeEstimate? runtime)
+    {
+        // Presentation has its own freshness guard: an estimate cached by a caller
+        // cannot outlive the battery sample or become a category-based estimate.
+        if (snapshot.Battery.Percentage is null)
+            return ("Unavailable", "A reported battery percentage is required; native categories cannot supply a runtime estimate.");
+        if (!BatteryPresentation.IsFreshPercentage(snapshot, settings, now))
+            return ("Unavailable", "A fresh timestamped percentage is required; stale readings are excluded.");
+        if (snapshot.Connection != ConnectionState.Connected || snapshot.Battery.Charging != ChargingState.Discharging)
+            return ("Unavailable", "Runtime requires a confirmed peripheral connection and a known uninterrupted discharge period.");
+        return (runtime?.Text ?? "Unavailable", runtime?.Detail ??
+            "Runtime requires fresh percentage samples from a known discharging peripheral.");
+    }
 
     private static (string Glyph, string Kind) GetDeviceIcon(PeripheralIdentity device)
     {

@@ -17,12 +17,15 @@ public partial class SettingsWindow : Window
     private readonly Action? showUpdates;
     private readonly Action? openLogs;
     private readonly Action? exportLogs;
+    private readonly Action? gamingAlerts;
+    private readonly Action? previewGamingAlert;
     private readonly List<(string Id, CheckBox Choice)> trayChoices = [];
     private readonly List<(string Id, TextBox Editor)> names = [];
 
     public SettingsWindow(AppSettings settings, IReadOnlyList<DeviceSnapshot> devices, bool canRegister,
         bool startupEnabled, string? startupError, Action<AppSettings, bool> save, Action? showPolling = null,
-        Action? showUpdates = null, Action? openLogs = null, Action? exportLogs = null)
+        Action? showUpdates = null, Action? openLogs = null, Action? exportLogs = null,
+        Action? gamingAlerts = null, Action? previewGamingAlert = null)
     {
         InitializeComponent();
         original = settings;
@@ -31,9 +34,13 @@ public partial class SettingsWindow : Window
         this.showUpdates = showUpdates;
         this.openLogs = openLogs;
         this.exportLogs = exportLogs;
+        this.gamingAlerts = gamingAlerts;
+        this.previewGamingAlert = previewGamingAlert;
         UpdatesButton.IsEnabled = showUpdates is not null;
         OpenLogsButton.IsEnabled = openLogs is not null;
         ExportLogsButton.IsEnabled = exportLogs is not null;
+        GamingAlertsButton.IsEnabled = gamingAlerts is not null;
+        PreviewGamingAlertButton.IsEnabled = previewGamingAlert is not null;
         var trayModes = new[] { new TrayModeChoice(TrayIconMode.Single, "Single summary icon (default)"),
             new TrayModeChoice(TrayIconMode.SelectedDevices, "Separate icons for selected devices") };
         TrayModeBox.ItemsSource = trayModes;
@@ -46,6 +53,12 @@ public partial class SettingsWindow : Window
         initialStartup = startupEnabled;
         IntervalBox.Text = settings.RefreshIntervalSeconds.ToString(CultureInfo.InvariantCulture);
         ThresholdBox.Text = settings.LowBatteryThreshold.ToString(CultureInfo.InvariantCulture);
+        ThresholdBox.IsEnabled = settings.GamingAlerts is null;
+        if (settings.GamingAlerts is not null)
+            ThresholdBox.Text = settings.GamingAlerts.GlobalRule.LowPercentage.ToString(CultureInfo.InvariantCulture);
+        AlertThresholdNote.Text = settings.GamingAlerts is null
+            ? "Gaming alerts adds critical thresholds, runtime triggers and optional per-device rules."
+            : "Configure low, critical and per-device thresholds in Gaming alerts. The switch above controls all battery alerts.";
         NotifyBox.IsChecked = settings.LowBatteryNotifications;
         StartupBox.IsChecked = startupEnabled;
         StartupBox.IsEnabled = canRegister && startupError is null;
@@ -106,7 +119,9 @@ public partial class SettingsWindow : Window
             IntervalBox.Focus();
             return;
         }
-        if (!int.TryParse(ThresholdBox.Text, NumberStyles.None, CultureInfo.InvariantCulture, out var threshold) || threshold is < 1 or > 50)
+        var threshold = original.LowBatteryThreshold;
+        if (original.GamingAlerts is null &&
+            (!int.TryParse(ThresholdBox.Text, NumberStyles.None, CultureInfo.InvariantCulture, out threshold) || threshold is < 1 or > 50))
         {
             ErrorText.Text = "Choose a low-battery threshold from 1% to 50%.";
             ThresholdBox.Focus();
@@ -161,6 +176,36 @@ public partial class SettingsWindow : Window
     }
     private void OpenLogs_Click(object sender, RoutedEventArgs e) => InvokeOptional(openLogs, "Logs");
     private void ExportLogs_Click(object sender, RoutedEventArgs e) => InvokeOptional(exportLogs, "Diagnostic export");
+    private void GamingAlerts_Click(object sender, RoutedEventArgs e)
+    {
+        if (HasUnsavedChanges())
+        {
+            ErrorText.Text = "Save or cancel your current changes before opening gaming-alert settings.";
+            return;
+        }
+        InvokeOptional(gamingAlerts, "Gaming-alert settings");
+    }
+    private void PreviewGamingAlert_Click(object sender, RoutedEventArgs e)
+    {
+        if (HasUnsavedChanges())
+        {
+            ErrorText.Text = "Save your changes before previewing, or use the preview inside Gaming alerts for unsaved alert rules.";
+            return;
+        }
+        InvokeOptional(previewGamingAlert, "Synthetic gaming-alert preview");
+    }
+
+    private bool HasUnsavedChanges() =>
+        IntervalBox.Text != original.RefreshIntervalSeconds.ToString(CultureInfo.InvariantCulture) ||
+        (original.GamingAlerts is null && ThresholdBox.Text != original.LowBatteryThreshold.ToString(CultureInfo.InvariantCulture)) ||
+        (NotifyBox.IsChecked == true) != original.LowBatteryNotifications ||
+        (StartupBox.IsChecked == true) != initialStartup ||
+        (PreferredBox.SelectedItem as DeviceChoice)?.Id != original.PreferredDeviceId ||
+        ((TrayModeBox.SelectedItem as TrayModeChoice)?.Mode ?? TrayIconMode.Single) != original.TrayIconMode ||
+        ((UpdateModeBox.SelectedItem as UpdateModeChoice)?.Mode ?? UpdateCheckMode.NotifyOnly) != original.UpdateCheckMode ||
+        !trayChoices.Where(item => item.Choice.IsChecked == true).Select(item => item.Id).ToHashSet(StringComparer.Ordinal)
+            .SetEquals(original.TrayDeviceIds) ||
+        names.Any(item => item.Editor.Text != (original.CustomNames.GetValueOrDefault(item.Id) ?? ""));
     private void InvokeOptional(Action? action, string label)
     {
         try { action?.Invoke(); }

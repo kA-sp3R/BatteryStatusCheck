@@ -110,6 +110,7 @@
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
@@ -126,7 +127,9 @@
                                             </Grid>
                                             <TextBlock Grid.Row="1" Text="{Binding StatusText}" FontSize="9.5"
                                                        Foreground="#8B9887" TextTrimming="CharacterEllipsis" Margin="0,1,0,0"/>
-                                            <ProgressBar Grid.Row="2" Minimum="0" Maximum="100" Height="2"
+                                            <TextBlock Grid.Row="2" Text="{Binding RuntimeDisplayText}" FontSize="9.5"
+                                                       Foreground="#A8B5A6" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                            <ProgressBar Grid.Row="3" Minimum="0" Maximum="100" Height="2"
                                                          Margin="0,5,0,0" BorderThickness="0" Background="#1B2519"
                                                          Foreground="{Binding ProgressBrush}" Value="{Binding ProgressValue, Mode=OneWay}"
                                                          Visibility="{Binding ProgressVisibility}"
