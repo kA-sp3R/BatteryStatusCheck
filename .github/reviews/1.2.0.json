@@ -29,7 +29,7 @@
     "bytes": 54874611,
     "sha256": "a59c337b2708faf5815e52c7011e00cac3671b701736ee5b1c69405d1d778dd2"
   },
-  "status": "awaiting-publication-decision",
+  "status": "superseded-by-expanded-candidate",
   "published": false,
   "repository": "kA-sp3R/BatteryStatusCheck",
   "reviewedNotesSha256": "e72829a04ebb2e00601a6f8d61a97564946746cdcc72888cbd8d0df05fd67d24",
@@ -629,5 +629,6 @@
     "full-software-tests-Release-1/TestResults/runneradmin_runnervmdaln5_2026-10-25_08_21_32_net10.0.trx": "0212ed7f53e181c54821907d2af6626ff5a7f7118a61e8737d0a62f60e2ef817",
     "full-software-tests-Release-1/ci-logs/full-Release.log": "365e99b3c1380562b6a56b29115150f97c03d5074dfdb3b4b267a9f9a1727e15",
     "windows-installer-win-x64-1/installer-release.json": "bcc126c6441f6da910ec6600692b7ea659838173db97b0b9d931413ee3d9f5e7"
-  }
+  },
+  "supersededBy": ".github/reviews/1.2.0-gaming.json"
 }

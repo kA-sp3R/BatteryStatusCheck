@@ -1,8 +1,14 @@
 # Verification
 
-## 1.2.0 candidate
+## 1.2.0 candidate with runtime and gaming alerts
 
-The unpublished 1.2.0 candidate passed Windows verification at source `fb41c9e63ce24cf68dbf63d6add4503597bc474c`: compilation, 1019 C# tests each in Debug/Release, 5 parser/18 release-policy cases, both portable inspections, 12 isolated application-smoke checks per flavor and 64 installer lifecycle assertions. [Build/smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40176230540), [full-software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40176230772), [source/run/hash record](../.github/reviews/1.2.0.json).
+The expanded unpublished 1.2.0 candidate passed at source `1ca669c2b90770d7074cad4b98f156b0031a9240`: Windows compilation; 1,095 C# cases each in Debug/Release (zero failed/skipped); 5 parser/18 release-policy cases; both portable inspections; 18 isolated application checks per flavor; and 64 installer lifecycle assertions. [Build/package/smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40233889412), [full-software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40233889759), [source/run/hash review](../.github/reviews/1.2.0-gaming.json).
+
+The [full change report](runtime-and-gaming-alerts.md) lists all files, behavior, affected existing functions, exact test scope and remaining limits. Native alert styles/hooks and unchanged foreground snapshot passed on the CI desktop; twenty simulated events coalesced to one. Actual cross-process click routing and real-game/exclusive fullscreen compatibility remain unverified. Software smoke bypasses the normal controller/HID/network/startup and uses synthetic battery/monitor/fullscreen/sound inputs. Capacity health remains unavailable on all admitted physical devices for insufficient telemetry. No new release or draft exists; v1.1.0 remains published.
+
+## Earlier capacity-only 1.2.0 snapshot
+
+The earlier capacity-only snapshot passed Windows verification at source `fb41c9e63ce24cf68dbf63d6add4503597bc474c`: compilation, 1019 C# tests each in Debug/Release, 5 parser/18 release-policy cases, both portable inspections, 12 isolated application-smoke checks per flavor and 64 installer lifecycle assertions. [Build/smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40176230540), [full-software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40176230772), [source/run/hash record](../.github/reviews/1.2.0.json).
 
 The [complete change report](capacity-health-and-efficiency.md) records all edited files, affected functions, failed/fixed verification, actual CPU/memory/handle observations and remaining limits. Synthetic workload results: discovery 8000→800, queries 16000→12200 with healthy reads 8000→8000. CPU observations were 187.5→125 ms and 93.75→62.5 ms across the two flavors; memory/GC snapshots are reported without steady-state or physical claims.
 

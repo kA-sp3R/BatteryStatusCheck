@@ -1,0 +1,714 @@
+{
+  "version": "1.2.0",
+  "tag": "v1.2.0",
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "sourceCommit": "1ca669c2b90770d7074cad4b98f156b0031a9240",
+  "buildRun": 40233889412,
+  "buildAttempt": 1,
+  "fullTestRun": 40233889759,
+  "fullTestAttempt": 1,
+  "testAutomationCommit": "1ca669c2b90770d7074cad4b98f156b0031a9240",
+  "testCount": 1095,
+  "parserTestCount": 5,
+  "automationTestCount": 18,
+  "appSmoke": true,
+  "appSmokeCheckCount": 18,
+  "packages": {
+    "framework-dependent": {
+      "bytes": 391744,
+      "sha256": "50350a3b324227b42a941bde607ca78dbfe0e2742808e4a664e644a26e48586d"
+    },
+    "self-contained": {
+      "bytes": 76418618,
+      "sha256": "179c5554c33f0b8d668c032c77a9e10c4f2200b3ab7cf2fdc8fd7894306bb21a"
+    }
+  },
+  "status": "awaiting-publication-decision",
+  "published": false,
+  "repository": "kA-sp3R/BatteryStatusCheck",
+  "supersedes": ".github/reviews/1.2.0.json",
+  "reviewDateAustraliaSydney": "2026-10-26",
+  "installer": {
+    "bytes": 54855102,
+    "sha256": "1ccd2e2bf1a03097d569d264876eb80bec7dc2c9cb1a7aaed0f76ad5ebf73116"
+  },
+  "reviewedNotesSha256": "bcf6932dde27efa28a000cc90692e50b2de998eee67187ba8b3d990c5385bdff",
+  "verification": {
+    "testResults": {
+      "installerSmoke": {
+        "executed": 64,
+        "passed": 64,
+        "failed": 0,
+        "installerExecuted": true,
+        "applicationLaunched": false,
+        "hardwareVerified": false
+      },
+      "Debug": {
+        "total": 1095,
+        "executed": 1095,
+        "passed": 1095,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "Release": {
+        "total": 1095,
+        "executed": 1095,
+        "passed": 1095,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "offlineParser": {
+        "executed": 5,
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "releasePolicy": {
+        "executed": 18,
+        "passed": 18,
+        "failed": 0,
+        "skipped": 0
+      },
+      "applicationSmoke": {
+        "framework-dependent": {
+          "total": 18,
+          "executed": 18,
+          "passed": 18,
+          "failed": 0,
+          "applicationLaunched": true,
+          "normalApplicationControllerStarted": false,
+          "hardwareAccessed": false,
+          "networkAccessed": false
+        },
+        "self-contained": {
+          "total": 18,
+          "executed": 18,
+          "passed": 18,
+          "failed": 0,
+          "applicationLaunched": true,
+          "normalApplicationControllerStarted": false,
+          "hardwareAccessed": false,
+          "networkAccessed": false
+        }
+      }
+    },
+    "packageInspections": {
+      "framework-dependent": {
+        "files": 11,
+        "payloadHashesVerified": true,
+        "pe": "win-x64/GUI",
+        "runtimeOptions": {
+          "tfm": "net10.0",
+          "frameworks": [
+            {
+              "name": "Microsoft.NETCore.App",
+              "version": "10.0.0"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App",
+              "version": "10.0.0"
+            }
+          ],
+          "configProperties": {
+            "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+            "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+          }
+        }
+      },
+      "self-contained": {
+        "files": 482,
+        "payloadHashesVerified": true,
+        "pe": "win-x64/GUI",
+        "runtimeOptions": {
+          "tfm": "net10.0",
+          "includedFrameworks": [
+            {
+              "name": "Microsoft.NETCore.App",
+              "version": "10.0.14"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App",
+              "version": "10.0.14"
+            }
+          ],
+          "configProperties": {
+            "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+            "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+          }
+        }
+      }
+    },
+    "gaming": {
+      "framework-dependent": {
+        "mode": "synthetic-desktop-gaming-alert-smoke",
+        "physicalDevicesAccessed": false,
+        "gamesLaunched": false,
+        "runtime": {
+          "state": 2,
+          "text": "1\u20133 hours remaining",
+          "isConfident": true,
+          "sampleCount": 32,
+          "coverage": "00:31:00",
+          "remaining": "01:59:33.9164641",
+          "lowerBound": "01:37:47.3268675",
+          "upperBound": "02:33:05.6496525"
+        },
+        "nativeSafety": {
+          "noActivate": true,
+          "clickThrough": true,
+          "toolWindow": true,
+          "layered": true,
+          "foregroundUnchanged": true,
+          "mouseActivateResult": 3,
+          "hitTestResult": -1,
+          "bounds": {
+            "x": -558,
+            "y": 674,
+            "width": 540,
+            "height": 168
+          },
+          "monitor": "synthetic-selected-work-area",
+          "dpi": 144
+        },
+        "repeatedEvents": 20,
+        "coalescedDeliveries": 1,
+        "revalidations": 2,
+        "previewAcknowledged": 0,
+        "soundCallbacks": 1,
+        "audioHardwareAccessed": false,
+        "settingsStorage": "Synthetic fixture beneath the smoke report directory only",
+        "limits": "No physical-device trend, real game, exclusive-fullscreen compatibility, actual monitor switching, hardware DPI transition or user-input delivery was tested. Native safety styles and direct message-hook responses are measured in the CI desktop only."
+      },
+      "self-contained": {
+        "mode": "synthetic-desktop-gaming-alert-smoke",
+        "physicalDevicesAccessed": false,
+        "gamesLaunched": false,
+        "runtime": {
+          "state": 2,
+          "text": "1\u20133 hours remaining",
+          "isConfident": true,
+          "sampleCount": 32,
+          "coverage": "00:31:00",
+          "remaining": "01:59:33.9164641",
+          "lowerBound": "01:37:47.3268675",
+          "upperBound": "02:33:05.6496525"
+        },
+        "nativeSafety": {
+          "noActivate": true,
+          "clickThrough": true,
+          "toolWindow": true,
+          "layered": true,
+          "foregroundUnchanged": true,
+          "mouseActivateResult": 3,
+          "hitTestResult": -1,
+          "bounds": {
+            "x": -558,
+            "y": 674,
+            "width": 540,
+            "height": 168
+          },
+          "monitor": "synthetic-selected-work-area",
+          "dpi": 144
+        },
+        "repeatedEvents": 20,
+        "coalescedDeliveries": 1,
+        "revalidations": 2,
+        "previewAcknowledged": 0,
+        "soundCallbacks": 1,
+        "audioHardwareAccessed": false,
+        "settingsStorage": "Synthetic fixture beneath the smoke report directory only",
+        "limits": "No physical-device trend, real game, exclusive-fullscreen compatibility, actual monitor switching, hardware DPI transition or user-input delivery was tested. Native safety styles and direct message-hook responses are measured in the CI desktop only."
+      }
+    },
+    "syntheticEfficiency": {
+      "framework-dependent": {
+        "schemaVersion": 1,
+        "mode": "synthetic-software-efficiency-smoke",
+        "sourceCommit": "1ca669c2b90770d7074cad4b98f156b0031a9240",
+        "appVersion": "1.2.0",
+        "flavor": "framework-dependent",
+        "repository": "kA-sp3R/BatteryStatusCheck",
+        "workflowRun": "40233889412",
+        "workflowAttempt": "1",
+        "measuredAtUtc": "2026-10-25T21:10:31.9808385+00:00",
+        "physicalDevicesAccessed": false,
+        "normalApplicationControllerStarted": false,
+        "monitorWorkload": {
+          "schemaVersion": 1,
+          "workload": "deterministic-synthetic-healthy-and-nonresponsive-usb-receivers",
+          "physicalDevicesAccessed": false,
+          "normalApplicationControllerStarted": false,
+          "warmupTrialsPerPolicy": 3,
+          "measuredTrialsPerPolicy": 200,
+          "simulatedMinutesPerTrial": 20,
+          "scheduledRefreshIntervalSeconds": 30,
+          "receiverCount": 2,
+          "legacy": {
+            "policy": "legacy refresh policy",
+            "trials": 200,
+            "scheduledRefreshes": 8000,
+            "discoveryEnumerations": 8000,
+            "transportOpens": 16000,
+            "healthyReads": 8000,
+            "nonResponsiveReads": 8000,
+            "featureQueries": 16000,
+            "wallMilliseconds": 90.9996,
+            "cpuMilliseconds": 93.75,
+            "allocatedBytes": 49511248,
+            "before": {
+              "cpuMilliseconds": 2734.375,
+              "workingSetBytes": 143994880,
+              "privateBytes": 55652352,
+              "managedHeapBytes": 10596480,
+              "totalAllocatedBytes": 21205352,
+              "processHandles": 524,
+              "gdiHandles": 46,
+              "userHandles": 33,
+              "gen0Collections": 4,
+              "gen1Collections": 4,
+              "gen2Collections": 4
+            },
+            "after": {
+              "cpuMilliseconds": 2828.125,
+              "workingSetBytes": 155463680,
+              "privateBytes": 66871296,
+              "managedHeapBytes": 11315864,
+              "totalAllocatedBytes": 70716600,
+              "processHandles": 526,
+              "gdiHandles": 40,
+              "userHandles": 33,
+              "gen0Collections": 7,
+              "gen1Collections": 5,
+              "gen2Collections": 4
+            },
+            "featureQueriesPerSimulatedMinute": 4
+          },
+          "optimized": {
+            "policy": "cached discovery and bounded receiver backoff",
+            "trials": 200,
+            "scheduledRefreshes": 8000,
+            "discoveryEnumerations": 800,
+            "transportOpens": 12200,
+            "healthyReads": 8000,
+            "nonResponsiveReads": 4200,
+            "featureQueries": 12200,
+            "wallMilliseconds": 51.7337,
+            "cpuMilliseconds": 46.875,
+            "allocatedBytes": 25328960,
+            "before": {
+              "cpuMilliseconds": 2828.125,
+              "workingSetBytes": 155463680,
+              "privateBytes": 66871296,
+              "managedHeapBytes": 11315864,
+              "totalAllocatedBytes": 70721024,
+              "processHandles": 526,
+              "gdiHandles": 40,
+              "userHandles": 33,
+              "gen0Collections": 7,
+              "gen1Collections": 5,
+              "gen2Collections": 4
+            },
+            "after": {
+              "cpuMilliseconds": 2875,
+              "workingSetBytes": 155549696,
+              "privateBytes": 66871296,
+              "managedHeapBytes": 19948728,
+              "totalAllocatedBytes": 96049984,
+              "processHandles": 526,
+              "gdiHandles": 40,
+              "userHandles": 33,
+              "gen0Collections": 8,
+              "gen1Collections": 5,
+              "gen2Collections": 4
+            },
+            "featureQueriesPerSimulatedMinute": 3.05
+          },
+          "recovery": {
+            "manualRefreshBypassedBackoff": true,
+            "deviceChangeBypassedBackoff": true,
+            "staleStateAndOriginalSamplePreserved": true
+          },
+          "limitations": [
+            "Synthetic feature replies and immediate synthetic timeouts; no USB latency, real radio traffic or battery drain was measured.",
+            "Simulated time advances without sleeping; this is a short software smoke workload, not a 20-minute physical run or endurance test.",
+            "CPU, allocations, working/private memory and handles are process-wide before/after observations; other runtime/WPF work and JIT/GC/scheduler noise may contribute.",
+            "Memory figures are snapshots, not peak or steady-state memory; CPU/memory deltas are reported without a performance pass threshold.",
+            "Legacy is the same managed monitor with efficiency options omitted; optimized uses the new default cache/backoff policy. Healthy refresh cadence is identical.",
+            "Policy measurements run sequentially after warmup; query/enumeration counts are deterministic, but one short CPU/memory sample does not establish a causal performance percentage."
+          ]
+        },
+        "presentation": {
+          "unchangedIterations": 200,
+          "popupUpdatesBefore": 1,
+          "popupUpdatesAfterUnchanged": 1,
+          "trayBefore": {
+            "presentationUpdates": 12,
+            "iconRenders": 7,
+            "iconAssignments": 7,
+            "tooltipAssignments": 12,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 1,
+            "unchangedSelections": 0
+          },
+          "afterUnchanged": {
+            "presentationUpdates": 12,
+            "iconRenders": 7,
+            "iconAssignments": 7,
+            "tooltipAssignments": 12,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 1,
+            "unchangedSelections": 200
+          },
+          "afterAlias": {
+            "presentationUpdates": 17,
+            "iconRenders": 7,
+            "iconAssignments": 7,
+            "tooltipAssignments": 13,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 2,
+            "unchangedSelections": 200
+          },
+          "afterPercentage": {
+            "presentationUpdates": 22,
+            "iconRenders": 8,
+            "iconAssignments": 8,
+            "tooltipAssignments": 14,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 3,
+            "unchangedSelections": 200
+          },
+          "afterFreshness": {
+            "presentationUpdates": 27,
+            "iconRenders": 9,
+            "iconAssignments": 9,
+            "tooltipAssignments": 16,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 4,
+            "unchangedSelections": 200
+          },
+          "afterDpi": {
+            "presentationUpdates": 32,
+            "iconRenders": 14,
+            "iconAssignments": 14,
+            "tooltipAssignments": 16,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 22,
+            "menuCreations": 6,
+            "selectionReconciliations": 4,
+            "unchangedSelections": 200
+          },
+          "syntheticDeviceChangeRequests": 20,
+          "coalescedDeviceChangeCallbacks": 1,
+          "baselineNote": "The previous release already cached icon bitmaps and menus. Zero redundant renders/menu creations verifies preservation; selection and shared-DPI probe counts exercise the new reductions.",
+          "limitations": "Native property-assignment counters do not trace Shell_NotifyIcon syscalls. Actual USB events and physical mixed-DPI behavior were not exercised."
+        },
+        "capacityPresentation": {
+          "unchangedIterations": 200,
+          "updatesBefore": 1,
+          "updatesAfterUnchanged": 1,
+          "updatesAfterDesignSave": 2
+        }
+      },
+      "self-contained": {
+        "schemaVersion": 1,
+        "mode": "synthetic-software-efficiency-smoke",
+        "sourceCommit": "1ca669c2b90770d7074cad4b98f156b0031a9240",
+        "appVersion": "1.2.0",
+        "flavor": "self-contained",
+        "repository": "kA-sp3R/BatteryStatusCheck",
+        "workflowRun": "40233889412",
+        "workflowAttempt": "1",
+        "measuredAtUtc": "2026-10-25T21:10:30.9632868+00:00",
+        "physicalDevicesAccessed": false,
+        "normalApplicationControllerStarted": false,
+        "monitorWorkload": {
+          "schemaVersion": 1,
+          "workload": "deterministic-synthetic-healthy-and-nonresponsive-usb-receivers",
+          "physicalDevicesAccessed": false,
+          "normalApplicationControllerStarted": false,
+          "warmupTrialsPerPolicy": 3,
+          "measuredTrialsPerPolicy": 200,
+          "simulatedMinutesPerTrial": 20,
+          "scheduledRefreshIntervalSeconds": 30,
+          "receiverCount": 2,
+          "legacy": {
+            "policy": "legacy refresh policy",
+            "trials": 200,
+            "scheduledRefreshes": 8000,
+            "discoveryEnumerations": 8000,
+            "transportOpens": 16000,
+            "healthyReads": 8000,
+            "nonResponsiveReads": 8000,
+            "featureQueries": 16000,
+            "wallMilliseconds": 80.1776,
+            "cpuMilliseconds": 78.125,
+            "allocatedBytes": 49511376,
+            "before": {
+              "cpuMilliseconds": 3093.75,
+              "workingSetBytes": 146993152,
+              "privateBytes": 55287808,
+              "managedHeapBytes": 10601928,
+              "totalAllocatedBytes": 21469024,
+              "processHandles": 530,
+              "gdiHandles": 46,
+              "userHandles": 33,
+              "gen0Collections": 4,
+              "gen1Collections": 4,
+              "gen2Collections": 4
+            },
+            "after": {
+              "cpuMilliseconds": 3171.875,
+              "workingSetBytes": 158445568,
+              "privateBytes": 66478080,
+              "managedHeapBytes": 11299744,
+              "totalAllocatedBytes": 70980400,
+              "processHandles": 530,
+              "gdiHandles": 40,
+              "userHandles": 33,
+              "gen0Collections": 7,
+              "gen1Collections": 5,
+              "gen2Collections": 4
+            },
+            "featureQueriesPerSimulatedMinute": 4
+          },
+          "optimized": {
+            "policy": "cached discovery and bounded receiver backoff",
+            "trials": 200,
+            "scheduledRefreshes": 8000,
+            "discoveryEnumerations": 800,
+            "transportOpens": 12200,
+            "healthyReads": 8000,
+            "nonResponsiveReads": 4200,
+            "featureQueries": 12200,
+            "wallMilliseconds": 45.2546,
+            "cpuMilliseconds": 46.875,
+            "allocatedBytes": 25329088,
+            "before": {
+              "cpuMilliseconds": 3171.875,
+              "workingSetBytes": 158445568,
+              "privateBytes": 66478080,
+              "managedHeapBytes": 11307968,
+              "totalAllocatedBytes": 70984952,
+              "processHandles": 530,
+              "gdiHandles": 40,
+              "userHandles": 33,
+              "gen0Collections": 7,
+              "gen1Collections": 5,
+              "gen2Collections": 4
+            },
+            "after": {
+              "cpuMilliseconds": 3218.75,
+              "workingSetBytes": 158527488,
+              "privateBytes": 66478080,
+              "managedHeapBytes": 19939416,
+              "totalAllocatedBytes": 96314040,
+              "processHandles": 530,
+              "gdiHandles": 40,
+              "userHandles": 33,
+              "gen0Collections": 8,
+              "gen1Collections": 5,
+              "gen2Collections": 4
+            },
+            "featureQueriesPerSimulatedMinute": 3.05
+          },
+          "recovery": {
+            "manualRefreshBypassedBackoff": true,
+            "deviceChangeBypassedBackoff": true,
+            "staleStateAndOriginalSamplePreserved": true
+          },
+          "limitations": [
+            "Synthetic feature replies and immediate synthetic timeouts; no USB latency, real radio traffic or battery drain was measured.",
+            "Simulated time advances without sleeping; this is a short software smoke workload, not a 20-minute physical run or endurance test.",
+            "CPU, allocations, working/private memory and handles are process-wide before/after observations; other runtime/WPF work and JIT/GC/scheduler noise may contribute.",
+            "Memory figures are snapshots, not peak or steady-state memory; CPU/memory deltas are reported without a performance pass threshold.",
+            "Legacy is the same managed monitor with efficiency options omitted; optimized uses the new default cache/backoff policy. Healthy refresh cadence is identical.",
+            "Policy measurements run sequentially after warmup; query/enumeration counts are deterministic, but one short CPU/memory sample does not establish a causal performance percentage."
+          ]
+        },
+        "presentation": {
+          "unchangedIterations": 200,
+          "popupUpdatesBefore": 1,
+          "popupUpdatesAfterUnchanged": 1,
+          "trayBefore": {
+            "presentationUpdates": 12,
+            "iconRenders": 7,
+            "iconAssignments": 7,
+            "tooltipAssignments": 12,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 1,
+            "unchangedSelections": 0
+          },
+          "afterUnchanged": {
+            "presentationUpdates": 12,
+            "iconRenders": 7,
+            "iconAssignments": 7,
+            "tooltipAssignments": 12,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 1,
+            "unchangedSelections": 200
+          },
+          "afterAlias": {
+            "presentationUpdates": 17,
+            "iconRenders": 7,
+            "iconAssignments": 7,
+            "tooltipAssignments": 13,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 2,
+            "unchangedSelections": 200
+          },
+          "afterPercentage": {
+            "presentationUpdates": 22,
+            "iconRenders": 8,
+            "iconAssignments": 8,
+            "tooltipAssignments": 14,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 3,
+            "unchangedSelections": 200
+          },
+          "afterFreshness": {
+            "presentationUpdates": 27,
+            "iconRenders": 9,
+            "iconAssignments": 9,
+            "tooltipAssignments": 16,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 12,
+            "menuCreations": 6,
+            "selectionReconciliations": 4,
+            "unchangedSelections": 200
+          },
+          "afterDpi": {
+            "presentationUpdates": 32,
+            "iconRenders": 14,
+            "iconAssignments": 14,
+            "tooltipAssignments": 16,
+            "dpiProbes": 1,
+            "dpiMetricQueries": 22,
+            "menuCreations": 6,
+            "selectionReconciliations": 4,
+            "unchangedSelections": 200
+          },
+          "syntheticDeviceChangeRequests": 20,
+          "coalescedDeviceChangeCallbacks": 1,
+          "baselineNote": "The previous release already cached icon bitmaps and menus. Zero redundant renders/menu creations verifies preservation; selection and shared-DPI probe counts exercise the new reductions.",
+          "limitations": "Native property-assignment counters do not trace Shell_NotifyIcon syscalls. Actual USB events and physical mixed-DPI behavior were not exercised."
+        },
+        "capacityPresentation": {
+          "unchangedIterations": 200,
+          "updatesBefore": 1,
+          "updatesAfterUnchanged": 1,
+          "updatesAfterDesignSave": 2
+        }
+      }
+    },
+    "screenshotsReviewed": [
+      "runtime-popup.png",
+      "gaming-alert.png",
+      "gaming-alert-settings.png",
+      "settings.png",
+      "settings-selected.png"
+    ],
+    "screenshotReview": "New screenshots and settings screenshots are byte-identical across flavors. Text/actions readable. Alert uses fake144DPI workarea on runner with different fontDPI, so blank-space proportions are synthetic; actual physical DPI transitions remain unverified.",
+    "allWindowsJobsPassedFirstAttempt": true,
+    "normalControllerStarted": false,
+    "hardwareVerified": false,
+    "limits": [
+      "Synthetic battery samples and fake fullscreen/sound/monitor inputs; no physical devices or games.",
+      "Native HWND styles, direct message hooks and unchanged foreground snapshot measured on CI desktop; actual cross-process click routing unverified.",
+      "Normal controller/HID/network/startup behavior and OS power/PnP/Explorer events are not exercised by application smoke.",
+      "Installer upgrade fixture uses current application bytes; lifecycle assertions do not establish historical binary migration.",
+      "Runtime confidence is a heuristic; firmware caching and future load can change actual runtime.",
+      "Capacity health remains unavailable on all admitted real models for insufficient telemetry.",
+      "No extended endurance or real-game testing; no dedicated measurement of runtime-estimator/alert CPU overhead."
+    ]
+  },
+  "evidenceFileHashes": {
+    "build/application-smoke-evidence-framework-dependent-1/application-smoke.json": "7852085c983f7175de7b20bb93eda17744736f03886adc0a7fa8ba181542e9ed",
+    "build/application-smoke-evidence-framework-dependent-1/capacity-details.png": "eeef4d9a493cce380fc60e08da1a3118b7b6748d1cd0b3a87ef869625e2331e2",
+    "build/application-smoke-evidence-framework-dependent-1/capacity-unavailable.png": "9fbea9ca40c0ec4988b93d26b3ce4a754835375325a1109da834fec680f5a476",
+    "build/application-smoke-evidence-framework-dependent-1/efficiency-workload.json": "c6848b20211cb8e6d3f9815b0901d1bcbd216f203df32592b8289c293cc7c073",
+    "build/application-smoke-evidence-framework-dependent-1/gaming-alert-settings.png": "e5821eb02656c80195c201f34b388934b6b0e4e41d0f61b9762b970cd060d30c",
+    "build/application-smoke-evidence-framework-dependent-1/gaming-alert.png": "be594c7716f49901e81c3e36f0edbb1a396baccfb3b8ca1699dcb2e01e601879",
+    "build/application-smoke-evidence-framework-dependent-1/popup.png": "a319210514ff0f2fad086e14621316ac856083bc120acbd3fb9d0e26527fda7a",
+    "build/application-smoke-evidence-framework-dependent-1/runtime-popup.png": "99aa39a9e2d28f93340e40eb01499870ea8c58f0c4f84499075d098eb9984942",
+    "build/application-smoke-evidence-framework-dependent-1/settings-selected.png": "229c6c6ba681699708b5c20e0e3137694a48e8fc709a37e24004a2bcbfa30030",
+    "build/application-smoke-evidence-framework-dependent-1/settings.png": "e581fd1fe50af67463d8f0643e7a19b3bb182c78b48ab8de25f316bece4b3a9b",
+    "build/application-smoke-evidence-framework-dependent-1/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/application-smoke-evidence-framework-dependent-1/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/application-smoke-evidence-framework-dependent-1/synthetic-capacity-history.json": "c747b2e8ba6bc4f92612b02176d26cd46a015c2249e2ebea846d6b5ebd5c3ea9",
+    "build/application-smoke-evidence-framework-dependent-1/synthetic-capacity-pending.json": "22c5ed10836826713c1d1e286fb8716a2f4ec435ee754322cb502761fb00c6ea",
+    "build/application-smoke-evidence-framework-dependent-1/synthetic-capacity-restarted.json": "663db4264c484b3ee8255d85ef2196fff39479f1a2626e1f4d838c30d22bef66",
+    "build/application-smoke-evidence-framework-dependent-1/synthetic-gaming-settings/settings.json": "24ed4dc02995a94b18a0bfde6363fc2bed1690d931acfde890c24a717ff58071",
+    "build/application-smoke-evidence-framework-dependent-1/tray-0-48.png": "8f5b8330a9af1cce82eaed7e7f1fbf20981ca3471f2248098d110e779dcd2ff3",
+    "build/application-smoke-evidence-framework-dependent-1/tray-100-48.png": "3fc124134bf80b7023150664089f7732842a095f886572eaaa06cea643443357",
+    "build/application-smoke-evidence-framework-dependent-1/tray-neutral-48.png": "57352badb44082ecf722b2d47d51a9ec15ccef8d391b81e9e2a8f8bfd4d1e471",
+    "build/application-smoke-evidence-framework-dependent-1/updates-off.png": "e60fbfb4b37d983d3eb3afb2e405bc7614c0528efc9f6be13d587b2622bec9b9",
+    "build/application-smoke-evidence-self-contained-1/application-smoke.json": "3bba6bf012575a793934e29bb95b7311a431db7b7824288e5edf3f06a9e9453d",
+    "build/application-smoke-evidence-self-contained-1/capacity-details.png": "eeef4d9a493cce380fc60e08da1a3118b7b6748d1cd0b3a87ef869625e2331e2",
+    "build/application-smoke-evidence-self-contained-1/capacity-unavailable.png": "9fbea9ca40c0ec4988b93d26b3ce4a754835375325a1109da834fec680f5a476",
+    "build/application-smoke-evidence-self-contained-1/efficiency-workload.json": "48f09df8fd7e2adc576d6eddde8890a479afa50876abd3d0b3be816602fe7105",
+    "build/application-smoke-evidence-self-contained-1/gaming-alert-settings.png": "e5821eb02656c80195c201f34b388934b6b0e4e41d0f61b9762b970cd060d30c",
+    "build/application-smoke-evidence-self-contained-1/gaming-alert.png": "be594c7716f49901e81c3e36f0edbb1a396baccfb3b8ca1699dcb2e01e601879",
+    "build/application-smoke-evidence-self-contained-1/popup.png": "a319210514ff0f2fad086e14621316ac856083bc120acbd3fb9d0e26527fda7a",
+    "build/application-smoke-evidence-self-contained-1/runtime-popup.png": "99aa39a9e2d28f93340e40eb01499870ea8c58f0c4f84499075d098eb9984942",
+    "build/application-smoke-evidence-self-contained-1/settings-selected.png": "229c6c6ba681699708b5c20e0e3137694a48e8fc709a37e24004a2bcbfa30030",
+    "build/application-smoke-evidence-self-contained-1/settings.png": "e581fd1fe50af67463d8f0643e7a19b3bb182c78b48ab8de25f316bece4b3a9b",
+    "build/application-smoke-evidence-self-contained-1/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/application-smoke-evidence-self-contained-1/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/application-smoke-evidence-self-contained-1/synthetic-capacity-history.json": "631e2dac50f25785de4c541e3e5d892133dd3a6625f5cdd470e8d22e14651774",
+    "build/application-smoke-evidence-self-contained-1/synthetic-capacity-pending.json": "22c5ed10836826713c1d1e286fb8716a2f4ec435ee754322cb502761fb00c6ea",
+    "build/application-smoke-evidence-self-contained-1/synthetic-capacity-restarted.json": "663db4264c484b3ee8255d85ef2196fff39479f1a2626e1f4d838c30d22bef66",
+    "build/application-smoke-evidence-self-contained-1/synthetic-gaming-settings/settings.json": "4a6cb429a52daa41e382200af8b7c7b6abe1447a2c7e5188be1b2646945652e3",
+    "build/application-smoke-evidence-self-contained-1/tray-0-48.png": "8f5b8330a9af1cce82eaed7e7f1fbf20981ca3471f2248098d110e779dcd2ff3",
+    "build/application-smoke-evidence-self-contained-1/tray-100-48.png": "3fc124134bf80b7023150664089f7732842a095f886572eaaa06cea643443357",
+    "build/application-smoke-evidence-self-contained-1/tray-neutral-48.png": "57352badb44082ecf722b2d47d51a9ec15ccef8d391b81e9e2a8f8bfd4d1e471",
+    "build/application-smoke-evidence-self-contained-1/updates-off.png": "e60fbfb4b37d983d3eb3afb2e405bc7614c0528efc9f6be13d587b2622bec9b9",
+    "build/compile-evidence-1/compile.log": "cad53bcbafed3fbab25e06ebb10643258a4ee5a4b72a20fc1f4c873d2a582e31",
+    "build/compile-evidence-1/restore.log": "416706a738a8572ef46351663faea2cf05ac961980ef1a43feeb49d3a62350ac",
+    "build/focused-unit-tests-evidence-1/TestResults/focused.trx": "6ac7520813b008ed1d0184138d5b01dd7e44c1001b856d81ccefe2a9d168d8ea",
+    "build/focused-unit-tests-evidence-1/ci-logs/focused.log": "35a8a2f3f5a413cb10f29aa81ed157d28cf997f042a8305fa788dbabfdf0c86e",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/blocked-running-application.log": "03658aea80f99ac5d06e769da1673516a5f3d9f0863d7f634a4cdaa0bc517f5c",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/install-prior-fixture.log": "b79c4bdb725bab90824d64542a9f34e60a55573f547842a741e8b139cfa70182",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/installer-smoke.json": "9bfd4ac1a3e145d85243f75a156a18177e4d5f5f85ac800503b881a89ebdf3f1",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/reinstall-current.log": "04098551c2882258b3d902eb9fe3417b45c60f2c63fa90c589de4b013a9d219b",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/uninstall-foreign-startup.log": "0a777a269c300cbe56eb52aed2fcb4cfb8d471d680d89c07e4db083772839443",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/uninstall-owned-startup.log": "9049e75f59b409ea50dd714848706674deb874cd338599e4ed3bb4bd710959a3",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/upgrade-to-current.log": "06c8be51abd00abaa3fe8fcbc3a28976675b5520bbd247d4a36e5dbd6f57487a",
+    "build/installer-smoke-evidence-1/ci-logs/installer-compile.log": "a28279af33b137ddcbae441c091625f32cfc523cd92a79501de6c99641d883e5",
+    "build/installer-smoke-evidence-1/ci-logs/installer-compiler-probe.log": "54bfc8b21b8f89a9880951116c1c0580ab961a4e7d8a7fae607110d944e2e3b6",
+    "build/installer-smoke-evidence-1/ci-logs/installer-upgrade-fixture-compile.log": "1c503496bb76903ef2123b7cb56480a817d02d937d94dc79942f57aceae0bfc6",
+    "build/offline-capture-tests-evidence-1/offline.log": "55fe93d2c98bd9f7962731fb753d1fd88726da530cf143502395589303b405fc",
+    "build/package-evidence-framework-dependent-1/publish-framework-dependent.log": "cfded859bcfb590bba12d6ecae5bf11af0e83b4f5d2074a79cc04f0ad3e07f64",
+    "build/package-evidence-self-contained-1/publish-self-contained.log": "f1e86e95a4a52fc63f12e0bfc2f5e682980fdb53fba31cc17f64ea25006e0b35",
+    "build/windows-installer-win-x64-1/installer-release.json": "ba23e47a19b3007306be906708b0a1e4f34018f0f4313962547d4cbd4ca8509c",
+    "full/full-offline-parser-tests-1/offline.log": "55fe93d2c98bd9f7962731fb753d1fd88726da530cf143502395589303b405fc",
+    "full/full-release-automation-tests-1/release-automation.log": "8912b8a7b61b8fa783268de5a8f574b8968b879fa87a2dbb52baeb120f91d983",
+    "full/full-software-tests-Debug-1/TestResults/full-Debug.json": "f08f7d94f6dd3d76152db9a854bd6c6c8bfc76bac6e3c36f406194b469cb1757",
+    "full/full-software-tests-Debug-1/TestResults/runneradmin_runnervmdaln5_2026-10-25_21_07_32_net10.0.trx": "6ec7c90fddab75d1d44795ddae497d99eaf46c8f8fc5354cf3d9c1f2ae732edb",
+    "full/full-software-tests-Debug-1/ci-logs/full-Debug.log": "56c1f9c1095e97ebd78a6554a0dd1eb81acb3060b5df86c68d9370e5c80bc8d5",
+    "full/full-software-tests-Release-1/TestResults/full-Release.json": "f1d98e0a5f958c99dc6fb2bf5a4a1588cb18c200955159fa0a7cd639406e34b1",
+    "full/full-software-tests-Release-1/TestResults/runneradmin_runnervmdaln5_2026-10-25_21_07_27_net10.0.trx": "8e4688c9181a916aa6386773bbd7fd9996dbf10b5f98864433b65547fc492339",
+    "full/full-software-tests-Release-1/ci-logs/full-Release.log": "fd14c5f1cc7f857f33504e52120a65f53f17a4f92123e6bcb0ac729cf1e58706"
+  }
+}
