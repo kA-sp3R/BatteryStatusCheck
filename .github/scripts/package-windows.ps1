@@ -40,6 +40,13 @@ $staging = Join-Path $output $packageName
 if (Test-Path $staging) { Remove-Item -LiteralPath $staging -Recurse -Force }
 New-Item -ItemType Directory $staging | Out-Null
 Get-ChildItem -LiteralPath $publish -Force | Copy-Item -Destination $staging -Recurse -Force
+foreach ($file in Get-ChildItem -LiteralPath $staging -Recurse -File) {
+    if ($file.Name -match '\.(pdb|cs|csproj)$' -or
+        $file.Name -match '^DeviceBatteryStatus\.(Smoke|Tests)(\.|$)' -or
+        $file.Name -in 'application-smoke.json', 'smoke-harness-manifest.json', 'efficiency-workload.json') {
+        throw "Development or verification files must be kept outside the application package: $($file.Name)"
+    }
+}
 Copy-Item (Join-Path $repositoryRoot 'THIRD_PARTY_NOTICES.md') (Join-Path $staging 'THIRD_PARTY_NOTICES.md') -Force
 Copy-Item (Join-Path $repositoryRoot 'docs/release.md') (Join-Path $staging 'README.md') -Force
 
@@ -124,6 +131,7 @@ $manifest = [ordered]@{
     workflowUrl = "$($env:GITHUB_SERVER_URL)/$($env:GITHUB_REPOSITORY)/actions/runs/$($env:GITHUB_RUN_ID)"
     sdkVersion = $sdk
     runtimeOptions = $runtimeConfig.runtimeOptions
+    archiveCompression = 'Deflate/SmallestSize'
     applicationLaunched = $false
     hardwareVerified = $false
     distributionNotices = [ordered]@{ source = 'active-dotnet-distribution'; sdkVersion = $sdk; files = $distributionNoticePaths }
@@ -144,7 +152,7 @@ $archive = [IO.Compression.ZipFile]::Open($zipPath, [IO.Compression.ZipArchiveMo
 try {
     foreach ($file in Get-ChildItem -LiteralPath $staging -Recurse -File | Sort-Object FullName) {
         $relative = [IO.Path]::GetRelativePath($staging, $file.FullName).Replace([char]92, [char]47)
-        $entry = $archive.CreateEntry($relative, [IO.Compression.CompressionLevel]::Optimal)
+        $entry = $archive.CreateEntry($relative, [IO.Compression.CompressionLevel]::SmallestSize)
         $entry.LastWriteTime = $timestamp
         $inputStream = [IO.File]::OpenRead($file.FullName)
         try {

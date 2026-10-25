@@ -1,5 +1,4 @@
 using System.Windows;
-using DeviceBatteryStatus.App.Testing;
 
 namespace DeviceBatteryStatus.App;
 
@@ -9,20 +8,14 @@ public partial class App : Application
     private ApplicationController? controller;
     internal Action? AfterShutdown { get; set; }
 
-    protected override async void OnStartup(StartupEventArgs e)
+    protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // Retired CI invocations must fail closed instead of starting real
+        // monitoring. Synthetic checks now live only in the separate harness.
         if (e.Args.Contains("--software-smoke-test", StringComparer.OrdinalIgnoreCase))
         {
-            if (e.Args.Length != 2 || !string.Equals(e.Args[0], "--software-smoke-test", StringComparison.OrdinalIgnoreCase))
-            {
-                Shutdown(2);
-                return;
-            }
-            // Internal CI entry point; never enters normal startup, HID discovery,
-            // update checks, startup registration or an installer continuation.
-            var smokeExitCode = await SoftwareSmokeTest.RunAsync(e.Args[1]);
-            Shutdown(smokeExitCode);
+            Shutdown(2);
             return;
         }
         instanceMutex = new Mutex(true, @"Local\DeviceBatteryStatus", out var firstInstance);

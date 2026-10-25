@@ -31,6 +31,10 @@ try {
     foreach ($entry in $archive.Entries) {
         if ($entry.FullName -match '(^/|\\|:|(^|/)\.\.(/|$))' -or $entry.FullName.EndsWith('/') -or
             !$entries.TryAdd($entry.FullName, $entry)) { throw "Unsafe or duplicate ZIP entry: $($entry.FullName)" }
+        if ([IO.Path]::GetFileName($entry.FullName) -match '\.(pdb|cs|csproj)$|^DeviceBatteryStatus\.(Smoke|Tests)(\.|$)' -or
+            [IO.Path]::GetFileName($entry.FullName) -in 'application-smoke.json', 'smoke-harness-manifest.json', 'efficiency-workload.json') {
+            throw 'Development or verification files leaked into the application ZIP.'
+        }
         if ($entry.Length -gt 512MB) { throw "Unexpectedly large package entry: $($entry.FullName)" }
     }
     foreach ($required in 'DeviceBatteryStatus.exe', 'DeviceBatteryStatus.dll', 'DeviceBatteryStatus.deps.json',

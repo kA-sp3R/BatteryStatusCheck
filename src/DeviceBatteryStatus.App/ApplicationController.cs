@@ -41,9 +41,10 @@ internal sealed class ApplicationController
     private readonly StartupRegistration startup = new();
     private readonly RuntimeEstimator runtime = new();
     private readonly GamingAlertPolicy gamingAlerts = new();
+    private GamingAlertPreferences alertPreferences;
     private readonly GamingAlertPresenter alertPresenter;
-    private IReadOnlyDictionary<string, RuntimeEstimate> runtimeEstimates = new Dictionary<string, RuntimeEstimate>();
-    private readonly PopupWindow popup = new();
+    private readonly Dictionary<string, RuntimeEstimate> runtimeEstimates = new(StringComparer.Ordinal);
+    private PopupWindow? popup;
     private readonly DispatcherTimer presentationTimer;
     private readonly TrayIconManager tray;
     private readonly DiagnosticLog diagnostics;
@@ -54,7 +55,7 @@ internal sealed class ApplicationController
     private AvailableUpdate? availableUpdate;
     private string? notifiedUpdateVersion;
     private UpdateWindow? updateWindow;
-    internal static string CurrentVersion => typeof(ApplicationController).Assembly
+    internal static string CurrentVersion { get; } = typeof(ApplicationController).Assembly
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "1.2.0";
     private readonly DispatcherTimer pollTimer;
     private AppSettings settings;
@@ -94,16 +95,13 @@ internal sealed class ApplicationController
             [new RazerPollingRateController(), new LogitechPollingRateController()], hidOperations);
         var loaded = store.Load();
         settings = loaded.Settings;
+        alertPreferences = GamingAlertPreferences.Create(settings);
         settingsWarning = loaded.Error;
         if (loaded.Error is not null) diagnostics.Record("settings", "Preferences could not be loaded; defaults are in use. Detailed errors are displayed locally, not logged.");
         pollTimer = new DispatcherTimer(DispatcherPriority.Background)
         { Interval = TimeSpan.FromSeconds(settings.RefreshIntervalSeconds) };
         pollTimer.Tick += (_, _) => RefreshFromTimer();
         tray = new(TogglePopup, ShowSettings, RefreshFromMenu, ExitFromMenu);
-        popup.RefreshRequested += (_, _) => RefreshFromMenu();
-        popup.SettingsRequested += (_, _) => ShowSettings();
-        popup.ExitRequested += (_, _) => ExitFromMenu();
-        popup.DeviceDetailsRequested += ShowDeviceDetails;
         presentationTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromSeconds(5)
@@ -238,13 +236,12 @@ internal sealed class ApplicationController
         try { health.CheckContinuity(now); }
         catch (Exception exception) { diagnostics.RecordException("Capacity freshness", exception); }
         ExpireCurrentReadings(now);
-        var estimates = new Dictionary<string, RuntimeEstimate>(StringComparer.Ordinal);
+        runtimeEstimates.Clear();
         foreach (var snapshot in snapshots)
         {
-            try { estimates[snapshot.Device.Id] = runtime.Get(snapshot, settings, now); }
+            try { runtimeEstimates[snapshot.Device.Id] = runtime.Get(snapshot, settings, now); }
             catch (Exception exception) { diagnostics.RecordException("Runtime estimate presentation", exception); }
         }
-        runtimeEstimates = estimates;
         displayError = null;
         try { tray.Update(snapshots, settings, now, runtimeEstimates); }
         catch (Exception exception) { diagnostics.RecordException("Tray display", exception); displayError = $"Tray display unavailable: {exception.Message}"; }
@@ -255,9 +252,9 @@ internal sealed class ApplicationController
             if (suspended) alertPresenter.Clear();
             else
             {
-                foreach (var alert in gamingAlerts.Evaluate(snapshots, settings, runtimeEstimates, now))
+                foreach (var alert in gamingAlerts.Evaluate(alertPreferences, snapshots, runtimeEstimates, now))
                     alertPresenter.Queue(alert, now);
-                alertPresenter.Tick(now, alert => gamingAlerts.Revalidate(alert, snapshots, settings, runtimeEstimates, now));
+                alertPresenter.Tick(now, alert => gamingAlerts.Revalidate(alertPreferences, alert, snapshots, runtimeEstimates, now));
             }
         }
         catch (Exception exception) { diagnostics.RecordException("Gaming battery alerts", exception); displayError = $"Battery alert unavailable: {exception.Message}"; }
@@ -273,9 +270,9 @@ internal sealed class ApplicationController
         }
         var status = warning ?? displayError ?? settingsWarning ?? (refreshing ? "Refreshing…" : lastRefresh is not null
             ? $"Updated {lastRefresh:t}" : "Waiting for devices…");
-        if (popup.IsVisible || includeHiddenPopup)
+        if (popup is { } currentPopup && (currentPopup.IsVisible || includeHiddenPopup))
         {
-            try { popup.SetDevices(snapshots, settings, now, status, runtimeEstimates); }
+            try { currentPopup.SetDevices(snapshots, settings, now, status, runtimeEstimates); }
             catch (Exception exception) { diagnostics.RecordException("Popup presentation", exception); displayError = $"Popup display unavailable: {exception.Message}"; }
         }
     }
@@ -288,9 +285,17 @@ internal sealed class ApplicationController
     private void TogglePopup()
     {
         if (stopping) return;
-        UpdatePresentation(includeHiddenPopup: true);
         try
         {
+            if (popup is null)
+            {
+                popup = new();
+                popup.RefreshRequested += (_, _) => RefreshFromMenu();
+                popup.SettingsRequested += (_, _) => ShowSettings();
+                popup.ExitRequested += (_, _) => ExitFromMenu();
+                popup.DeviceDetailsRequested += ShowDeviceDetails;
+            }
+            UpdatePresentation(includeHiddenPopup: true);
             popup.ToggleNearTray();
             tray.UpdateDpi(popup.CurrentDpi);
         }
@@ -330,7 +335,7 @@ internal sealed class ApplicationController
     private void ShowSettings()
     {
         if (stopping) return;
-        popup.Hide();
+        popup?.Hide();
         if (settingsWindow is not null) { settingsWindow.Activate(); return; }
         var enabled = settings.StartWithWindows;
         string? startupError = null;
@@ -346,7 +351,7 @@ internal sealed class ApplicationController
     private void ShowGamingAlerts()
     {
         if (stopping) return;
-        popup.Hide();
+        popup?.Hide();
         if (alertSettingsWindow is not null) { alertSettingsWindow.Activate(); return; }
         if (pollingWindow is not null || updateWindow is not null)
         {
@@ -439,6 +444,7 @@ internal sealed class ApplicationController
         }
         var previousUpdateMode = settings.UpdateCheckMode;
         settings = updated;
+        alertPreferences = GamingAlertPreferences.Create(updated);
         if (previousUpdateMode != updated.UpdateCheckMode)
         {
             updateCancellation.Cancel();
@@ -514,7 +520,7 @@ internal sealed class ApplicationController
     private void ShowUpdates()
     {
         if (stopping) return;
-        popup.Hide();
+        popup?.Hide();
         if (updateWindow is not null) { updateWindow.Activate(); return; }
         updateWindow = new(updates, CurrentVersion, () => stopping ? UpdateCheckMode.Off : settings.UpdateCheckMode,
             InstallUpdate, exception => diagnostics.RecordException("Update operation", exception), availableUpdate)
@@ -626,7 +632,7 @@ internal sealed class ApplicationController
         {
             shutdown.Dispose();
             lock (powerGate) powerCancellation.Dispose();
-            popup.CloseForShutdown();
+            popup?.CloseForShutdown();
             settingsWindow?.Close();
             alertSettingsWindow?.Close();
             application.Shutdown();
@@ -660,7 +666,7 @@ internal sealed class ApplicationController
         Cleanup("Dispose update HTTP service", updates.Dispose);
         diagnostics.Record("application", "Application stopping");
         SystemEvents.PowerModeChanged -= OnPowerModeChanged;
-        Cleanup("Hide popup", popup.Hide);
+        Cleanup("Hide popup", () => popup?.Hide());
         Cleanup("Dispose tray icons", tray.Dispose);
         diagnostics.Dispose();
     }

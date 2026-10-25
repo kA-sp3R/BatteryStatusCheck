@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>DeviceBatteryStatus.Smoke</AssemblyName>
+    <StartupObject>DeviceBatteryStatus.Smoke.Program</StartupObject>
+    <Version>1.0.0</Version>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishSingleFile>false</PublishSingleFile>
+    <ApplicationManifest>../../src/DeviceBatteryStatus.App/app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/DeviceBatteryStatus.App/GlobalUsings.cs" Link="GlobalUsings.cs" />
+  </ItemGroup>
+  <!-- Ordinary solution compilation checks the harness without packaging it.
+       Package smoke instead compiles against the exact extracted DLLs, and never
+       rebuilds/replaces the application under test. -->
+  <ItemGroup Condition="'$(SmokeApplicationDirectory)' == ''">
+    <ProjectReference Include="../../src/DeviceBatteryStatus.App/DeviceBatteryStatus.App.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(SmokeApplicationDirectory)' != ''">
+    <Reference Include="DeviceBatteryStatus">
+      <HintPath>$(SmokeApplicationDirectory)/DeviceBatteryStatus.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="DeviceBatteryStatus.Core">
+      <HintPath>$(SmokeApplicationDirectory)/DeviceBatteryStatus.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="DeviceBatteryStatus.Windows">
+      <HintPath>$(SmokeApplicationDirectory)/DeviceBatteryStatus.Windows.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

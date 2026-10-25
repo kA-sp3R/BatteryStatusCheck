@@ -43,6 +43,8 @@ public sealed class DiagnosticLog : IDiagnosticSink, IDisposable
     private bool strictPrivacy;
     private bool disposed;
     private string? lastError;
+    private DateTimeOffset? lastPrunedAt;
+    private static readonly TimeSpan PruningInterval = TimeSpan.FromMinutes(5);
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(100);
 
@@ -76,7 +78,7 @@ public sealed class DiagnosticLog : IDiagnosticSink, IDisposable
             try
             {
                 Directory.CreateDirectory(DirectoryPath);
-                PruneExpired();
+                var pruned = PruneExpired();
                 var entry = new DiagnosticEntry(clock.GetUtcNow(), version, sessionId,
                     Redact(category, 48), Redact(message, 1536), SanitizeFields(fields));
                 var bytes = Encode(entry);
@@ -86,7 +88,10 @@ public sealed class DiagnosticLog : IDiagnosticSink, IDisposable
                 var current = LogPath(0);
                 RequireRegularFile(current);
                 if (File.Exists(current) && new FileInfo(current).Length + bytes.Length > options.MaximumFileBytes)
-                    Rotate();
+                {
+                    if (!pruned) PruneExpired(force: true);
+                    if (File.Exists(current) && new FileInfo(current).Length + bytes.Length > options.MaximumFileBytes) Rotate();
+                }
                 using var stream = new FileStream(current, FileMode.Append, FileAccess.Write, FileShare.Read);
                 stream.Write(bytes);
                 lastError = null;
@@ -183,7 +188,7 @@ public sealed class DiagnosticLog : IDiagnosticSink, IDisposable
             int exported = 0, omitted = 0;
             try
             {
-                if (Directory.Exists(DirectoryPath)) PruneExpired();
+                if (Directory.Exists(DirectoryPath)) PruneExpired(force: true);
                 using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 using (var archive = new ZipArchive(output, ZipArchiveMode.Create))
                 {
@@ -327,9 +332,14 @@ public sealed class DiagnosticLog : IDiagnosticSink, IDisposable
             throw new IOException("Linked diagnostic files are not supported.");
     }
 
-    private void PruneExpired()
+    private bool PruneExpired(bool force = false)
     {
-        var cutoff = clock.GetUtcNow().UtcDateTime - options.Retention;
+        var now = clock.GetUtcNow();
+        var interval = options.Retention < PruningInterval ? options.Retention : PruningInterval;
+        if (!force && lastPrunedAt is { } previous && now >= previous && now - previous < interval) return false;
+        // Startup, export and rotation always scan. Normal appends reuse that result,
+        // and a wall-clock rollback revokes it rather than postponing retention indefinitely.
+        var cutoff = now.UtcDateTime - options.Retention;
         foreach (var path in Directory.EnumerateFiles(DirectoryPath, "diagnostic-*.jsonl"))
         {
             var name = Path.GetFileNameWithoutExtension(path);
@@ -339,6 +349,8 @@ public sealed class DiagnosticLog : IDiagnosticSink, IDisposable
             if (index >= options.MaximumFiles || new FileInfo(path).Length > options.MaximumFileBytes ||
                 File.GetLastWriteTimeUtc(path) < cutoff) File.Delete(path);
         }
+        lastPrunedAt = now;
+        return true;
     }
 
     private void Rotate()

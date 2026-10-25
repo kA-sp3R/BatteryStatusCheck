@@ -51,6 +51,15 @@ def release_policy(manifest, version, notes):
     if "appSmokeCheckCount" in manifest:
         require(type(manifest["appSmokeCheckCount"]) is int and manifest["appSmokeCheckCount"] > 0,
                 "Invalid manifest count: appSmokeCheckCount")
+    require(manifest.get("appSmokeMode", "embedded") in ("embedded", "companion"), "Invalid smoke mode.")
+    if manifest.get("appSmokeMode") == "companion":
+        require(manifest.get("appSmoke") is True, "Companion verification must be enabled.")
+        hashes = manifest.get("appSmokeAssemblyHashes", {})
+        names = {"DeviceBatteryStatus.dll", "DeviceBatteryStatus.Core.dll", "DeviceBatteryStatus.Windows.dll"}
+        require(isinstance(hashes, dict) and set(hashes) == {"framework-dependent", "self-contained"} and
+                all(isinstance(values, dict) and set(values) == names and
+                    all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) for value in values.values())
+                    for values in hashes.values()), "Missing exact companion assembly hashes.")
     if "installer" in manifest:
         installer = manifest["installer"]
         require(isinstance(installer, dict) and type(installer.get("bytes")) is int and installer["bytes"] > 0 and
@@ -124,8 +133,10 @@ def validate_installer_smoke(report, manifest):
 
 
 def validate_application_smoke(report, manifest, repository, flavor):
-    require(type(report.get("schemaVersion")) is int and report["schemaVersion"] == 1 and
-            report.get("mode") == "hardware-free-windows-application-smoke" and report.get("passed") is True and
+    companion = manifest.get("appSmokeMode", "embedded") == "companion"
+    require(type(report.get("schemaVersion")) is int and report["schemaVersion"] == (2 if companion else 1) and
+            report.get("mode") == ("hardware-free-windows-companion-smoke" if companion
+                                   else "hardware-free-windows-application-smoke") and report.get("passed") is True and
             report.get("appVersion") == manifest["version"] and report.get("sourceCommit") == manifest["sourceCommit"] and
             report.get("repository") == repository and report.get("workflowRun") == str(manifest["buildRun"]) and
             report.get("workflowAttempt") == str(manifest.get("buildAttempt", 1)) and report.get("flavor") == flavor and
@@ -140,12 +151,25 @@ def validate_application_smoke(report, manifest, repository, flavor):
             all(isinstance(check, dict) and isinstance(check.get("name"), str) and check["name"].strip() and
                 check.get("passed") is True for check in checks) and len({check["name"] for check in checks}) == expected,
             "Application smoke has missing, duplicate or failed checks.")
-    require(report.get("applicationLaunched") is True and report.get("normalApplicationControllerStarted") is False and
+    require(report.get("applicationLaunched") is (False if companion else True) and report.get("normalApplicationControllerStarted") is False and
             report.get("hardwareAccessed") is False and report.get("networkAccessed") is False and
             report.get("startupRegistrationAccessed") is False and report.get("userSettingsPersisted") is False,
             "Unexpected application smoke scope claim.")
-    return {**counts, "applicationLaunched": True, "normalApplicationControllerStarted": False,
-            "hardwareAccessed": False, "networkAccessed": False}
+    result = {**counts, "applicationLaunched": not companion, "normalApplicationControllerStarted": False,
+              "hardwareAccessed": False, "networkAccessed": False}
+    if companion:
+        expected = manifest.get("appSmokeAssemblyHashes", {}).get(flavor)
+        require(isinstance(expected, dict) and set(expected) ==
+                {"DeviceBatteryStatus.dll", "DeviceBatteryStatus.Core.dll", "DeviceBatteryStatus.Windows.dll"} and
+                all(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) for value in expected.values()) and
+                report.get("loadedApplicationAssemblies") == expected and
+                report.get("harnessSourceCommit") == manifest["sourceCommit"] and
+                report.get("harnessLaunched") is True and report.get("harnessExecuted") is True and
+                report.get("separateHarnessVerified") is True and report.get("packagedApplicationAssembliesLoaded") is True,
+                "Companion harness or packaged assembly provenance mismatch.")
+        result.update(harnessLaunched=True, packagedApplicationAssembliesLoaded=True,
+                      loadedApplicationAssemblies=expected, harnessSourceCommit=manifest["sourceCommit"])
+    return result
 
 
 def deterministic_archive(directory, destination):
@@ -251,6 +275,10 @@ def main():
             for name, expected_hash in package_manifest["files"].items():
                 require(hashlib.sha256(archive.read(name)).hexdigest() == expected_hash,
                         f"Payload hash mismatch: {name}")
+            if manifest.get("appSmokeMode") == "companion":
+                require(all(package_manifest["files"].get(name) == expected_hash
+                            for name, expected_hash in manifest["appSmokeAssemblyHashes"][flavor].items()),
+                        "Companion-tested assemblies differ from the release package payload.")
         assets.extend([package, checksum])
     require(set(manifest["packages"]) == {"framework-dependent", "self-contained"}, "Both package flavors are required.")
 
@@ -314,8 +342,15 @@ def main():
         automation_log = next((evidence / "release-automation").rglob("*.log")).read_text(encoding="utf-8-sig")
         test_results["releaseAutomation"] = offline_test_counts(automation_log, manifest["automationTestCount"])
     # This bundle is immutable evidence for the reviewed source/tests, not a publication-attempt log.
+    product_launched = any(value.get("applicationLaunched") is True
+                           for value in test_results.get("applicationSmoke", {}).values())
+    harness_launched = any(value.get("harnessLaunched") is True
+                           for value in test_results.get("applicationSmoke", {}).values())
     summary = {**manifest, "releasePolicy": policy, "testResults": test_results,
-               "applicationLaunched": bool(test_results.get("applicationSmoke")), "hardwareVerified": False}
+               "applicationLaunched": product_launched, "hardwareVerified": False}
+    if harness_launched:
+        summary["harnessLaunched"] = True
+        summary["packagedApplicationAssembliesLoaded"] = True
     # Preserve old immutable verification bytes when these extensions are absent.
     if "installerSmoke" in test_results:
         summary["installerExecuted"] = True
@@ -359,14 +394,17 @@ def main():
     receipt = {"releaseUrl": published["html_url"], "releaseId": published["id"], "tag": tag,
                "sourceCommit": source, "publishedAt": published["published_at"], **policy,
                "fullTestRun": manifest["fullTestRun"], "testResults": test_results, "assets": expected_assets,
-               "applicationLaunched": bool(test_results.get("applicationSmoke")), "hardwareVerified": False,
+               "applicationLaunched": product_launched, "hardwareVerified": False,
                "installerExecuted": "installerSmoke" in test_results,
                "publicationWorkflowCommit": os.environ["GITHUB_SHA"], "publicationWorkflowRun": os.environ["GITHUB_RUN_ID"]}
+    if harness_launched:
+        receipt["harnessLaunched"] = True
+        receipt["packagedApplicationAssembliesLoaded"] = True
     (staging / "publication-receipt.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"::notice title=Published verified release::{published['html_url']}; Source={source}; Assets={len(expected_assets)}; "
           f"Prerelease={str(policy['prerelease']).lower()}; Signed=false; Debug={manifest['testCount']} passed; "
           f"Release={manifest['testCount']} passed; Parser={manifest.get('parserTestCount', 5)} passed; "
-          f"ApplicationLaunched={str(bool(test_results.get('applicationSmoke'))).lower()}; "
+          f"ApplicationLaunched={str(product_launched).lower()}; HarnessLaunched={str(harness_launched).lower()}; "
           f"InstallerExecuted={str('installerSmoke' in test_results).lower()}; HardwareVerified=false")
 
 

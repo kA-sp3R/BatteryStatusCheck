@@ -25,6 +25,7 @@ public sealed class CapacityHealthService : IDisposable
     private readonly Dictionary<string, CapacityTelemetry> lastTelemetry = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> reasons = new(StringComparer.Ordinal);
     private readonly HashSet<string> interruptedBindings = new(StringComparer.Ordinal);
+    private readonly List<string> unstoredReasonOrder = [];
     private long revision;
     private bool validPrimary;
     private bool disposed;
@@ -141,6 +142,7 @@ public sealed class CapacityHealthService : IDisposable
             {
                 var key = Key(snapshot.Device.Id);
                 seen.Add(key);
+                if (!devices.ContainsKey(key)) RememberUnstoredReason(key);
                 var sample = snapshot.CapacityTelemetry;
                 var problem = ValidateSample(snapshot, observedAt);
                 if (problem is not null)
@@ -160,13 +162,13 @@ public sealed class CapacityHealthService : IDisposable
                     interruptedBindings.Add(key);
                     continue;
                 }
-                lastTelemetry[key] = sample!;
-                interruptedBindings.Remove(key);
                 if (!devices.ContainsKey(key) && devices.Count >= MaximumDevices)
                 {
                     reasons[key] = "Capacity history device limit reached; collection is unavailable for this device.";
                     continue;
                 }
+                lastTelemetry[key] = sample!;
+                interruptedBindings.Remove(key);
                 var device = GetOrCreate(key);
                 if (device.Design is null && sample!.DesignCapacity is { SourceKind: CapacitySourceKind.DeviceData } detected)
                 {
@@ -398,10 +400,24 @@ public sealed class CapacityHealthService : IDisposable
         return true;
     }
 
+    private void RememberUnstoredReason(string key)
+    {
+        // Persisted devices and their identity guards are never eviction candidates.
+        // Unknown-device failures are advisory; retain only the 64 most recently observed.
+        unstoredReasonOrder.Remove(key);
+        unstoredReasonOrder.Add(key);
+        if (unstoredReasonOrder.Count <= MaximumDevices) return;
+        var expired = unstoredReasonOrder[0];
+        unstoredReasonOrder.RemoveAt(0);
+        reasons.Remove(expired);
+        interruptedBindings.Remove(expired);
+    }
+
     private StoredDevice GetOrCreate(string key)
     {
         if (devices.TryGetValue(key, out var found)) return found;
         if (devices.Count >= MaximumDevices) throw new InvalidOperationException("The capacity history device limit has been reached.");
+        unstoredReasonOrder.Remove(key);
         return devices[key] = new(key, null, [], null);
     }
 

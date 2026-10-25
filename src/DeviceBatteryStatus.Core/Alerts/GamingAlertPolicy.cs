@@ -21,18 +21,28 @@ public sealed class GamingAlertPolicy
         ArgumentNullException.ThrowIfNull(snapshots);
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(runtime);
-        var preferences = settings.Normalize();
-        var rules = GamingAlertSettings.FromLegacy(preferences);
+        return Evaluate(GamingAlertPreferences.Create(settings), snapshots, runtime, now);
+    }
+
+    /// <summary>Reuses an owned preferences snapshot while checking current samples and cooldowns.</summary>
+    public IReadOnlyList<GamingBatteryAlert> Evaluate(GamingAlertPreferences preferences,
+        IEnumerable<DeviceSnapshot> snapshots, IReadOnlyDictionary<string, RuntimeEstimate> runtime, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(preferences);
+        ArgumentNullException.ThrowIfNull(snapshots);
+        ArgumentNullException.ThrowIfNull(runtime);
+        var settings = preferences.Settings;
+        var rules = preferences.Rules;
         var result = new List<GamingBatteryAlert>();
         foreach (var snapshot in snapshots.GroupBy(value => value.Device.Id, StringComparer.Ordinal)
                      .Select(group => group.OrderByDescending(value => value.Battery.SampledAt).First()))
         {
-            if (!BatteryPresentation.IsFreshCurrent(snapshot, preferences, now)) continue;
+            if (!BatteryPresentation.IsFreshCurrent(snapshot, settings, now)) continue;
             var state = GetState(snapshot.Device.Id, now);
             var rule = rules.ForDevice(snapshot.Device.Id);
             runtime.TryGetValue(snapshot.Device.Id, out var estimate);
             Recover(state, snapshot, rule, estimate);
-            var candidate = CreateCandidate(snapshot, preferences, rules, estimate, now);
+            var candidate = CreateCandidate(snapshot, settings, rules, estimate, now);
             if (candidate is null) continue;
             var eligible = candidate.Signals.Where(pair => state.For(pair.Key).IsArmed(pair.Value))
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
@@ -63,12 +73,23 @@ public sealed class GamingAlertPolicy
         ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(runtime);
         if (candidate.IsPreview) return null;
+        return Revalidate(GamingAlertPreferences.Create(settings), candidate, snapshots, runtime, now);
+    }
+
+    /// <summary>Reuses prepared preferences without skipping freshness or queued-alert relevance checks.</summary>
+    public GamingBatteryAlert? Revalidate(GamingAlertPreferences preferences, GamingBatteryAlert candidate,
+        IEnumerable<DeviceSnapshot> snapshots, IReadOnlyDictionary<string, RuntimeEstimate> runtime, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(preferences);
+        ArgumentNullException.ThrowIfNull(candidate);
+        ArgumentNullException.ThrowIfNull(snapshots);
+        ArgumentNullException.ThrowIfNull(runtime);
+        if (candidate.IsPreview) return null;
         var snapshot = snapshots.Where(value => value.Device.Id == candidate.DeviceId)
             .OrderByDescending(value => value.Battery.SampledAt).FirstOrDefault();
         if (snapshot is null) return null;
-        var preferences = settings.Normalize();
         runtime.TryGetValue(snapshot.Device.Id, out var estimate);
-        var current = CreateCandidate(snapshot, preferences, GamingAlertSettings.FromLegacy(preferences), estimate, now);
+        var current = CreateCandidate(snapshot, preferences.Settings, preferences.Rules, estimate, now);
         if (current is null) return null;
         // Keep the original triggering sources. An unrelated, previously acknowledged runtime
         // condition must not turn a newly queued percentage alert into a duplicate critical alert.

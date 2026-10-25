@@ -217,9 +217,19 @@ public sealed class TrayIconManager : IDisposable
         {
             var item = items[index];
             var id = item.Presentation.DeviceId;
-            var matches = id is null ? Array.Empty<DeviceSnapshot>()
-                : devices.Where(device => device.Device.Id == id).Take(2).ToArray();
-            var snapshot = matches.Length == 1 ? matches[0] : null;
+            DeviceSnapshot? snapshot = null;
+            if (id is not null)
+            {
+                // Scan until uniqueness is decided without allocating a query
+                // and matching array for every selected icon.
+                for (var deviceIndex = 0; deviceIndex < devices.Count; deviceIndex++)
+                {
+                    var candidate = devices[deviceIndex];
+                    if (candidate.Device.Id != id) continue;
+                    if (snapshot is not null) { snapshot = null; break; }
+                    snapshot = candidate;
+                }
+            }
             if (snapshot is null) { result[index] = item; continue; }
             var name = BatteryPresentation.GetDisplayName(snapshot.Device, settings);
             if (name.Length > 32) name = name[..(char.IsHighSurrogate(name[30]) ? 30 : 31)] + "…";

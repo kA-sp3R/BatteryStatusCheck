@@ -25,7 +25,7 @@ using Drawing = System.Drawing;
 namespace DeviceBatteryStatus.App.Testing;
 
 /// <summary>
-/// Internal Windows CI entry point. It never constructs the application controller,
+/// Separate Windows CI harness. It never constructs the application controller,
 /// enumerates HID, contacts a server, changes startup registration or installs anything.
 /// </summary>
 internal static class SoftwareSmokeTest
@@ -46,13 +46,17 @@ internal static class SoftwareSmokeTest
         string? output = null;
         string? failure = null;
         string currentCheck = "Initialize smoke workspace";
-        var assembly = Assembly.GetEntryAssembly();
+        var assembly = typeof(PopupWindow).Assembly;
         var assemblyVersion = assembly?.GetName().Version?.ToString() ?? "unknown";
         var version = assembly?.GetName().Version?.ToString(3) ?? "unknown";
         var informationalVersion = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "unknown";
         var revision = Regex.Match(informationalVersion, @"(?:\+|\.)([0-9a-fA-F]{40})(?:$|[.+])",
             RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
         var sourceCommit = revision.Success ? revision.Groups[1].Value.ToLowerInvariant() : "unknown";
+        var harnessAssembly = Assembly.GetEntryAssembly() ?? throw new InvalidOperationException("Harness assembly is missing.");
+        var harnessSourceCommit = SmokeProvenance.SourceCommit(harnessAssembly);
+        IReadOnlyDictionary<string, string> loadedApplicationAssemblies = new Dictionary<string, string>();
+        object? runtimeHost = null;
         var flavor = "unknown";
         var metrics = new Dictionary<string, int>();
         object? efficiency = null;
@@ -63,6 +67,8 @@ internal static class SoftwareSmokeTest
             Require(Thread.CurrentThread.GetApartmentState() == ApartmentState.STA, "The smoke process must use STA.");
             output = Path.GetFullPath(reportDirectory);
             Directory.CreateDirectory(output);
+            loadedApplicationAssemblies = SmokeProvenance.VerifyApplicationAssemblies();
+            Require(harnessSourceCommit == sourceCommit, "Harness and packaged application sources must match.");
             using (var runtime = JsonDocument.Parse(await File.ReadAllTextAsync(
                 Path.Combine(AppContext.BaseDirectory, "DeviceBatteryStatus.runtimeconfig.json"))))
             {
@@ -73,6 +79,7 @@ internal static class SoftwareSmokeTest
             }
             Require(RuntimeInformation.ProcessArchitecture == Architecture.X64,
                 "The smoke process must use the packaged x64 architecture.");
+            runtimeHost = SmokeProvenance.VerifyRuntime(flavor);
             var now = DateTimeOffset.UtcNow;
             var devices = SyntheticDevices(now);
             var settings = new AppSettings();
@@ -350,12 +357,16 @@ internal static class SoftwareSmokeTest
                 {
                     var report = new
                     {
-                        schemaVersion = 1,
-                        mode = "hardware-free-windows-application-smoke",
+                        schemaVersion = 2,
+                        mode = "hardware-free-windows-companion-smoke",
                         appVersion = version,
                         assemblyVersion,
                         informationalVersion,
                         sourceCommit,
+                        harnessSourceCommit,
+                        harnessAssemblySha256 = SmokeProvenance.Hash(harnessAssembly.Location),
+                        loadedApplicationAssemblies,
+                        runtimeHost,
                         repository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY"),
                         workflowRun = Environment.GetEnvironmentVariable("GITHUB_RUN_ID"),
                         workflowAttempt = Environment.GetEnvironmentVariable("GITHUB_RUN_ATTEMPT"),
@@ -364,7 +375,10 @@ internal static class SoftwareSmokeTest
                         startedAt,
                         completedAt = DateTimeOffset.UtcNow,
                         passed = failure is null && checks.Count == ExpectedChecks,
-                        applicationLaunched = true,
+                        applicationLaunched = false,
+                        harnessExecuted = true,
+                        harnessLaunched = true,
+                        packagedApplicationAssembliesLoaded = loadedApplicationAssemblies.Count == 3,
                         normalApplicationControllerStarted = false,
                         hardwareAccessed = false,
                         networkAccessed = false,
@@ -380,6 +394,7 @@ internal static class SoftwareSmokeTest
                         failure,
                         verificationBoundary = new[]
                         {
+                            "Separate synthetic harness loads the exact inspected packaged assemblies; production apphost, App startup and normal controller are not launched.",
                             "Synthetic in-memory devices only; no HID discovery or commands.",
                             "Update/log/settings callbacks are fake; no update network or installer execution.",
                             "App startup registration and saved preferences are not accessed; Windows may maintain its own notification-area metadata.",

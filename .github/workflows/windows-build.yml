@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
       - name: Restore
         run: ./.github/scripts/run-ci-command.ps1 -Name restore -Command @('dotnet', 'restore', 'DeviceBatteryStatus.sln')
       - name: Compile
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
       - name: Run focused unit tests only
         run: ./.github/scripts/run-ci-command.ps1 -Name focused -Command @('dotnet', 'test', 'tests/DeviceBatteryStatus.Tests/DeviceBatteryStatus.Tests.csproj', '--configuration', 'Release', '--logger', 'trx;LogFileName=focused.trx', '--results-directory', 'TestResults')
       - uses: actions/upload-artifact@v4
@@ -91,7 +91,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
       - name: Publish Windows application (no launch)
         run: |
           $selfContained = ('${{ matrix.flavor }}' -eq 'self-contained').ToString().ToLowerInvariant()
@@ -100,11 +100,22 @@ jobs:
         run: ./.github/scripts/package-windows.ps1 -PublishDirectory publish -Flavor '${{ matrix.flavor }}'
       - name: Inspect ZIP, PE headers, payload hashes and runtime metadata (no launch)
         run: ./.github/scripts/verify-windows-package.ps1 -Flavor '${{ matrix.flavor }}'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Record compressed and extracted sizes with payload provenance (no launch)
+        run: |
+          $archive = @(Get-ChildItem artifacts/packages -Filter '*-${{ matrix.flavor }}.zip')
+          if ($archive.Count -ne 1) { throw 'Expected one package for size measurement.' }
+          python .github/scripts/measure-package-size.py --package $archive[0].FullName --output 'ci-logs/package-size-${{ matrix.flavor }}.json' --expected-source '${{ github.sha }}' --expected-run '${{ github.run_id }}' --expected-attempt '${{ github.run_attempt }}'
+          if ($LASTEXITCODE -ne 0) { throw 'Package size inventory failed.' }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: package-evidence-${{ matrix.flavor }}-${{ github.run_attempt }}
-          path: ci-logs/*.log
+          path: |
+            ci-logs/*.log
+            ci-logs/*.json
           if-no-files-found: warn
           retention-days: 14
       - uses: actions/upload-artifact@v4
@@ -130,7 +141,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
       - uses: actions/download-artifact@v4
         with:
           name: windows-preview-win-x64-${{ matrix.flavor }}-${{ github.run_attempt }}
@@ -140,8 +151,17 @@ jobs:
           $archive = @(Get-ChildItem artifacts/smoke-input -Filter '*-${{ matrix.flavor }}.zip')
           if ($archive.Count -ne 1) { throw 'Expected one inspected application ZIP.' }
           Expand-Archive -LiteralPath $archive[0].FullName -DestinationPath smoke-app
-      - name: Launch isolated software smoke branch (no HID or network)
-        run: ./.github/scripts/run-application-smoke.ps1 -ApplicationPath smoke-app/DeviceBatteryStatus.exe -ReportDirectory artifacts/application-smoke -RequirePackageManifest
+      - name: Compile separate synthetic harness against inspected package DLLs
+        run: ./.github/scripts/build-smoke-harness.ps1 -ApplicationDirectory smoke-app
+      - name: Run companion WPF smoke against inspected assemblies (no HID or network)
+        run: ./.github/scripts/run-application-smoke.ps1 -ApplicationPath smoke-app/DeviceBatteryStatus.exe -HarnessPath artifacts/smoke-harness/launch/DeviceBatteryStatus.Smoke.exe -ReportDirectory artifacts/application-smoke -RequirePackageManifest
+      - name: Preserve separate harness compilation log
+        if: always()
+        run: |
+          New-Item -ItemType Directory -Force artifacts/application-smoke | Out-Null
+          if (Test-Path -LiteralPath ci-logs/build-separate-smoke-harness.log) {
+            Copy-Item -LiteralPath ci-logs/build-separate-smoke-harness.log -Destination artifacts/application-smoke/harness-build.log
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:

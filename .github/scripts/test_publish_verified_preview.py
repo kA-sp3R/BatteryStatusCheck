@@ -186,6 +186,43 @@ class SmokeEvidenceValidationTests(unittest.TestCase):
             with self.subTest(extra=extra), self.assertRaises(SystemExit):
                 publisher.validate_application_smoke({**report, **extra}, manifest, "owner/repo", "self-contained")
 
+    def companion_hashes(self):
+        return {name: str(index) * 64 for index, name in enumerate(
+            ["DeviceBatteryStatus.dll", "DeviceBatteryStatus.Core.dll", "DeviceBatteryStatus.Windows.dll"], 1)}
+
+    def test_companion_requires_exact_packaged_assemblies_and_honest_launch_scope(self):
+        hashes = self.companion_hashes()
+        manifest = {**self.manifest(), "appSmoke": True, "appSmokeMode": "companion",
+                    "appSmokeAssemblyHashes": {flavor: hashes for flavor in ["framework-dependent", "self-contained"]}}
+        report = {**self.application_smoke(), "schemaVersion": 2, "mode": "hardware-free-windows-companion-smoke",
+                  "applicationLaunched": False, "harnessLaunched": True, "packagedApplicationAssembliesLoaded": True,
+                  "harnessExecuted": True, "separateHarnessVerified": True,
+                  "harnessSourceCommit": manifest["sourceCommit"], "loadedApplicationAssemblies": hashes}
+        result = publisher.validate_application_smoke(report, manifest, "owner/repo", "self-contained")
+        self.assertFalse(result["applicationLaunched"])
+        self.assertTrue(result["harnessLaunched"])
+        self.assertEqual(hashes, result["loadedApplicationAssemblies"])
+        for extra in [{"schemaVersion": 1}, {"mode": "hardware-free-windows-application-smoke"},
+                      {"applicationLaunched": True}, {"harnessLaunched": False},
+                      {"harnessExecuted": False}, {"separateHarnessVerified": False},
+                      {"packagedApplicationAssembliesLoaded": False}, {"harnessSourceCommit": "e" * 40},
+                      {"loadedApplicationAssemblies": {}},
+                      {"loadedApplicationAssemblies": {**hashes, "DeviceBatteryStatus.dll": "f" * 64}}]:
+            with self.subTest(extra=extra), self.assertRaises(SystemExit):
+                publisher.validate_application_smoke({**report, **extra}, manifest, "owner/repo", "self-contained")
+        with self.assertRaises(SystemExit):
+            publisher.validate_application_smoke(self.application_smoke(), manifest, "owner/repo", "self-contained")
+
+    def test_release_policy_requires_complete_companion_hashes(self):
+        hashes = {flavor: self.companion_hashes() for flavor in ["framework-dependent", "self-contained"]}
+        manifest = {**self.manifest(), "tag": "v1.0.0", "prerelease": False, "signed": False, "testCount": 8,
+                    "appSmoke": True, "appSmokeMode": "companion", "appSmokeAssemblyHashes": hashes}
+        publisher.release_policy(manifest, "1.0.0", "Unsigned release.")
+        for extra in [{"appSmoke": False}, {"appSmokeMode": "other"}, {"appSmokeAssemblyHashes": {}},
+                      {"appSmokeAssemblyHashes": {"self-contained": self.companion_hashes()}}]:
+            with self.subTest(extra=extra), self.assertRaises(SystemExit):
+                publisher.release_policy({**manifest, **extra}, "1.0.0", "Unsigned release.")
+
 
 class OfficialPublicationIntegrationTests(unittest.TestCase):
     def test_partial_upload_and_published_retry_preserve_assets_and_immutable_evidence(self):
@@ -203,20 +240,36 @@ class OfficialPublicationIntegrationTests(unittest.TestCase):
     def test_failed_application_smoke_cannot_upload_or_publish(self):
         self.exercise_publication(with_app_smoke=True, corrupt_optional="application")
 
-    def exercise_publication(self, automation_count=None, with_installer=False, with_app_smoke=False, corrupt_optional=None):
+    def test_companion_verification_preserves_payload_hashes_and_honest_receipt(self):
+        self.exercise_publication(with_app_smoke=True, companion_smoke=True)
+
+    def test_companion_package_mismatch_cannot_upload_or_publish(self):
+        self.exercise_publication(with_app_smoke=True, companion_smoke=True, corrupt_optional="companion-package")
+
+    def exercise_publication(self, automation_count=None, with_installer=False, with_app_smoke=False, corrupt_optional=None,
+                             companion_smoke=False):
         source, automation = "a" * 40, "b" * 40
         repository, notes = "owner/repo", "Unsigned official release. Runtime and hardware checks are deferred.\n"
         manifest = {"version": "1.0.0", "tag": "v1.0.0", "releaseId": 101, "sourceCommit": source,
                     "buildRun": 11, "fullTestRun": 22, "testAutomationCommit": automation,
                     "testCount": 2, "parserTestCount": 3, "prerelease": False, "signed": False, "packages": {}}
         fixtures = {}
+        companion_package_hashes = {}
         for flavor in ["framework-dependent", "self-contained"]:
             package_manifest = {"sourceCommit": source, "version": "1.0.0", "workflowRun": "11", "workflowAttempt": "1",
                                 "repository": repository, "flavor": flavor, "runtimeIdentifier": "win-x64",
                                 "applicationLaunched": False, "hardwareVerified": False, "files": {}}
+            payload = {}
+            if companion_smoke:
+                payload = {name: ("Synthetic assembly fixture: " + name).encode() for name in
+                           ["DeviceBatteryStatus.dll", "DeviceBatteryStatus.Core.dll", "DeviceBatteryStatus.Windows.dll"]}
+                package_manifest["files"] = {name: hashlib.sha256(data).hexdigest() for name, data in payload.items()}
+                companion_package_hashes[flavor] = package_manifest["files"]
             buffer = io.BytesIO()
             with ZipFile(buffer, "w") as archive:
                 archive.writestr("package-manifest.json", json.dumps(package_manifest))
+                for name, data in payload.items():
+                    archive.writestr(name, data)
             name = f"DeviceBatteryStatus-1.0.0-win-x64-{flavor}.zip"
             data = buffer.getvalue()
             digest = hashlib.sha256(data).hexdigest()
@@ -254,8 +307,18 @@ class OfficialPublicationIntegrationTests(unittest.TestCase):
             fixtures["installer-smoke-evidence-1"] = {"installer-smoke.json": json.dumps(smoke).encode(), "install.log": b"Synthetic fixture"}
         if with_app_smoke:
             manifest["appSmoke"] = True
+            if companion_smoke:
+                manifest["appSmokeMode"] = "companion"
+                manifest["appSmokeAssemblyHashes"] = copy.deepcopy(companion_package_hashes)
+                if corrupt_optional == "companion-package":
+                    manifest["appSmokeAssemblyHashes"]["self-contained"]["DeviceBatteryStatus.dll"] = "f" * 64
             for flavor in ["framework-dependent", "self-contained"]:
                 smoke = {**helper.application_smoke(), "flavor": flavor}
+                if companion_smoke:
+                    smoke.update(schemaVersion=2, mode="hardware-free-windows-companion-smoke", applicationLaunched=False,
+                                 harnessLaunched=True, harnessExecuted=True, separateHarnessVerified=True,
+                                 packagedApplicationAssembliesLoaded=True, harnessSourceCommit=source,
+                                 loadedApplicationAssemblies=manifest["appSmokeAssemblyHashes"][flavor])
                 if corrupt_optional == "application":
                     smoke["checks"][0]["passed"] = False
                 fixtures[f"application-smoke-evidence-{flavor}-1"] = {"application-smoke.json": json.dumps(smoke).encode()}
@@ -336,12 +399,17 @@ class OfficialPublicationIntegrationTests(unittest.TestCase):
                     self.assertFalse(receipt["signed"])
                     self.assertEqual("34", receipt["publicationWorkflowRun"])
                     self.assertEqual(first_digest, receipt["assets"]["DeviceBatteryStatus-1.0.0-verification.zip"]["digest"])
-                    self.assertEqual(with_app_smoke, receipt["applicationLaunched"])
+                    self.assertEqual(with_app_smoke and not companion_smoke, receipt["applicationLaunched"])
+                    if companion_smoke:
+                        self.assertTrue(receipt["harnessLaunched"])
+                        self.assertTrue(receipt["packagedApplicationAssembliesLoaded"])
                     self.assertFalse(receipt["hardwareVerified"])
                     self.assertEqual(with_installer, receipt["installerExecuted"])
                     with ZipFile("release-staging/verification/DeviceBatteryStatus-1.0.0-verification.zip") as archive:
                         summary = json.loads(archive.read("verification-summary.json"))
-                        self.assertEqual(with_app_smoke, summary["applicationLaunched"])
+                        self.assertEqual(with_app_smoke and not companion_smoke, summary["applicationLaunched"])
+                        if companion_smoke:
+                            self.assertTrue(summary["harnessLaunched"])
                         if not with_installer:
                             self.assertNotIn("installerExecuted", summary)
                         if not with_installer and not with_app_smoke:
@@ -354,7 +422,8 @@ class OfficialPublicationIntegrationTests(unittest.TestCase):
                         if with_app_smoke:
                             self.assertIn("application-smoke/self-contained/application-smoke.json", archive.namelist())
                             self.assertIn("application-smoke/framework-dependent/application-smoke.json", archive.namelist())
-                            self.assertTrue(receipt["testResults"]["applicationSmoke"]["self-contained"]["applicationLaunched"])
+                            self.assertEqual(not companion_smoke,
+                                receipt["testResults"]["applicationSmoke"]["self-contained"]["applicationLaunched"])
                     if automation_count is None:
                         self.assertNotIn("releaseAutomation", receipt["testResults"])
                     else:
