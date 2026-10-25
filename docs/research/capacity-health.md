@@ -52,8 +52,10 @@ Battery-terminal Wh and downstream load/output Wh are different bases. mAh and W
 
 ## Continuity, history and completion boundaries
 
-An active integrated cycle must be rejected after a missing/late/duplicate or out-of-order sample, uncertain clock interval, charging, disconnection/reconnection, sleep/resume, telemetry loss, unit/basis change or uncertain/changed battery identity. No missing area is filled with an assumed current or extrapolated from percentage. A restart must not join a partial cycle to later samples.
+An active integrated cycle must be rejected after a missing/late sample, changed non-advancing sample, or out-of-order sample, uncertain clock interval, charging, disconnection/reconnection, sleep/resume, telemetry loss, unit/basis change or uncertain/changed battery identity. No missing area is filled with an assumed current or extrapolated from percentage. A restart must not join a partial cycle to later samples.
 
 Records distinguish device-reported full capacity, calculated complete usable capacity, remaining capacity and incomplete/rejected coverage. They retain observation/measurement times, sample coverage, method, source, interruptions and identity context. Valid completed history can survive a restart, but persistence is not evidence that a newly connected same-model device is the same battery. Unsafe identities must not automatically acquire old health results.
 
 For today's admitted receivers the normal result is explicit: **Capacity measurement unavailable — no supported usable full-charge-capacity field or measured discharge current/power with trustworthy boundaries and battery identity.** A saved design specification may still be displayed, together with its source and units. Software tests can validate arithmetic, continuity rejection, persistence and presentation using synthetic telemetry; they cannot certify physical battery accuracy or add a model to the hardware-supported list.
+
+Exact repeated observations are ignored and never integrated twice; they do not by themselves reject a cycle. Changed non-advancing or out-of-order samples reject continuity.

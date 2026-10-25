@@ -1,8 +1,12 @@
 # Verification
 
-## 1.2.0 development candidate
+## 1.2.0 candidate
 
-Capacity-health and efficiency changes are awaiting final Windows verification. Their behavior, reproducible synthetic workload and explicit physical-support limits are recorded in [the new change report](capacity-health-and-efficiency.md). The v1.1.0 evidence below applies only to its recorded source.
+The unpublished 1.2.0 candidate passed Windows verification at source `fb41c9e63ce24cf68dbf63d6add4503597bc474c`: compilation, 1019 C# tests each in Debug/Release, 5 parser/18 release-policy cases, both portable inspections, 12 isolated application-smoke checks per flavor and 64 installer lifecycle assertions. [Build/smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40176230540), [full-software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40176230772), [source/run/hash record](../.github/reviews/1.2.0.json).
+
+The [complete change report](capacity-health-and-efficiency.md) records all edited files, affected functions, failed/fixed verification, actual CPU/memory/handle observations and remaining limits. Synthetic workload results: discovery 8000→800, queries 16000→12200 with healthy reads 8000→8000. CPU observations were 187.5→125 ms and 93.75→62.5 ms across the two flavors; memory/GC snapshots are reported without steady-state or physical claims.
+
+No admitted real model exposes sufficient capacity telemetry for health. Calculation/continuity/history, actual details rendering/design editing, unchanged presentation, simulated notifications and installer preservation passed software checks. Normal live monitoring, actual OS power/PnP/Explorer events, physical battery behavior and endurance remain unverified. The normal controller/HID/network/startup/preferences were bypassed by application smoke. No 1.2.0 release or draft has been created.
 
 ## V1.1.0 release checks
 

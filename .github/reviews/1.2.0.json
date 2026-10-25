@@ -1,0 +1,633 @@
+{
+  "version": "1.2.0",
+  "tag": "v1.2.0",
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "sourceCommit": "fb41c9e63ce24cf68dbf63d6add4503597bc474c",
+  "buildRun": 40176230540,
+  "buildAttempt": 1,
+  "fullTestRun": 40176230772,
+  "fullTestAttempt": 1,
+  "testAutomationCommit": "fb41c9e63ce24cf68dbf63d6add4503597bc474c",
+  "testCount": 1019,
+  "parserTestCount": 5,
+  "automationTestCount": 18,
+  "appSmoke": true,
+  "appSmokeCheckCount": 12,
+  "packages": {
+    "framework-dependent": {
+      "bytes": 345769,
+      "sha256": "495178bb3664c40d7cb4ce984d8f70dce0f779adee899f044a463019957c2170"
+    },
+    "self-contained": {
+      "bytes": 76372394,
+      "sha256": "23c401e80fc952fb47b8455e103e24227234400d733a3c98c7a6f987582afcae"
+    }
+  },
+  "installer": {
+    "bytes": 54874611,
+    "sha256": "a59c337b2708faf5815e52c7011e00cac3671b701736ee5b1c69405d1d778dd2"
+  },
+  "status": "awaiting-publication-decision",
+  "published": false,
+  "repository": "kA-sp3R/BatteryStatusCheck",
+  "reviewedNotesSha256": "e72829a04ebb2e00601a6f8d61a97564946746cdcc72888cbd8d0df05fd67d24",
+  "verification": {
+    "testResults": {
+      "Debug": {
+        "total": 1019,
+        "executed": 1019,
+        "passed": 1019,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "Release": {
+        "total": 1019,
+        "executed": 1019,
+        "passed": 1019,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "offlineParser": {
+        "passed": 5,
+        "failed": 0
+      },
+      "releasePolicy": {
+        "passed": 18,
+        "failed": 0
+      },
+      "installerSmoke": {
+        "executed": 64,
+        "passed": 64,
+        "failed": 0,
+        "installerExecuted": true,
+        "applicationLaunched": false,
+        "hardwareVerified": false
+      },
+      "applicationSmoke": {
+        "framework-dependent": {
+          "total": 12,
+          "executed": 12,
+          "passed": 12,
+          "failed": 0,
+          "applicationLaunched": true,
+          "normalApplicationControllerStarted": false,
+          "hardwareAccessed": false,
+          "networkAccessed": false
+        },
+        "self-contained": {
+          "total": 12,
+          "executed": 12,
+          "passed": 12,
+          "failed": 0,
+          "applicationLaunched": true,
+          "normalApplicationControllerStarted": false,
+          "hardwareAccessed": false,
+          "networkAccessed": false
+        }
+      }
+    },
+    "packageInspections": {
+      "framework-dependent": {
+        "files": 11,
+        "payloadHashesVerified": true,
+        "pe": "win-x64/GUI",
+        "runtimeOptions": {
+          "tfm": "net10.0",
+          "frameworks": [
+            {
+              "name": "Microsoft.NETCore.App",
+              "version": "10.0.0"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App",
+              "version": "10.0.0"
+            }
+          ],
+          "configProperties": {
+            "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+            "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+          }
+        }
+      },
+      "self-contained": {
+        "files": 482,
+        "payloadHashesVerified": true,
+        "pe": "win-x64/GUI",
+        "runtimeOptions": {
+          "tfm": "net10.0",
+          "includedFrameworks": [
+            {
+              "name": "Microsoft.NETCore.App",
+              "version": "10.0.13"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App",
+              "version": "10.0.13"
+            }
+          ],
+          "configProperties": {
+            "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+            "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+          }
+        }
+      }
+    },
+    "applicationMetrics": {
+      "framework-dependent": {
+        "taskbarCreatedWindowsMessaged": 5,
+        "gdiBefore": 40,
+        "gdiAfter": 40,
+        "userBefore": 31,
+        "userAfter": 31,
+        "trayLifecycleIterations": 20
+      },
+      "self-contained": {
+        "taskbarCreatedWindowsMessaged": 5,
+        "gdiBefore": 40,
+        "gdiAfter": 40,
+        "userBefore": 31,
+        "userAfter": 31,
+        "trayLifecycleIterations": 20
+      }
+    },
+    "installerCompiler": {
+      "product": "Inno Setup",
+      "version": "6.7.1",
+      "versionSource": "compiler-engine-banner",
+      "probeExitCode": 0,
+      "engineBanner": "Compiler engine version: Inno Setup 6.7.1",
+      "componentFileVersion": "0.0.0.0",
+      "componentProductVersion": "0.0.0.0",
+      "sha256": "eb6f4410c8db367a5f74127e8025ad2ccacc0afabbe783959d237df3050f97fb",
+      "engineModule": "ISCmplr.dll",
+      "engineModuleSha256": "1a6ff68241e7f3b18543bb875283788913abbdd7b9d7403ac094598d044def7a"
+    },
+    "normalMonitoringRuntimeVerified": false,
+    "hardwareVerified": false,
+    "physicalHealthSupport": [],
+    "publicationValidatorsPassed": true,
+    "screenshotsVisuallyReviewed": true
+  },
+  "syntheticEfficiency": {
+    "framework-dependent": {
+      "schemaVersion": 1,
+      "mode": "synthetic-software-efficiency-smoke",
+      "sourceCommit": "fb41c9e63ce24cf68dbf63d6add4503597bc474c",
+      "appVersion": "1.2.0",
+      "flavor": "framework-dependent",
+      "repository": "kA-sp3R/BatteryStatusCheck",
+      "workflowRun": "40176230540",
+      "workflowAttempt": "1",
+      "measuredAtUtc": "2026-10-25T08:23:46.9141616+00:00",
+      "physicalDevicesAccessed": false,
+      "normalApplicationControllerStarted": false,
+      "monitorWorkload": {
+        "schemaVersion": 1,
+        "workload": "deterministic-synthetic-healthy-and-nonresponsive-usb-receivers",
+        "physicalDevicesAccessed": false,
+        "normalApplicationControllerStarted": false,
+        "warmupTrialsPerPolicy": 3,
+        "measuredTrialsPerPolicy": 200,
+        "simulatedMinutesPerTrial": 20,
+        "scheduledRefreshIntervalSeconds": 30,
+        "receiverCount": 2,
+        "legacy": {
+          "policy": "legacy refresh policy",
+          "trials": 200,
+          "scheduledRefreshes": 8000,
+          "discoveryEnumerations": 8000,
+          "transportOpens": 16000,
+          "healthyReads": 8000,
+          "nonResponsiveReads": 8000,
+          "featureQueries": 16000,
+          "wallMilliseconds": 182.5971,
+          "cpuMilliseconds": 187.5,
+          "allocatedBytes": 49511248,
+          "before": {
+            "cpuMilliseconds": 4937.5,
+            "workingSetBytes": 154742784,
+            "privateBytes": 64217088,
+            "managedHeapBytes": 10436056,
+            "totalAllocatedBytes": 21604744,
+            "processHandles": 518,
+            "gdiHandles": 46,
+            "userHandles": 31,
+            "gen0Collections": 4,
+            "gen1Collections": 4,
+            "gen2Collections": 4
+          },
+          "after": {
+            "cpuMilliseconds": 5125,
+            "workingSetBytes": 157294592,
+            "privateBytes": 66641920,
+            "managedHeapBytes": 11110640,
+            "totalAllocatedBytes": 71115992,
+            "processHandles": 518,
+            "gdiHandles": 40,
+            "userHandles": 31,
+            "gen0Collections": 6,
+            "gen1Collections": 5,
+            "gen2Collections": 4
+          },
+          "featureQueriesPerSimulatedMinute": 4
+        },
+        "optimized": {
+          "policy": "cached discovery and bounded receiver backoff",
+          "trials": 200,
+          "scheduledRefreshes": 8000,
+          "discoveryEnumerations": 800,
+          "transportOpens": 12200,
+          "healthyReads": 8000,
+          "nonResponsiveReads": 4200,
+          "featureQueries": 12200,
+          "wallMilliseconds": 130.5979,
+          "cpuMilliseconds": 125,
+          "allocatedBytes": 25328960,
+          "before": {
+            "cpuMilliseconds": 5125,
+            "workingSetBytes": 157302784,
+            "privateBytes": 66646016,
+            "managedHeapBytes": 11118864,
+            "totalAllocatedBytes": 71120416,
+            "processHandles": 518,
+            "gdiHandles": 40,
+            "userHandles": 31,
+            "gen0Collections": 6,
+            "gen1Collections": 5,
+            "gen2Collections": 4
+          },
+          "after": {
+            "cpuMilliseconds": 5250,
+            "workingSetBytes": 157396992,
+            "privateBytes": 66744320,
+            "managedHeapBytes": 11354128,
+            "totalAllocatedBytes": 96449376,
+            "processHandles": 518,
+            "gdiHandles": 40,
+            "userHandles": 31,
+            "gen0Collections": 7,
+            "gen1Collections": 5,
+            "gen2Collections": 4
+          },
+          "featureQueriesPerSimulatedMinute": 3.05
+        },
+        "recovery": {
+          "manualRefreshBypassedBackoff": true,
+          "deviceChangeBypassedBackoff": true,
+          "staleStateAndOriginalSamplePreserved": true
+        },
+        "limitations": [
+          "Synthetic feature replies and immediate synthetic timeouts; no USB latency, real radio traffic or battery drain was measured.",
+          "Simulated time advances without sleeping; this is a short software smoke workload, not a 20-minute physical run or endurance test.",
+          "CPU, allocations, working/private memory and handles are process-wide before/after observations; other runtime/WPF work and JIT/GC/scheduler noise may contribute.",
+          "Memory figures are snapshots, not peak or steady-state memory; CPU/memory deltas are reported without a performance pass threshold.",
+          "Legacy is the same managed monitor with efficiency options omitted; optimized uses the new default cache/backoff policy. Healthy refresh cadence is identical.",
+          "Policy measurements run sequentially after warmup; query/enumeration counts are deterministic, but one short CPU/memory sample does not establish a causal performance percentage."
+        ]
+      },
+      "presentation": {
+        "unchangedIterations": 200,
+        "popupUpdatesBefore": 1,
+        "popupUpdatesAfterUnchanged": 1,
+        "trayBefore": {
+          "presentationUpdates": 12,
+          "iconRenders": 7,
+          "iconAssignments": 7,
+          "tooltipAssignments": 12,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 1,
+          "unchangedSelections": 0
+        },
+        "afterUnchanged": {
+          "presentationUpdates": 12,
+          "iconRenders": 7,
+          "iconAssignments": 7,
+          "tooltipAssignments": 12,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 1,
+          "unchangedSelections": 200
+        },
+        "afterAlias": {
+          "presentationUpdates": 17,
+          "iconRenders": 7,
+          "iconAssignments": 7,
+          "tooltipAssignments": 13,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 2,
+          "unchangedSelections": 200
+        },
+        "afterPercentage": {
+          "presentationUpdates": 22,
+          "iconRenders": 8,
+          "iconAssignments": 8,
+          "tooltipAssignments": 14,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 3,
+          "unchangedSelections": 200
+        },
+        "afterFreshness": {
+          "presentationUpdates": 27,
+          "iconRenders": 9,
+          "iconAssignments": 9,
+          "tooltipAssignments": 16,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 4,
+          "unchangedSelections": 200
+        },
+        "afterDpi": {
+          "presentationUpdates": 32,
+          "iconRenders": 14,
+          "iconAssignments": 14,
+          "tooltipAssignments": 16,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 22,
+          "menuCreations": 6,
+          "selectionReconciliations": 4,
+          "unchangedSelections": 200
+        },
+        "syntheticDeviceChangeRequests": 20,
+        "coalescedDeviceChangeCallbacks": 1,
+        "baselineNote": "The previous release already cached icon bitmaps and menus. Zero redundant renders/menu creations verifies preservation; selection and shared-DPI probe counts exercise the new reductions.",
+        "limitations": "Native property-assignment counters do not trace Shell_NotifyIcon syscalls. Actual USB events and physical mixed-DPI behavior were not exercised."
+      },
+      "capacityPresentation": {
+        "unchangedIterations": 200,
+        "updatesBefore": 1,
+        "updatesAfterUnchanged": 1,
+        "updatesAfterDesignSave": 2
+      }
+    },
+    "self-contained": {
+      "schemaVersion": 1,
+      "mode": "synthetic-software-efficiency-smoke",
+      "sourceCommit": "fb41c9e63ce24cf68dbf63d6add4503597bc474c",
+      "appVersion": "1.2.0",
+      "flavor": "self-contained",
+      "repository": "kA-sp3R/BatteryStatusCheck",
+      "workflowRun": "40176230540",
+      "workflowAttempt": "1",
+      "measuredAtUtc": "2026-10-25T08:23:39.999561+00:00",
+      "physicalDevicesAccessed": false,
+      "normalApplicationControllerStarted": false,
+      "monitorWorkload": {
+        "schemaVersion": 1,
+        "workload": "deterministic-synthetic-healthy-and-nonresponsive-usb-receivers",
+        "physicalDevicesAccessed": false,
+        "normalApplicationControllerStarted": false,
+        "warmupTrialsPerPolicy": 3,
+        "measuredTrialsPerPolicy": 200,
+        "simulatedMinutesPerTrial": 20,
+        "scheduledRefreshIntervalSeconds": 30,
+        "receiverCount": 2,
+        "legacy": {
+          "policy": "legacy refresh policy",
+          "trials": 200,
+          "scheduledRefreshes": 8000,
+          "discoveryEnumerations": 8000,
+          "transportOpens": 16000,
+          "healthyReads": 8000,
+          "nonResponsiveReads": 8000,
+          "featureQueries": 16000,
+          "wallMilliseconds": 87.9525,
+          "cpuMilliseconds": 93.75,
+          "allocatedBytes": 49511248,
+          "before": {
+            "cpuMilliseconds": 3078.125,
+            "workingSetBytes": 142360576,
+            "privateBytes": 54390784,
+            "managedHeapBytes": 10431736,
+            "totalAllocatedBytes": 21160184,
+            "processHandles": 524,
+            "gdiHandles": 46,
+            "userHandles": 33,
+            "gen0Collections": 4,
+            "gen1Collections": 4,
+            "gen2Collections": 4
+          },
+          "after": {
+            "cpuMilliseconds": 3171.875,
+            "workingSetBytes": 149815296,
+            "privateBytes": 61587456,
+            "managedHeapBytes": 11104888,
+            "totalAllocatedBytes": 70671432,
+            "processHandles": 526,
+            "gdiHandles": 40,
+            "userHandles": 33,
+            "gen0Collections": 7,
+            "gen1Collections": 5,
+            "gen2Collections": 4
+          },
+          "featureQueriesPerSimulatedMinute": 4
+        },
+        "optimized": {
+          "policy": "cached discovery and bounded receiver backoff",
+          "trials": 200,
+          "scheduledRefreshes": 8000,
+          "discoveryEnumerations": 800,
+          "transportOpens": 12200,
+          "healthyReads": 8000,
+          "nonResponsiveReads": 4200,
+          "featureQueries": 12200,
+          "wallMilliseconds": 51.0355,
+          "cpuMilliseconds": 62.5,
+          "allocatedBytes": 25328960,
+          "before": {
+            "cpuMilliseconds": 3171.875,
+            "workingSetBytes": 149815296,
+            "privateBytes": 61587456,
+            "managedHeapBytes": 11113112,
+            "totalAllocatedBytes": 70675856,
+            "processHandles": 526,
+            "gdiHandles": 40,
+            "userHandles": 33,
+            "gen0Collections": 7,
+            "gen1Collections": 5,
+            "gen2Collections": 4
+          },
+          "after": {
+            "cpuMilliseconds": 3234.375,
+            "workingSetBytes": 149909504,
+            "privateBytes": 61587456,
+            "managedHeapBytes": 19744992,
+            "totalAllocatedBytes": 96004816,
+            "processHandles": 526,
+            "gdiHandles": 40,
+            "userHandles": 33,
+            "gen0Collections": 8,
+            "gen1Collections": 5,
+            "gen2Collections": 4
+          },
+          "featureQueriesPerSimulatedMinute": 3.05
+        },
+        "recovery": {
+          "manualRefreshBypassedBackoff": true,
+          "deviceChangeBypassedBackoff": true,
+          "staleStateAndOriginalSamplePreserved": true
+        },
+        "limitations": [
+          "Synthetic feature replies and immediate synthetic timeouts; no USB latency, real radio traffic or battery drain was measured.",
+          "Simulated time advances without sleeping; this is a short software smoke workload, not a 20-minute physical run or endurance test.",
+          "CPU, allocations, working/private memory and handles are process-wide before/after observations; other runtime/WPF work and JIT/GC/scheduler noise may contribute.",
+          "Memory figures are snapshots, not peak or steady-state memory; CPU/memory deltas are reported without a performance pass threshold.",
+          "Legacy is the same managed monitor with efficiency options omitted; optimized uses the new default cache/backoff policy. Healthy refresh cadence is identical.",
+          "Policy measurements run sequentially after warmup; query/enumeration counts are deterministic, but one short CPU/memory sample does not establish a causal performance percentage."
+        ]
+      },
+      "presentation": {
+        "unchangedIterations": 200,
+        "popupUpdatesBefore": 1,
+        "popupUpdatesAfterUnchanged": 1,
+        "trayBefore": {
+          "presentationUpdates": 12,
+          "iconRenders": 7,
+          "iconAssignments": 7,
+          "tooltipAssignments": 12,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 1,
+          "unchangedSelections": 0
+        },
+        "afterUnchanged": {
+          "presentationUpdates": 12,
+          "iconRenders": 7,
+          "iconAssignments": 7,
+          "tooltipAssignments": 12,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 1,
+          "unchangedSelections": 200
+        },
+        "afterAlias": {
+          "presentationUpdates": 17,
+          "iconRenders": 7,
+          "iconAssignments": 7,
+          "tooltipAssignments": 13,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 2,
+          "unchangedSelections": 200
+        },
+        "afterPercentage": {
+          "presentationUpdates": 22,
+          "iconRenders": 8,
+          "iconAssignments": 8,
+          "tooltipAssignments": 14,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 3,
+          "unchangedSelections": 200
+        },
+        "afterFreshness": {
+          "presentationUpdates": 27,
+          "iconRenders": 9,
+          "iconAssignments": 9,
+          "tooltipAssignments": 16,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 12,
+          "menuCreations": 6,
+          "selectionReconciliations": 4,
+          "unchangedSelections": 200
+        },
+        "afterDpi": {
+          "presentationUpdates": 32,
+          "iconRenders": 14,
+          "iconAssignments": 14,
+          "tooltipAssignments": 16,
+          "dpiProbes": 1,
+          "dpiMetricQueries": 22,
+          "menuCreations": 6,
+          "selectionReconciliations": 4,
+          "unchangedSelections": 200
+        },
+        "syntheticDeviceChangeRequests": 20,
+        "coalescedDeviceChangeCallbacks": 1,
+        "baselineNote": "The previous release already cached icon bitmaps and menus. Zero redundant renders/menu creations verifies preservation; selection and shared-DPI probe counts exercise the new reductions.",
+        "limitations": "Native property-assignment counters do not trace Shell_NotifyIcon syscalls. Actual USB events and physical mixed-DPI behavior were not exercised."
+      },
+      "capacityPresentation": {
+        "unchangedIterations": 200,
+        "updatesBefore": 1,
+        "updatesAfterUnchanged": 1,
+        "updatesAfterDesignSave": 2
+      }
+    }
+  },
+  "evidenceFileHashes": {
+    "full-release-automation-tests-1/release-automation.log": "f7d7a3f30cd47e5311ac7742f40e89f92ad2638f1864aaefaad1f10c54959e0b",
+    "offline-capture-tests-evidence-1/offline.log": "55fe93d2c98bd9f7962731fb753d1fd88726da530cf143502395589303b405fc",
+    "package-evidence-self-contained-1/publish-self-contained.log": "2ba78614eccbdf40154e83d09dc4311f469a2941b5f683326833fce25ec76569",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/blocked-running-application.log": "a75080ae5bf675fd848931051790f01c564a8023dce8528cfa6cc61ffecfc6c7",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/install-prior-fixture.log": "00bb2db641a45850be0357670e2dfc31a3faa7457c35579ca1d9cb860321fdf7",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/installer-smoke.json": "fb22b5f8dc27d9c9a05910172933856551f0192d5dfd2290d9a16ebc6efc1bbb",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/reinstall-current.log": "5e4c0e2a87304773539114fab88d0427b165d5e27da6afb64900b0087f232ae8",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/uninstall-foreign-startup.log": "24b04f05c210620d3a52a999c605705aae1dd408c8b6e08cd409ab525e6206bb",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/uninstall-owned-startup.log": "84d6677e14dee3f0e568f11b922d830b72075cca27194b9864a5e63545744711",
+    "installer-smoke-evidence-1/artifacts/installer-smoke/upgrade-to-current.log": "1a90b813850f1b08afa7ed7b7a21bf1ac9fd5401d0c89f65980f8846dc047655",
+    "installer-smoke-evidence-1/ci-logs/installer-compile.log": "c160b70106ce897c476423048cb3e913cb2faea77c19cde856225e84afda207e",
+    "installer-smoke-evidence-1/ci-logs/installer-compiler-probe.log": "789c0d6c1e57c1f54e275fba6e85b34e43a2c1f4d691c791b103968bb20ccea3",
+    "installer-smoke-evidence-1/ci-logs/installer-upgrade-fixture-compile.log": "a6f6cfd9cf16c350b4f7edd8f00e69894115f658f78ef01cc2aacbd9163d1fac",
+    "package-evidence-framework-dependent-1/publish-framework-dependent.log": "d1b1392af52873d7ead3392bce56f60e79dab3c6626dcecfd4a96c0b1af1e9f7",
+    "full-software-tests-Debug-1/TestResults/full-Debug.json": "a48970fa189c09f29963c5265a9c88e31a447b802e4a4271a23b3e26ebb16c82",
+    "full-software-tests-Debug-1/TestResults/runneradmin_runnervmdaln5_2026-10-25_08_21_36_net10.0.trx": "eb1daff19d5423de0c1a1310dbc234f7e1984e5eb61ed0d33f7ca8d2d5701b35",
+    "full-software-tests-Debug-1/ci-logs/full-Debug.log": "96ea3f9bcfecef18339dba0483b4e8b71003aa622f684069a4fe9ea7a74ccad6",
+    "application-smoke-evidence-self-contained-1/application-smoke.json": "200a019d31dac7545de56ce8836e40e50ef425f4574636441597e8687e55ac4a",
+    "application-smoke-evidence-self-contained-1/capacity-details.png": "eeef4d9a493cce380fc60e08da1a3118b7b6748d1cd0b3a87ef869625e2331e2",
+    "application-smoke-evidence-self-contained-1/capacity-unavailable.png": "9fbea9ca40c0ec4988b93d26b3ce4a754835375325a1109da834fec680f5a476",
+    "application-smoke-evidence-self-contained-1/efficiency-workload.json": "a67a30ef768dae4c920d2aa7ca898b44d227739cf7af8b1efa234fd0650fac20",
+    "application-smoke-evidence-self-contained-1/popup.png": "fd0af178d1956a9050d4573fc158bfdfef314739120b222f8643f9d40474dee9",
+    "application-smoke-evidence-self-contained-1/settings-selected.png": "73f7c02f08c26a69a9ae15b97c7561ae74804ff7b96dfae2713d193ee9f620b5",
+    "application-smoke-evidence-self-contained-1/settings.png": "b1a41ef720fc82ca05dff16e6a56220de3b019fe62f67dbb8c5328482ca61c49",
+    "application-smoke-evidence-self-contained-1/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "application-smoke-evidence-self-contained-1/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "application-smoke-evidence-self-contained-1/synthetic-capacity-history.json": "e02b962b89c36b6116aa0c98441cd8dea50e638023044e79c50c6b95ca514082",
+    "application-smoke-evidence-self-contained-1/synthetic-capacity-pending.json": "22c5ed10836826713c1d1e286fb8716a2f4ec435ee754322cb502761fb00c6ea",
+    "application-smoke-evidence-self-contained-1/synthetic-capacity-restarted.json": "663db4264c484b3ee8255d85ef2196fff39479f1a2626e1f4d838c30d22bef66",
+    "application-smoke-evidence-self-contained-1/tray-0-48.png": "8f5b8330a9af1cce82eaed7e7f1fbf20981ca3471f2248098d110e779dcd2ff3",
+    "application-smoke-evidence-self-contained-1/tray-100-48.png": "3fc124134bf80b7023150664089f7732842a095f886572eaaa06cea643443357",
+    "application-smoke-evidence-self-contained-1/tray-neutral-48.png": "57352badb44082ecf722b2d47d51a9ec15ccef8d391b81e9e2a8f8bfd4d1e471",
+    "application-smoke-evidence-self-contained-1/updates-off.png": "e60fbfb4b37d983d3eb3afb2e405bc7614c0528efc9f6be13d587b2622bec9b9",
+    "focused-unit-tests-evidence-1/TestResults/focused.trx": "961b70912e8e459164b24d6e0436923d92ba2088937fe38e2b47dc0ddd5f64a2",
+    "focused-unit-tests-evidence-1/ci-logs/focused.log": "59ba5f30c325849ab5c378d8739bda3dc39b1d998fdd6f9de50ea0b35e44817b",
+    "application-smoke-evidence-framework-dependent-1/application-smoke.json": "3536a9e5fdbe2741d7ca16d66b0b126f0e789814cb7750ce3c795c3f1024b32a",
+    "application-smoke-evidence-framework-dependent-1/capacity-details.png": "eeef4d9a493cce380fc60e08da1a3118b7b6748d1cd0b3a87ef869625e2331e2",
+    "application-smoke-evidence-framework-dependent-1/capacity-unavailable.png": "9fbea9ca40c0ec4988b93d26b3ce4a754835375325a1109da834fec680f5a476",
+    "application-smoke-evidence-framework-dependent-1/efficiency-workload.json": "3cf8a207f29cddde5d415aa206e10c2f954e296e38fb4c2acfa097a3dc8b19da",
+    "application-smoke-evidence-framework-dependent-1/popup.png": "fd0af178d1956a9050d4573fc158bfdfef314739120b222f8643f9d40474dee9",
+    "application-smoke-evidence-framework-dependent-1/settings-selected.png": "73f7c02f08c26a69a9ae15b97c7561ae74804ff7b96dfae2713d193ee9f620b5",
+    "application-smoke-evidence-framework-dependent-1/settings.png": "b1a41ef720fc82ca05dff16e6a56220de3b019fe62f67dbb8c5328482ca61c49",
+    "application-smoke-evidence-framework-dependent-1/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "application-smoke-evidence-framework-dependent-1/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "application-smoke-evidence-framework-dependent-1/synthetic-capacity-history.json": "39076075406a2825a7a3f958198ceaa5de0d08961220302be38e470ec90ad391",
+    "application-smoke-evidence-framework-dependent-1/synthetic-capacity-pending.json": "22c5ed10836826713c1d1e286fb8716a2f4ec435ee754322cb502761fb00c6ea",
+    "application-smoke-evidence-framework-dependent-1/synthetic-capacity-restarted.json": "663db4264c484b3ee8255d85ef2196fff39479f1a2626e1f4d838c30d22bef66",
+    "application-smoke-evidence-framework-dependent-1/tray-0-48.png": "8f5b8330a9af1cce82eaed7e7f1fbf20981ca3471f2248098d110e779dcd2ff3",
+    "application-smoke-evidence-framework-dependent-1/tray-100-48.png": "3fc124134bf80b7023150664089f7732842a095f886572eaaa06cea643443357",
+    "application-smoke-evidence-framework-dependent-1/tray-neutral-48.png": "57352badb44082ecf722b2d47d51a9ec15ccef8d391b81e9e2a8f8bfd4d1e471",
+    "application-smoke-evidence-framework-dependent-1/updates-off.png": "e60fbfb4b37d983d3eb3afb2e405bc7614c0528efc9f6be13d587b2622bec9b9",
+    "compile-evidence-1/compile.log": "e6bc570a2586d56f38db77ccb255caf3c9bed973739a1f29f57777033753a303",
+    "compile-evidence-1/restore.log": "2f49231a560f9f3ea97f352f89633b083b654d9d29efac4e63b0144213462def",
+    "full-offline-parser-tests-1/offline.log": "55fe93d2c98bd9f7962731fb753d1fd88726da530cf143502395589303b405fc",
+    "full-software-tests-Release-1/TestResults/full-Release.json": "5d7811c5ca402f197dabfa4a86197986b60990302a9eefcaffb247ec08bd69b9",
+    "full-software-tests-Release-1/TestResults/runneradmin_runnervmdaln5_2026-10-25_08_21_32_net10.0.trx": "0212ed7f53e181c54821907d2af6626ff5a7f7118a61e8737d0a62f60e2ef817",
+    "full-software-tests-Release-1/ci-logs/full-Release.log": "365e99b3c1380562b6a56b29115150f97c03d5074dfdb3b4b267a9f9a1727e15",
+    "windows-installer-win-x64-1/installer-release.json": "bcc126c6441f6da910ec6600692b7ea659838173db97b0b9d931413ee3d9f5e7"
+  }
+}
