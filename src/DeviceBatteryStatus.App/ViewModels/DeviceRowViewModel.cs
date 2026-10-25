@@ -15,7 +15,12 @@ public sealed class DeviceRowViewModel
     private static readonly Brush Red = FrozenBrush(0xF0, 0x5C, 0x60);
     private static readonly Brush Neutral = FrozenBrush(0x91, 0x9A, 0x91);
     private static readonly Brush StaleProgress = FrozenBrush(0x4F, 0x5C, 0x50);
+    private readonly PeripheralIdentity identity;
+    private readonly BatteryReading reading;
+    private readonly ConnectionState connectionState;
+    private readonly bool fresh;
 
+    public string DeviceId => identity.Id;
     public string Name { get; }
     public string PercentageText { get; }
     public string StatusText { get; }
@@ -34,13 +39,16 @@ public sealed class DeviceRowViewModel
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentNullException.ThrowIfNull(settings);
+        identity = snapshot.Device;
+        reading = snapshot.Battery;
+        connectionState = snapshot.Connection;
         var battery = snapshot.Battery;
         Name = BatteryPresentation.GetDisplayName(snapshot.Device, settings);
         VendorName = snapshot.Device.Vendor.ToString();
         (DeviceGlyph, DeviceKind) = GetDeviceIcon(snapshot.Device);
         DeviceIconToolTip = $"{VendorName} {DeviceKind.ToLowerInvariant()}";
 
-        var fresh = BatteryPresentation.IsFreshCurrent(snapshot, settings, now);
+        fresh = BatteryPresentation.IsFreshCurrent(snapshot, settings, now);
         var stale = battery.State == ReadingState.Stale ||
             (battery.State == ReadingState.Current && !fresh);
         var hasPercentage = battery.Percentage is not null;
@@ -102,6 +110,11 @@ public sealed class DeviceRowViewModel
         ToolTip = string.Join(Environment.NewLine, lines);
         AccessibilityText = $"{Name}, {VendorName} {DeviceKind}, {PercentageText}, {readingText}, {connection}, {charging}";
     }
+
+    internal bool Matches(DeviceSnapshot snapshot, AppSettings settings, DateTimeOffset now) =>
+        identity == snapshot.Device && reading == snapshot.Battery && connectionState == snapshot.Connection &&
+        fresh == BatteryPresentation.IsFreshCurrent(snapshot, settings, now) &&
+        string.Equals(Name, BatteryPresentation.GetDisplayName(snapshot.Device, settings), StringComparison.Ordinal);
 
     private static (string Glyph, string Kind) GetDeviceIcon(PeripheralIdentity device)
     {

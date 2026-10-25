@@ -95,14 +95,16 @@
                                             <ColumnDefinition Width="35"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <Border Width="26" Height="26" CornerRadius="7" HorizontalAlignment="Left"
-                                                VerticalAlignment="Top" Margin="0,2,0,0"
-                                                Background="#111A10" BorderBrush="#263324" BorderThickness="1"
-                                                ToolTip="{Binding DeviceIconToolTip}">
+                                        <Button Width="26" Height="26" HorizontalAlignment="Left"
+                                                VerticalAlignment="Top" Margin="0,2,0,0" Padding="0"
+                                                Background="#111A10" BorderBrush="#263324"
+                                                Style="{StaticResource QuietButton}" Click="OnDeviceDetailsClick"
+                                                ToolTip="Open device details and capacity health"
+                                                AutomationProperties.Name="Open device details and capacity health">
                                             <TextBlock Text="{Binding DeviceGlyph}" Foreground="#7F9B75"
                                                        FontFamily="Segoe MDL2 Assets" FontSize="14" HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"/>
-                                        </Border>
+                                        </Button>
                                         <Grid Grid.Column="1">
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>

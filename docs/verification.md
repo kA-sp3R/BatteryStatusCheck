@@ -1,5 +1,9 @@
 # Verification
 
+## 1.2.0 development candidate
+
+Capacity-health and efficiency changes are awaiting final Windows verification. Their behavior, reproducible synthetic workload and explicit physical-support limits are recorded in [the new change report](capacity-health-and-efficiency.md). The v1.1.0 evidence below applies only to its recorded source.
+
 ## V1.1.0 release checks
 
 The **published stable v1.1.0 release** passed final Windows verification at source `367ea4165c528b6767522764ce7eef97a4744d15`: compilation, 921 C# tests in each Debug/Release configuration, 5 parser tests, 18 release-policy tests, both portable inspections, eight isolated application-smoke checks per flavor and 56 installer lifecycle assertions. Downloaded TRX/JSON/logs, payload hashes and the actual publication-evidence validators independently agree. [Build/smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39858821493), [full-software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/39858849245), [source-bound review record](../.github/reviews/1.1.0.json).

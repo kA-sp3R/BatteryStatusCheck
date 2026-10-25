@@ -12,21 +12,36 @@ public sealed class TrayIconService : IDisposable
     private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
     private readonly Forms.NotifyIcon notifyIcon;
     private readonly Forms.ContextMenuStrip menu;
+    private readonly bool managedDpi;
     private Drawing.Icon? ownedIcon;
     private Drawing.Icon? fallbackIcon;
     private TrayPresentation presentation = new(null, BatteryColor.Neutral, "Device Battery Status — no current reading", null);
     private (int? Percentage, BatteryColor Color, int Width, int Height)? rendered;
     private uint dpi;
     private uint taskbarDpi;
+    private uint dimensionsDpi;
+    private int iconWidth;
+    private int iconHeight;
+    private long presentationUpdates;
+    private long iconRenders;
+    private long iconAssignments;
+    private long tooltipAssignments;
+    private long dpiProbes;
+    private long dpiMetricQueries;
     private bool disposed;
     private Action? notificationClick;
 
     public TrayIconService(Action togglePopup, Action showSettings, Action refresh, Action exit)
+        : this(togglePopup, showSettings, refresh, exit, 96, false) { }
+
+    internal TrayIconService(Action togglePopup, Action showSettings, Action refresh, Action exit,
+        uint initialDpi, bool manageDpiExternally)
     {
         ArgumentNullException.ThrowIfNull(togglePopup);
         ArgumentNullException.ThrowIfNull(showSettings);
         ArgumentNullException.ThrowIfNull(refresh);
         ArgumentNullException.ThrowIfNull(exit);
+        managedDpi = manageDpiExternally;
         menu = new Forms.ContextMenuStrip
         {
             ShowImageMargin = false,
@@ -55,14 +70,14 @@ public sealed class TrayIconService : IDisposable
         };
         try
         {
-            taskbarDpi = ReadTaskbarDpi();
+            taskbarDpi = managedDpi ? initialDpi : ProbeTaskbarDpi();
             dpi = taskbarDpi == 0 ? 96 : taskbarDpi;
-            var width = Math.Clamp(GetSystemMetricsForDpi(49, dpi), 16, 128);
-            var height = Math.Clamp(GetSystemMetricsForDpi(50, dpi), 16, 128);
+            UpdateDimensions();
             // Keep this separately owned neutral icon for allocation/update failures later.
-            fallbackIcon = TrayIconRenderer.Render(width, height, null, BatteryColor.Neutral);
+            fallbackIcon = RenderIcon(null, BatteryColor.Neutral);
             notifyIcon.Icon = fallbackIcon;
-            rendered = (null, BatteryColor.Neutral, width, height);
+            iconAssignments++;
+            rendered = (null, BatteryColor.Neutral, iconWidth, iconHeight);
             Update(presentation);
         }
         catch
@@ -79,10 +94,11 @@ public sealed class TrayIconService : IDisposable
         dispatcher.VerifyAccess();
         if (disposed) return;
         ArgumentNullException.ThrowIfNull(value);
+        presentationUpdates++;
         presentation = value;
         try
         {
-            var observedDpi = ReadTaskbarDpi();
+            var observedDpi = managedDpi ? taskbarDpi : ProbeTaskbarDpi();
             if (observedDpi != 0 && observedDpi != taskbarDpi)
             {
                 taskbarDpi = observedDpi;
@@ -91,13 +107,12 @@ public sealed class TrayIconService : IDisposable
             var percentage = value.Percentage is >= 0 and <= 100 && value.Color != BatteryColor.Neutral
                 ? value.Percentage : null;
             var color = percentage is null ? BatteryColor.Neutral : value.Color;
-            var width = Math.Clamp(GetSystemMetricsForDpi(49, dpi), 16, 128); // SM_CXSMICON
-            var height = Math.Clamp(GetSystemMetricsForDpi(50, dpi), 16, 128); // SM_CYSMICON
-            var key = (percentage, color, width, height);
+            UpdateDimensions();
+            var key = (percentage, color, iconWidth, iconHeight);
             if (rendered != key)
             {
-                var next = TrayIconRenderer.Render(width, height, percentage, color);
-                try { notifyIcon.Icon = next; }
+                var next = RenderIcon(percentage, color);
+                try { notifyIcon.Icon = next; iconAssignments++; }
                 catch { next.Dispose(); throw; }
                 var previous = ownedIcon;
                 ownedIcon = next;
@@ -105,7 +120,7 @@ public sealed class TrayIconService : IDisposable
                 previous?.Dispose();
             }
             var tooltip = LimitText(value.Tooltip, 127, "Device Battery Status");
-            if (notifyIcon.Text != tooltip) notifyIcon.Text = tooltip;
+            if (notifyIcon.Text != tooltip) { notifyIcon.Text = tooltip; tooltipAssignments++; }
             if (!notifyIcon.Visible) notifyIcon.Visible = true;
         }
         catch
@@ -113,6 +128,38 @@ public sealed class TrayIconService : IDisposable
             ShowUnavailableFallback();
             throw;
         }
+    }
+
+    internal TrayActivityMetrics Metrics
+    {
+        get
+        {
+            dispatcher.VerifyAccess();
+            return new(presentationUpdates, iconRenders, iconAssignments, tooltipAssignments,
+                dpiProbes, dpiMetricQueries, 1, 0, 0);
+        }
+    }
+
+    private uint ProbeTaskbarDpi()
+    {
+        dpiProbes++;
+        return ReadTaskbarDpi();
+    }
+
+    private void UpdateDimensions()
+    {
+        if (dimensionsDpi == dpi) return;
+        iconWidth = Math.Clamp(GetSystemMetricsForDpi(49, dpi), 16, 128); // SM_CXSMICON
+        iconHeight = Math.Clamp(GetSystemMetricsForDpi(50, dpi), 16, 128); // SM_CYSMICON
+        dpiMetricQueries += 2;
+        dimensionsDpi = dpi;
+    }
+
+    private Drawing.Icon RenderIcon(int? percentage, BatteryColor color)
+    {
+        var icon = TrayIconRenderer.Render(iconWidth, iconHeight, percentage, color);
+        iconRenders++;
+        return icon;
     }
 
     /// <summary>Call when the tray/popup monitor changes DPI; unchanged images are reused.</summary>
@@ -165,7 +212,7 @@ public sealed class TrayIconService : IDisposable
         return text[..cut] + "…";
     }
 
-    private static uint ReadTaskbarDpi()
+    internal static uint ReadTaskbarDpi()
     {
         var taskbar = FindWindowW("Shell_TrayWnd", null);
         return taskbar == IntPtr.Zero ? GetDpiForSystem() : GetDpiForWindow(taskbar);
@@ -180,7 +227,12 @@ public sealed class TrayIconService : IDisposable
         {
             if (fallbackIcon is null) throw new InvalidOperationException("No neutral tray icon is available.");
             notifyIcon.Icon = fallbackIcon;
-            notifyIcon.Text = "Device Battery Status: display unavailable";
+            iconAssignments++;
+            if (notifyIcon.Text != "Device Battery Status: display unavailable")
+            {
+                notifyIcon.Text = "Device Battery Status: display unavailable";
+                tooltipAssignments++;
+            }
             notifyIcon.Visible = true;
         }
         catch
@@ -224,4 +276,17 @@ public sealed class TrayIconService : IDisposable
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr window);
     [DllImport("user32.dll")] private static extern uint GetDpiForSystem();
     [DllImport("user32.dll")] private static extern int GetSystemMetricsForDpi(int index, uint dpi);
+}
+
+/// <summary>Dispatcher-owned counters for actual render/native-update work, not an estimate of OS resources.</summary>
+internal readonly record struct TrayActivityMetrics(long PresentationUpdates, long IconRenders,
+    long IconAssignments, long TooltipAssignments, long DpiProbes, long DpiMetricQueries,
+    long MenuCreations, long SelectionReconciliations, long UnchangedSelections)
+{
+    public static TrayActivityMetrics operator +(TrayActivityMetrics left, TrayActivityMetrics right) =>
+        new(left.PresentationUpdates + right.PresentationUpdates, left.IconRenders + right.IconRenders,
+            left.IconAssignments + right.IconAssignments, left.TooltipAssignments + right.TooltipAssignments,
+            left.DpiProbes + right.DpiProbes, left.DpiMetricQueries + right.DpiMetricQueries,
+            left.MenuCreations + right.MenuCreations, left.SelectionReconciliations + right.SelectionReconciliations,
+            left.UnchangedSelections + right.UnchangedSelections);
 }

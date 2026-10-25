@@ -95,6 +95,8 @@ function Assert-SettingsPreserved([string]$Stage) {
     Assert-InstallerCheck ((Get-FileHash -LiteralPath (Join-Path $dataDirectory 'settings.json') -Algorithm SHA256).Hash -ceq $script:settingsHash) "Settings bytes preserved after $Stage"
     Assert-InstallerCheck ((Get-FileHash -LiteralPath (Join-Path $dataDirectory 'settings.json.bak') -Algorithm SHA256).Hash -ceq $script:backupHash) "Settings backup preserved after $Stage"
     Assert-InstallerCheck ((Get-FileHash -LiteralPath (Join-Path $dataDirectory 'logs/smoke-preservation.jsonl') -Algorithm SHA256).Hash -ceq $script:logHash) "Diagnostic log preserved after $Stage"
+    Assert-InstallerCheck ((Get-FileHash -LiteralPath (Join-Path $dataDirectory 'capacity-health.json') -Algorithm SHA256).Hash -ceq $script:healthHash) "Capacity history bytes preserved after $Stage"
+    Assert-InstallerCheck ((Get-FileHash -LiteralPath (Join-Path $dataDirectory 'capacity-health.json.bak') -Algorithm SHA256).Hash -ceq $script:healthBackupHash) "Capacity history backup preserved after $Stage"
 }
 function Assert-InstalledPayload([string]$ExpectedVersion, [string]$Stage) {
     $marker = Get-Content -LiteralPath (Join-Path $installDirectory 'installation.json') -Raw | ConvertFrom-Json
@@ -150,10 +152,14 @@ try {
     $dataCreated = $true
     [IO.File]::WriteAllText((Join-Path $dataDirectory 'settings.json'), '{"RefreshIntervalSeconds":77,"PreferredDeviceId":"smoke-device","CustomNames":{"smoke-device":"Preserved name"},"TrayIconMode":1,"TrayDeviceIds":["smoke-device"],"UpdateCheckMode":2,"FuturePreference":"preserve verbatim"}', [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText((Join-Path $dataDirectory 'settings.json.bak'), '{"RefreshIntervalSeconds":60}', [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText((Join-Path $dataDirectory 'capacity-health.json'), '{"fixture":"synthetic pre-existing capacity ledger; preserve verbatim"}', [Text.UTF8Encoding]::new($false))
+    [IO.File]::WriteAllText((Join-Path $dataDirectory 'capacity-health.json.bak'), '{"fixture":"synthetic capacity ledger backup"}', [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText((Join-Path $dataDirectory 'logs/smoke-preservation.jsonl'), "{`"event`":`"preserve existing diagnostics`"}`n", [Text.UTF8Encoding]::new($false))
     $settingsHash = (Get-FileHash -LiteralPath (Join-Path $dataDirectory 'settings.json') -Algorithm SHA256).Hash
     $backupHash = (Get-FileHash -LiteralPath (Join-Path $dataDirectory 'settings.json.bak') -Algorithm SHA256).Hash
     $logHash = (Get-FileHash -LiteralPath (Join-Path $dataDirectory 'logs/smoke-preservation.jsonl') -Algorithm SHA256).Hash
+    $healthHash = (Get-FileHash -LiteralPath (Join-Path $dataDirectory 'capacity-health.json') -Algorithm SHA256).Hash
+    $healthBackupHash = (Get-FileHash -LiteralPath (Join-Path $dataDirectory 'capacity-health.json.bak') -Algorithm SHA256).Hash
 
     Invoke-SmokeInstaller $fixture.FullName 'install-prior-fixture'
     Assert-InstalledPayload '0.0.0-smoke-fixture' 'initial installation'
@@ -220,7 +226,7 @@ finally {
         initialInstallPassed = $initialInstallPassed; upgradePassed = $upgradePassed
         ownedStartupUninstallPassed = $ownedStartupUninstallPassed
         foreignStartupUninstallPassed = $foreignStartupUninstallPassed
-        settingsPreserved = $completed; cleanUninstall = $completed
+        settingsPreserved = $completed; capacityHistoryPreserved = $completed; cleanUninstall = $completed
         installerProcesses = $processResults.ToArray(); installerExecuted = $installerExecuted
         applicationLaunched = $false; hardwareVerified = $false
         upgradeFixture = '0.0.0-smoke-fixture uses current application bytes; tests installer lifecycle only'

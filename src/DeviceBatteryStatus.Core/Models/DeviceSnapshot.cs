@@ -7,4 +7,5 @@ public sealed record PeripheralIdentity(string Id, string Name, DeviceVendor Ven
     string ReceiverId, string? ModelId = null);
 
 public sealed record DeviceSnapshot(PeripheralIdentity Device, BatteryReading Battery,
-    ConnectionState Connection = ConnectionState.Unknown);
+    ConnectionState Connection = ConnectionState.Unknown,
+    DeviceBatteryStatus.Core.Health.CapacityTelemetry? CapacityTelemetry = null);

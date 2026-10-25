@@ -14,6 +14,17 @@ public sealed class TrayIconManager : IDisposable
     private readonly Action showSettings;
     private readonly Action refresh;
     private readonly Action exit;
+    private DeviceSnapshot[]? previousDevices;
+    private AppSettings? previousSettings;
+    private IReadOnlyList<TrayIconItem>? previousSelection;
+    private DateTimeOffset previousPresentationTime;
+    private DateTimeOffset nextFreshnessChange;
+    private uint observedTaskbarDpi;
+    private long lastDpiProbe;
+    private long dpiProbes;
+    private long selectionReconciliations;
+    private long unchangedSelections;
+    private TrayActivityMetrics retiredMetrics;
     private uint? dpi;
     private bool disposed;
 
@@ -27,6 +38,10 @@ public sealed class TrayIconManager : IDisposable
         this.showSettings = showSettings;
         this.refresh = refresh;
         this.exit = exit;
+        observedTaskbarDpi = TrayIconService.ReadTaskbarDpi();
+        dpiProbes++;
+        lastDpiProbe = Environment.TickCount64;
+        dpi = observedTaskbarDpi == 0 ? 96u : observedTaskbarDpi;
         icons.Add(TrayIconSelection.SummaryKey, CreateIcon());
     }
 
@@ -39,7 +54,26 @@ public sealed class TrayIconManager : IDisposable
     {
         dispatcher.VerifyAccess();
         if (disposed) return;
+        ArgumentNullException.ThrowIfNull(devices);
+        ArgumentNullException.ThrowIfNull(settings);
+        RefreshTaskbarDpi();
+        // The monitor publishes immutable records, but callers can supply a mutable
+        // collection. Keep a small copy so mutation cannot hide a presentation change.
+        if (previousDevices is not null && previousSettings is not null && previousSelection is not null &&
+            now >= previousPresentationTime && now < nextFreshnessChange &&
+            SameDisplaySettings(settings, previousSettings) && SameDevices(devices, previousDevices))
+        {
+            unchangedSelections++;
+            return;
+        }
+        selectionReconciliations++;
         var selected = TrayIconSelection.Create(devices, settings, now);
+        if (previousSelection is not null && selected.SequenceEqual(previousSelection))
+        {
+            unchangedSelections++;
+            RememberInputs(devices, settings, selected, now);
+            return;
+        }
         var desired = selected.Select(item => item.Key).ToHashSet(StringComparer.Ordinal);
         Exception? failure = null;
         var obsolete = icons.Keys.Where(key => !desired.Contains(key)).ToArray();
@@ -92,7 +126,99 @@ public sealed class TrayIconManager : IDisposable
             catch (Exception exception) { failure ??= exception; }
         }
         if (failure is not null)
+        {
+            InvalidatePresentationCache();
             throw new InvalidOperationException("One or more tray icons could not be updated.", failure);
+        }
+        RememberInputs(devices, settings, selected, now);
+    }
+
+    internal TrayActivityMetrics Metrics
+    {
+        get
+        {
+            dispatcher.VerifyAccess();
+            var result = retiredMetrics + new TrayActivityMetrics(0, 0, 0, 0, dpiProbes, 0, 0,
+                selectionReconciliations, unchangedSelections);
+            foreach (var icon in icons.Values) result += icon.Metrics;
+            return result;
+        }
+    }
+
+    private void RefreshTaskbarDpi()
+    {
+        // Reuse the application's presentation ticks. One probe covers all selected
+        // icons; no new timer, per-icon shell query, or icon allocation is necessary.
+        var timestamp = Environment.TickCount64;
+        if (timestamp - lastDpiProbe < 5000) return;
+        lastDpiProbe = timestamp;
+        var observed = TrayIconService.ReadTaskbarDpi();
+        dpiProbes++;
+        if (observed == 0 || observed == observedTaskbarDpi) return;
+        observedTaskbarDpi = observed;
+        UpdateDpi(observed);
+    }
+
+    private void RememberInputs(IReadOnlyList<DeviceSnapshot> devices, AppSettings settings,
+        IReadOnlyList<TrayIconItem> selection, DateTimeOffset now)
+    {
+        previousDevices = devices.ToArray();
+        previousSettings = settings with
+        {
+            TrayDeviceIds = (settings.TrayDeviceIds ?? Array.Empty<string>()).ToArray(),
+            CustomNames = settings.CustomNames is null ? new Dictionary<string, string>(StringComparer.Ordinal)
+                : new Dictionary<string, string>(settings.CustomNames, StringComparer.Ordinal)
+        };
+        previousSelection = selection;
+        previousPresentationTime = now;
+        nextFreshnessChange = DateTimeOffset.MaxValue;
+        var age = TimeSpan.FromSeconds(2 * Math.Clamp(settings.RefreshIntervalSeconds, 10, 3600) + 5);
+        foreach (var snapshot in devices)
+        {
+            if (snapshot.Connection == ConnectionState.Disconnected || snapshot.Battery.State != ReadingState.Current ||
+                !snapshot.Battery.HasMeasurement || snapshot.Battery.SampledAt is not { } sampled) continue;
+            var transition = sampled > now ? sampled
+                : sampled.UtcTicks > DateTimeOffset.MaxValue.UtcTicks - age.Ticks - 1 ? DateTimeOffset.MaxValue
+                : sampled + age + TimeSpan.FromTicks(1);
+            if (transition > now && transition < nextFreshnessChange) nextFreshnessChange = transition;
+        }
+    }
+
+    private static bool SameDevices(IReadOnlyList<DeviceSnapshot> left, DeviceSnapshot[] right)
+    {
+        if (left.Count != right.Length) return false;
+        for (var index = 0; index < right.Length; index++)
+        {
+            var current = left[index];
+            var previous = right[index];
+            // Capacity/current telemetry is not displayed in a tray icon. Its
+            // collection must not force battery presentation work on its own.
+            if (current.Device != previous.Device || current.Battery != previous.Battery ||
+                current.Connection != previous.Connection) return false;
+        }
+        return true;
+    }
+
+    private static bool SameDisplaySettings(AppSettings left, AppSettings right)
+    {
+        if (left.RefreshIntervalSeconds != right.RefreshIntervalSeconds || left.PreferredDeviceId != right.PreferredDeviceId ||
+            left.TrayIconMode != right.TrayIconMode) return false;
+        var leftIds = left.TrayDeviceIds ?? Array.Empty<string>();
+        if (leftIds.Count != right.TrayDeviceIds.Count) return false;
+        for (var index = 0; index < leftIds.Count; index++)
+            if (leftIds[index] != right.TrayDeviceIds[index]) return false;
+        if (left.CustomNames is null) return right.CustomNames.Count == 0;
+        if (left.CustomNames.Count != right.CustomNames.Count) return false;
+        foreach (var pair in left.CustomNames)
+            if (!right.CustomNames.TryGetValue(pair.Key, out var name) || name != pair.Value) return false;
+        return true;
+    }
+
+    private void InvalidatePresentationCache()
+    {
+        previousDevices = null;
+        previousSettings = null;
+        previousSelection = null;
     }
 
     private void RemoveIcon(string key, ref Exception? failure)
@@ -101,13 +227,16 @@ public sealed class TrayIconManager : IDisposable
         icons.Remove(key);
         try { previous.Dispose(); }
         catch (Exception exception) { failure ??= exception; }
+        finally { retiredMetrics += previous.Metrics; }
     }
 
     public void UpdateDpi(uint value)
     {
         dispatcher.VerifyAccess();
         if (disposed) return;
-        dpi = Math.Clamp(value == 0 ? 96u : value, 48u, 768u);
+        value = Math.Clamp(value == 0 ? 96u : value, 48u, 768u);
+        if (dpi == value) return;
+        dpi = value;
         Exception? failure = null;
         foreach (var icon in icons.Values)
         {
@@ -115,7 +244,10 @@ public sealed class TrayIconManager : IDisposable
             catch (Exception exception) { failure ??= exception; }
         }
         if (failure is not null)
+        {
+            InvalidatePresentationCache();
             throw new InvalidOperationException("One or more tray icons could not update their DPI.", failure);
+        }
     }
 
     public void ShowLowBattery(LowBatteryAlert alert)
@@ -142,7 +274,7 @@ public sealed class TrayIconManager : IDisposable
 
     private TrayIconService CreateIcon()
     {
-        var icon = new TrayIconService(togglePopup, showSettings, refresh, exit);
+        var icon = new TrayIconService(togglePopup, showSettings, refresh, exit, dpi ?? 96u, true);
         try
         {
             if (dpi is { } currentDpi) icon.UpdateDpi(currentDpi);
@@ -166,8 +298,10 @@ public sealed class TrayIconManager : IDisposable
         {
             try { icon.Dispose(); }
             catch (Exception exception) { failure ??= exception; }
+            finally { retiredMetrics += icon.Metrics; }
         }
         icons.Clear();
+        InvalidatePresentationCache();
         if (failure is not null)
             throw new InvalidOperationException("One or more tray icons could not be disposed.", failure);
     }

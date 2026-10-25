@@ -12,8 +12,10 @@ $app = (Resolve-Path -LiteralPath $ApplicationPath).Path
 $appDirectory = Split-Path -Parent $app
 $output = [IO.Path]::GetFullPath($ReportDirectory)
 New-Item -ItemType Directory -Force $output | Out-Null
+$expectedChecks = 12
 $requiredArtifacts = @('popup.png', 'settings.png', 'settings-selected.png', 'updates-off.png',
-    'tray-0-48.png', 'tray-100-48.png', 'tray-neutral-48.png', 'diagnostics-smoke.zip')
+    'tray-0-48.png', 'tray-100-48.png', 'tray-neutral-48.png', 'diagnostics-smoke.zip',
+    'capacity-details.png', 'capacity-unavailable.png', 'efficiency-workload.json')
 # Only this harness's fixed output names are removed. Prior evidence cannot make
 # a later run pass; unrelated files in a caller-selected directory are preserved.
 foreach ($name in @('application-smoke.json', 'stdout.log', 'stderr.log') + $requiredArtifacts) {
@@ -97,14 +99,25 @@ try {
         }
     }
     if ($code -ne 0 -or $report.schemaVersion -ne 1 -or $report.mode -ne 'hardware-free-windows-application-smoke' -or
-        $report.passed -ne $true -or @($report.checks).Count -ne 8 -or @($report.checks | Where-Object { !$_.passed }).Count -ne 0 -or
-        @($report.checks.name | Select-Object -Unique).Count -ne 8 -or
-        $report.counters.total -ne 8 -or $report.counters.executed -ne 8 -or $report.counters.passed -ne 8 -or $report.counters.failed -ne 0 -or
+        $report.passed -ne $true -or @($report.checks).Count -ne $expectedChecks -or @($report.checks | Where-Object { !$_.passed }).Count -ne 0 -or
+        @($report.checks.name | Select-Object -Unique).Count -ne $expectedChecks -or
+        $report.counters.total -ne $expectedChecks -or $report.counters.executed -ne $expectedChecks -or $report.counters.passed -ne $expectedChecks -or $report.counters.failed -ne 0 -or
         $report.applicationLaunched -ne $true -or $report.normalApplicationControllerStarted -ne $false -or
         $report.hardwareAccessed -ne $false -or $report.networkAccessed -ne $false -or
         $report.startupRegistrationAccessed -ne $false -or $report.userSettingsPersisted -ne $false -or
         $report.runtimeIdentifier -ne 'win-x64') {
         throw "Isolated Windows application smoke did not pass; inspect application-smoke.json (exit $code)."
+    }
+    $efficiency = Get-Content -LiteralPath (Join-Path $output 'efficiency-workload.json') -Raw | ConvertFrom-Json
+    if ($efficiency.schemaVersion -ne 1 -or $efficiency.mode -cne 'synthetic-software-efficiency-smoke' -or
+        $efficiency.sourceCommit -cne $report.sourceCommit -or $efficiency.appVersion -cne $report.appVersion -or
+        $efficiency.flavor -cne $report.flavor -or $efficiency.physicalDevicesAccessed -ne $false -or
+        $efficiency.normalApplicationControllerStarted -ne $false -or
+        $efficiency.monitorWorkload.physicalDevicesAccessed -ne $false -or
+        $efficiency.monitorWorkload.legacy.healthyReads -ne $efficiency.monitorWorkload.optimized.healthyReads -or
+        $efficiency.monitorWorkload.optimized.discoveryEnumerations -ge $efficiency.monitorWorkload.legacy.discoveryEnumerations -or
+        $efficiency.monitorWorkload.optimized.featureQueries -ge $efficiency.monitorWorkload.legacy.featureQueries) {
+        throw 'Synthetic efficiency evidence has invalid provenance, scope or deterministic work counters.'
     }
     if ($ExpectedSource -and $report.sourceCommit -cne $ExpectedSource.ToLowerInvariant()) { throw 'Launched assembly source differs from the requested smoke source.' }
     if ($ExpectedVersion -and $report.appVersion -cne $ExpectedVersion) { throw 'Launched application version differs from the requested smoke version.' }
@@ -137,7 +150,7 @@ try {
     Assert-PackagePayload # The smoke must not change the portable application files.
     $report | Add-Member -NotePropertyName packagePayloadVerified -NotePropertyValue ($null -ne $manifest) -Force
     $report | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $reportPath -Encoding utf8
-    Write-Output "::notice title=Windows application smoke::Checks=8; Passed=8; AppVersion=$($report.appVersion); Source=$($report.sourceCommit); Flavor=$($report.flavor); PackagePayloadVerified=$($null -ne $manifest); ApplicationLaunched=true; NormalControllerStarted=false; HardwareAccessed=false; NetworkAccessed=false; StartupRegistrationAccessed=false; UserSettingsPersisted=false; InteractiveExplorerRestart=unverified; PhysicalMixedDpi=unverified"
+    Write-Output "::notice title=Windows application smoke::Checks=$expectedChecks; Passed=$expectedChecks; AppVersion=$($report.appVersion); Source=$($report.sourceCommit); Flavor=$($report.flavor); PackagePayloadVerified=$($null -ne $manifest); ApplicationLaunched=true; NormalControllerStarted=false; HardwareAccessed=false; NetworkAccessed=false; StartupRegistrationAccessed=false; UserSettingsPersisted=false; EfficiencyWorkload=synthetic; InteractiveExplorerRestart=unverified; PhysicalMixedDpi=unverified"
 } finally {
     if ($started) {
         if (!$process.HasExited) {

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using DeviceBatteryStatus.App.ViewModels;
@@ -15,11 +16,14 @@ public partial class PopupWindow : Window
     private bool allowClose;
     private bool showing;
     private long suppressTrayToggleUntil;
+    private IReadOnlyList<DeviceRowViewModel> displayedRows = Array.Empty<DeviceRowViewModel>();
     public uint CurrentDpi { get; private set; } = 96;
+    internal int PresentationUpdateCount { get; private set; }
 
     public event EventHandler? RefreshRequested;
     public event EventHandler? SettingsRequested;
     public event EventHandler? ExitRequested;
+    public event Action<string>? DeviceDetailsRequested;
 
     public PopupWindow() => InitializeComponent();
 
@@ -29,13 +33,30 @@ public partial class PopupWindow : Window
         Dispatcher.VerifyAccess();
         ArgumentNullException.ThrowIfNull(devices);
         ArgumentNullException.ThrowIfNull(settings);
-        DeviceList.ItemsSource = devices.Select(device => new DeviceRowViewModel(device, settings, now)).ToArray();
+        var rowsChanged = displayedRows.Count != devices.Count;
+        if (!rowsChanged)
+            for (var index = 0; index < devices.Count; index++)
+                if (!displayedRows[index].Matches(devices[index], settings, now)) { rowsChanged = true; break; }
+        if (rowsChanged)
+        {
+            var rows = new DeviceRowViewModel[devices.Count];
+            for (var index = 0; index < devices.Count; index++)
+                rows[index] = index < displayedRows.Count && displayedRows[index].Matches(devices[index], settings, now)
+                    ? displayedRows[index] : new DeviceRowViewModel(devices[index], settings, now);
+            displayedRows = rows;
+            DeviceList.ItemsSource = rows;
+            PresentationUpdateCount++;
+        }
         EmptyState.Visibility = devices.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         DeviceScroll.Visibility = devices.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-        StatusLabel.Text = status ?? (devices.Count == 0 ? "No peripherals to display"
+        var statusText = status ?? (devices.Count == 0 ? "No peripherals to display"
             : $"{devices.Count} peripheral{(devices.Count == 1 ? "" : "s")} · battery monitoring");
-        StatusLabel.ToolTip = StatusLabel.Text;
-        if (IsVisible)
+        if (!string.Equals(StatusLabel.Text, statusText, StringComparison.Ordinal))
+        {
+            StatusLabel.Text = statusText;
+            StatusLabel.ToolTip = statusText;
+        }
+        if (IsVisible && rowsChanged)
         {
             UpdateLayout();
             PositionAtAnchor(moveToMonitor: false);
@@ -121,6 +142,13 @@ public partial class PopupWindow : Window
     }
 
     private void OnRefreshClick(object sender, RoutedEventArgs e) => RefreshRequested?.Invoke(this, EventArgs.Empty);
+
+    private void OnDeviceDetailsClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: DeviceRowViewModel row }) return;
+        Hide();
+        DeviceDetailsRequested?.Invoke(row.DeviceId);
+    }
 
     private void OnSettingsClick(object sender, RoutedEventArgs e)
     {

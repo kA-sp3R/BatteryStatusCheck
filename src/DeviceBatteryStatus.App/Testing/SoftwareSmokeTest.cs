@@ -15,6 +15,7 @@ using DeviceBatteryStatus.App.Tray;
 using DeviceBatteryStatus.App.ViewModels;
 using DeviceBatteryStatus.Core.Diagnostics;
 using DeviceBatteryStatus.Core.Hardware;
+using DeviceBatteryStatus.Core.Health;
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Presentation;
 using DeviceBatteryStatus.Core.Settings;
@@ -29,7 +30,7 @@ namespace DeviceBatteryStatus.App.Testing;
 /// </summary>
 internal static class SoftwareSmokeTest
 {
-    private const int ExpectedChecks = 8;
+    private const int ExpectedChecks = 12;
     private sealed record Check(string Name, bool Passed, string Detail);
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -54,6 +55,7 @@ internal static class SoftwareSmokeTest
         var sourceCommit = revision.Success ? revision.Groups[1].Value.ToLowerInvariant() : "unknown";
         var flavor = "unknown";
         var metrics = new Dictionary<string, int>();
+        object? efficiency = null;
         try
         {
             Application.Current.Dispatcher.VerifyAccess();
@@ -289,6 +291,36 @@ internal static class SoftwareSmokeTest
             }
             artifacts.Add("diagnostics-smoke.zip");
             checks.Add(new(currentCheck, true, "Actual bounded logger/export produced a ZIP with version/snapshot/protocol-failure records and no synthetic serial, receiver ID or HID path."));
+
+            currentCheck = "Capacity measurement, rejection and restart history";
+            var capacityFixture = VerifyCapacityHistory(output);
+            checks.Add(new(currentCheck, true, "Synthetic measured-current and measured-power integration used complete explicit boundaries, source/units/basis, retained accepted history across restart and rejected interrupted/incomplete/uncertain measurements."));
+
+            currentCheck = "Capacity details rendering and design entry";
+            var capacityPresentation = await VerifyCapacityDetailsAsync(capacityFixture, devices[0], output, windows);
+            artifacts.Add("capacity-details.png");
+            artifacts.Add("capacity-unavailable.png");
+            checks.Add(new(currentCheck, true, "Actual compact details rendered design/full capacity/health/date and unavailable telemetry explanation; design entry saved through its real handler without creating a capacity measurement."));
+
+            currentCheck = "Changed-only presentation and device-change debounce";
+            var presentation = await VerifyChangedPresentationAsync(devices, settings, separate, now, windows);
+            checks.Add(new(currentCheck, true, "Repeated unchanged popup/tray updates reused presentation and native resources; alias/value/freshness/DPI changes still updated, and synthetic PnP requests coalesced without HID access."));
+
+            currentCheck = "Reproducible synthetic efficiency workload";
+            using (var workloadTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+            {
+                var monitorWorkload = await Task.Run(() => EfficiencyWorkload.RunAsync(workloadTimeout.Token));
+                efficiency = new { schemaVersion = 1, mode = "synthetic-software-efficiency-smoke", sourceCommit,
+                    appVersion = version, flavor, repository = Environment.GetEnvironmentVariable("GITHUB_REPOSITORY"),
+                    workflowRun = Environment.GetEnvironmentVariable("GITHUB_RUN_ID"),
+                    workflowAttempt = Environment.GetEnvironmentVariable("GITHUB_RUN_ATTEMPT"),
+                    measuredAtUtc = DateTimeOffset.UtcNow, physicalDevicesAccessed = false,
+                    normalApplicationControllerStarted = false, monitorWorkload, presentation, capacityPresentation };
+                await File.WriteAllTextAsync(Path.Combine(output, "efficiency-workload.json"),
+                    JsonSerializer.Serialize(efficiency, JsonOptions) + Environment.NewLine);
+            }
+            artifacts.Add("efficiency-workload.json");
+            checks.Add(new(currentCheck, true, "Equal synthetic healthy/non-responsive receiver traces retained every healthy poll while reducing discovery, failed queries and opens; short process CPU/memory/allocation/handle observations recorded without physical or endurance claims."));
         }
         catch (Exception exception)
         {
@@ -336,6 +368,7 @@ internal static class SoftwareSmokeTest
                             passed = checks.Count(check => check.Passed), failed = checks.Count(check => !check.Passed) },
                         checks,
                         metrics,
+                        efficiency,
                         artifacts,
                         failure,
                         verificationBoundary = new[]
@@ -345,7 +378,9 @@ internal static class SoftwareSmokeTest
                             "App startup registration and saved preferences are not accessed; Windows may maintain its own notification-area metadata.",
                             "TaskbarCreated is delivered only to this process; real Explorer restart and tray placement are unverified.",
                             "Programmatic DPI paths are exercised; physical mixed-monitor behavior is unverified.",
-                            "Screenshots and software smoke do not establish physical battery accuracy, firmware behavior or performance endurance."
+                            "Capacity storage belongs only to synthetic fixtures inside this report directory, not real user capacity history.",
+                            "Synthetic device-change requests exercise coalescing; actual USB plug/unplug, Windows sleep/resume and real Explorer restart remain unverified.",
+                            "The short fake-HID workload reports process-wide observations and deterministic query counts, not physical-device battery drain or extended performance/endurance."
                         }
                     };
                     await File.WriteAllTextAsync(Path.Combine(output, "application-smoke.json"),
@@ -374,6 +409,256 @@ internal static class SoftwareSmokeTest
     ];
 
     private static TrayIconManager CreateTrayManager() => new(() => { }, () => { }, () => { }, () => { });
+
+    private sealed record CapacitySmokeFixture(string StorePath, DeviceSnapshot Snapshot, SmokeClock Clock);
+
+    private static CapacitySmokeFixture VerifyCapacityHistory(string output)
+    {
+        var clock = new SmokeClock();
+        var path = Path.Combine(output, "synthetic-capacity-history.json");
+        foreach (var name in new[] { "synthetic-capacity-history.json", "synthetic-capacity-pending.json", "synthetic-capacity-restarted.json" })
+        {
+            File.Delete(Path.Combine(output, name));
+            File.Delete(Path.Combine(output, name + ".bak"));
+        }
+        var current = CapacitySnapshot("current", clock.GetUtcNow(), current: 500m, full: true, sequence: 0);
+        using (var health = new CapacityHealthService(path, clock))
+        {
+            health.SetDesignCapacity(current, new(1000m, CapacityUnit.MilliampHours, CapacityBasis.BatteryPack,
+                "Synthetic original design specification; not a real device claim"));
+            health.Observe([current], clock.GetUtcNow());
+            for (var minute = 1; minute <= 60; minute++)
+            {
+                clock.Advance(TimeSpan.FromMinutes(1));
+                current = CapacitySnapshot("current", clock.GetUtcNow(), current: 500m, empty: minute == 60, sequence: minute);
+                health.Observe([current], clock.GetUtcNow());
+            }
+            var complete = health.GetDetails(current);
+            Require(complete.LatestMeasurement is { Complete: true, Method: CapacityMeasurementMethod.CurrentIntegration,
+                    SampleCount: 61, Unit: CapacityUnit.MilliampHours } &&
+                complete.LatestMeasurement.FullChargeCapacity is { } usable && Math.Abs(usable - 500m) < .0001m &&
+                complete.HealthPercentage is { } ratio && Math.Abs(ratio - 50m) < .0001m &&
+                complete.LatestMeasurement.CoverageFraction == 1m &&
+                complete.LatestMeasurement.MaximumSampleGap == TimeSpan.FromSeconds(90) &&
+                complete.LatestMeasurement.SequenceContinuityVerified,
+                "Measured current must integrate to usable mAh over a complete explicit cycle independently of SOC.");
+            health.SetDesignCapacity(current, new(1m, CapacityUnit.WattHours, CapacityBasis.BatteryPack, "Synthetic incompatible units"));
+            Require(health.GetDetails(current).HealthPercentage is null, "mAh and Wh cannot be compared or nominally converted.");
+            health.SetDesignCapacity(current, new(1000m, CapacityUnit.MilliampHours, CapacityBasis.SingleCell, "Synthetic incompatible basis"));
+            Require(health.GetDetails(current).HealthPercentage is null, "Pack and single-cell capacity cannot be compared.");
+            health.SetDesignCapacity(current, new(1000m, CapacityUnit.MilliampHours, CapacityBasis.BatteryPack,
+                "Synthetic original design specification; not a real device claim"));
+
+            var power = CapacitySnapshot("power", clock.GetUtcNow(), power: 2m, full: true);
+            health.SetDesignCapacity(power, new(1m, CapacityUnit.WattHours, CapacityBasis.BatteryPack, "Synthetic Wh design specification"));
+            health.Observe([power], clock.GetUtcNow());
+            for (var minute = 1; minute <= 15; minute++)
+            {
+                clock.Advance(TimeSpan.FromMinutes(1));
+                power = CapacitySnapshot("power", clock.GetUtcNow(), power: 2m, empty: minute == 15);
+                health.Observe([power], clock.GetUtcNow());
+            }
+            var powerResult = health.GetDetails(power);
+            Require(powerResult.LatestMeasurement is { Complete: true, Method: CapacityMeasurementMethod.PowerIntegration,
+                    Unit: CapacityUnit.WattHours } && powerResult.LatestMeasurement.FullChargeCapacity is { } wh &&
+                Math.Abs(wh - .5m) < .0001m && powerResult.HealthPercentage is { } powerRatio && Math.Abs(powerRatio - 50m) < .0001m,
+                "Measured watts must integrate to Wh without using voltage, runtime alone or an assumed draw.");
+
+            var reported = CapacitySnapshot("reported", clock.GetUtcNow(), reported: 400m, kind: CapacityFieldKind.FullChargeCapacity);
+            health.SetDesignCapacity(reported, new(1000m, CapacityUnit.MilliampHours, CapacityBasis.BatteryPack, "Synthetic reported-field design"));
+            health.Observe([reported], clock.GetUtcNow());
+            Require(health.GetDetails(reported) is { HealthPercentage: 40m,
+                LatestMeasurement.Method: CapacityMeasurementMethod.DeviceReported },
+                "An explicitly supported FULL-capacity field may be accepted at a partial SOC without multiplying by that SOC.");
+            var remaining = CapacitySnapshot("remaining", clock.GetUtcNow(), reported: 400m, kind: CapacityFieldKind.RemainingCapacity);
+            health.SetDesignCapacity(remaining, new(1000m, CapacityUnit.MilliampHours, CapacityBasis.BatteryPack, "Synthetic remaining-field design"));
+            health.Observe([remaining], clock.GetUtcNow());
+            Require(health.GetDetails(remaining) is { LatestMeasurement: null, HealthPercentage: null },
+                "Remaining capacity is not a usable full-charge-capacity measurement.");
+
+            foreach (var interruption in new[] { "gap", "charging", "reconnection", "identity", "missing", "sequence" })
+            {
+                var start = CapacitySnapshot(interruption, clock.GetUtcNow(), current: 100m, full: true, sequence: 0);
+                health.Observe([start], clock.GetUtcNow());
+                clock.Advance(TimeSpan.FromMinutes(interruption == "gap" ? 3 : 1));
+                var end = CapacitySnapshot(interruption, clock.GetUtcNow(), current: 100m, empty: true, sequence: 1);
+                end = interruption switch
+                {
+                    "charging" => end with { Battery = BatteryReading.Current(42, ChargingState.Charging, clock.GetUtcNow()) },
+                    "reconnection" => end with { CapacityTelemetry = end.CapacityTelemetry! with { ConnectionSession = "synthetic:new-session" } },
+                    "identity" => end with { CapacityTelemetry = end.CapacityTelemetry! with { IdentityVerified = false } },
+                    "missing" => end with { CapacityTelemetry = null },
+                    "sequence" => end with { CapacityTelemetry = end.CapacityTelemetry! with { SampleSequence = 2 } },
+                    _ => end
+                };
+                health.Observe([end], clock.GetUtcNow());
+                var rejected = health.GetDetails(end);
+                Require(rejected.HealthPercentage is null && rejected.LatestMeasurement is null &&
+                    rejected.History.Any(item => !item.Complete && item.FullChargeCapacity is null && !string.IsNullOrWhiteSpace(item.Interruption)),
+                    $"A {interruption} interruption must reject the incomplete usable-capacity measurement.");
+            }
+        }
+
+        // Complete history is loaded by a genuinely new service instance. A copied
+        // pending marker models interrupted process termination without racing writes.
+        current = current with { Battery = BatteryReading.Current(42, ChargingState.Discharging, clock.GetUtcNow()),
+            CapacityTelemetry = current.CapacityTelemetry! with { SampledAt = clock.GetUtcNow() } };
+        using (var reopened = new CapacityHealthService(path, clock))
+            Require(reopened.GetDetails(current).HealthPercentage is { } retained && Math.Abs(retained - 50m) < .0001m,
+                "An accepted capacity measurement and design source must survive application restart.");
+        var pendingPath = Path.Combine(output, "synthetic-capacity-pending.json");
+        var crashPath = Path.Combine(output, "synthetic-capacity-restarted.json");
+        var pending = CapacitySnapshot("restart", clock.GetUtcNow(), current: 100m, full: true);
+        using (var started = new CapacityHealthService(pendingPath, clock))
+        {
+            started.Observe([pending], clock.GetUtcNow());
+            File.Copy(pendingPath, crashPath, overwrite: true);
+        }
+        using (var restarted = new CapacityHealthService(crashPath, clock))
+        {
+            var result = restarted.GetDetails(pending);
+            Require(result.LatestMeasurement is null && result.HealthPercentage is null &&
+                result.History.Any(item => !item.Complete && item.Interruption?.Contains("restart", StringComparison.OrdinalIgnoreCase) == true),
+                "An incomplete cycle must be invalidated across process restart rather than resumed across missing telemetry.");
+        }
+        return new(path, current, clock);
+    }
+
+    private static DeviceSnapshot CapacitySnapshot(string id, DateTimeOffset now, decimal? current = null,
+        decimal? power = null, bool full = false, bool empty = false, decimal? reported = null,
+        CapacityFieldKind kind = CapacityFieldKind.None, long? sequence = null) =>
+        new(new($"capacity:{id}", "Synthetic capacity fixture", DeviceVendor.Razer, $"capacity:receiver:{id}"),
+            BatteryReading.Current(42, ChargingState.Discharging, now), ConnectionState.Connected,
+            new($"synthetic-battery:{id}", $"synthetic-session:{id}", now, true,
+                "Synthetic measured telemetry; not evidence of real-device support", DischargeCurrentMilliamps: current,
+                DischargePowerWatts: power, ReportedCapacity: reported,
+                ReportedCapacityUnit: reported is null ? null : CapacityUnit.MilliampHours,
+                ReportedCapacityKind: kind, FullBoundary: full, EmptyBoundary: empty,
+                MaximumSampleGap: TimeSpan.FromSeconds(90), SampleSequence: sequence));
+
+    private static async Task<object> VerifyCapacityDetailsAsync(CapacitySmokeFixture fixture, DeviceSnapshot unavailable,
+        string output, List<Window> windows)
+    {
+        using var health = new CapacityHealthService(fixture.StorePath, fixture.Clock);
+        var failures = new List<Exception>();
+        var details = new DeviceDetailsWindow(fixture.Snapshot, health, failures.Add);
+        windows.Add(details);
+        details.Show();
+        await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Require(Control<TextBlock>(details, "DesignCapacityText").Text.Contains("1000 mAh", StringComparison.Ordinal) &&
+            Control<TextBlock>(details, "FullChargeCapacityText").Text.Contains("500 mAh", StringComparison.Ordinal) &&
+            Control<TextBlock>(details, "HealthPercentageText").Text == "50%" &&
+            Control<TextBlock>(details, "MeasurementDateText").Text.Contains("2026", StringComparison.Ordinal),
+            "The details view omitted design capacity, measured full capacity, independently calculated health or measurement date.");
+        SaveWindow(details, Path.Combine(output, "capacity-details.png"));
+        details.Close();
+
+        var unsupported = new DeviceDetailsWindow(unavailable, health, failures.Add);
+        windows.Add(unsupported);
+        unsupported.Show();
+        await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        var detailsBefore = unsupported.PresentationUpdateCount;
+        for (var index = 0; index < 200; index++) unsupported.Update(unavailable);
+        var detailsAfter = unsupported.PresentationUpdateCount;
+        Require(detailsAfter == detailsBefore, "Unchanged unavailable-capacity details rebuilt their presentation.");
+        Require(Control<TextBlock>(unsupported, "CapacityStatusText").Text == "Capacity measurement unavailable" &&
+            Control<TextBlock>(unsupported, "ExplanationText").Text.Contains("current/power", StringComparison.OrdinalIgnoreCase),
+            "Unsupported telemetry must explain the missing capacity/current/power/boundary/identity information.");
+        Control<TextBox>(unsupported, "DesignValueBox").Text = "600";
+        Control<ComboBox>(unsupported, "DesignUnitBox").SelectedIndex = 0;
+        Control<ComboBox>(unsupported, "DesignBasisBox").SelectedIndex = 0;
+        Control<TextBox>(unsupported, "DesignSourceBox").Text = "Synthetic user-entered battery specification";
+        Click(Control<Button>(unsupported, "SaveDesignButton"));
+        Require(health.GetDetails(unavailable).Design is { Value: 600m, Unit: CapacityUnit.MilliampHours,
+                SourceKind: CapacitySourceKind.UserEntered } &&
+            Control<TextBlock>(unsupported, "HealthPercentageText").Text == "Unavailable" && failures.Count == 0,
+            "User design entry must retain source/units without inventing a capacity or health result.");
+        SaveWindow(unsupported, Path.Combine(output, "capacity-unavailable.png"));
+        unsupported.Close();
+        using var reloaded = new CapacityHealthService(fixture.StorePath, fixture.Clock);
+        Require(reloaded.GetDetails(unavailable).Design is { Value: 600m, SourceKind: CapacitySourceKind.UserEntered },
+            "The user-entered capacity specification was not durably retained.");
+        return new { unchangedIterations = 200, updatesBefore = detailsBefore,
+            updatesAfterUnchanged = detailsAfter, updatesAfterDesignSave = unsupported.PresentationUpdateCount };
+    }
+
+    private static async Task<object> VerifyChangedPresentationAsync(IReadOnlyList<DeviceSnapshot> devices,
+        AppSettings settings, AppSettings separate, DateTimeOffset now, List<Window> windows)
+    {
+        var popup = new PopupWindow();
+        windows.Add(popup);
+        popup.SetDevices(devices, settings, now, "Synthetic unchanged presentation");
+        popup.Show();
+        await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        var source = Control<ItemsControl>(popup, "DeviceList").ItemsSource;
+        var popupBefore = popup.PresentationUpdateCount;
+        using var manager = CreateTrayManager();
+        manager.Update(devices, separate, now);
+        manager.UpdateDpi(96);
+        var trayBefore = manager.Metrics;
+        for (var index = 0; index < 200; index++)
+        {
+            popup.SetDevices(devices, settings, now, "Synthetic unchanged presentation");
+            manager.Update(devices, separate, now);
+        }
+        var unchanged = manager.Metrics;
+        Require(popup.PresentationUpdateCount == popupBefore && ReferenceEquals(source, Control<ItemsControl>(popup, "DeviceList").ItemsSource),
+            "Unchanged popup content unnecessarily replaced its displayed rows.");
+        Require(unchanged.IconRenders == trayBefore.IconRenders && unchanged.IconAssignments == trayBefore.IconAssignments &&
+            unchanged.TooltipAssignments == trayBefore.TooltipAssignments && unchanged.MenuCreations == trayBefore.MenuCreations &&
+            unchanged.SelectionReconciliations == trayBefore.SelectionReconciliations && unchanged.DpiProbes <= trayBefore.DpiProbes + 1,
+            "Unchanged tray content regenerated icons, menus or selections, or repeatedly probed DPI.");
+        var alias = separate with { CustomNames = new Dictionary<string, string> { [devices[0].Device.Id] = "Renamed synthetic mouse" } };
+        manager.Update(devices, alias, now);
+        var renamed = manager.Metrics;
+        Require(renamed.TooltipAssignments > unchanged.TooltipAssignments && renamed.IconRenders == unchanged.IconRenders,
+            "An alias-only change must update tooltip text without re-rendering an unchanged percentage icon.");
+        var changed = devices.Select((device, index) => index == 0 ? device with
+            { Battery = BatteryReading.Current(5, ChargingState.Discharging, now) } : device).ToArray();
+        manager.Update(changed, alias, now);
+        var changedMetrics = manager.Metrics;
+        Require(changedMetrics.IconRenders > renamed.IconRenders, "A changed percentage did not regenerate its displayed icon.");
+        popup.SetDevices(changed, alias, now.AddMinutes(3), "Synthetic stale transition");
+        manager.Update(changed, alias, now.AddMinutes(3));
+        var stale = manager.Metrics;
+        Require(stale.IconRenders > changedMetrics.IconRenders &&
+            Control<ItemsControl>(popup, "DeviceList").Items.Cast<DeviceRowViewModel>().First().PercentageText.Contains("stale", StringComparison.OrdinalIgnoreCase),
+            "An independent freshness transition must invalidate cached current presentation.");
+        manager.UpdateDpi(144);
+        var dpiChanged = manager.Metrics;
+        Require(dpiChanged.IconRenders > stale.IconRenders, "A DPI change did not regenerate native icon dimensions.");
+        popup.CloseForShutdown();
+
+        var events = 0;
+        var flushed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using (var watcher = new DeviceChangeWatcher(receiveNativeNotifications: false))
+        {
+            watcher.Changed += () => { events++; flushed.TrySetResult(); };
+            for (var index = 0; index < 20; index++) watcher.QueueChange();
+            await flushed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            Require(events == 1, "Synthetic device-change requests were not coalesced into one refresh signal.");
+            watcher.QueueChange();
+            watcher.Dispose();
+            await Task.Delay(450);
+            Require(events == 1, "A disposed device-change watcher dispatched a queued callback.");
+        }
+        return new { unchangedIterations = 200, popupUpdatesBefore = popupBefore,
+            popupUpdatesAfterUnchanged = popupBefore, trayBefore, afterUnchanged = unchanged,
+            afterAlias = renamed, afterPercentage = changedMetrics, afterFreshness = stale, afterDpi = dpiChanged,
+            syntheticDeviceChangeRequests = 20, coalescedDeviceChangeCallbacks = events,
+            baselineNote = "The previous release already cached icon bitmaps and menus. Zero redundant renders/menu creations verifies preservation; selection and shared-DPI probe counts exercise the new reductions.",
+            limitations = "Native property-assignment counters do not trace Shell_NotifyIcon syscalls. Actual USB events and physical mixed-DPI behavior were not exercised." };
+    }
+
+    private sealed class SmokeClock : TimeProvider
+    {
+        private DateTimeOffset now = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        private long timestamp;
+        public override DateTimeOffset GetUtcNow() => now;
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+        public override long GetTimestamp() => timestamp;
+        public void Advance(TimeSpan span) { now += span; timestamp += span.Ticks; }
+    }
 
     private static T Control<T>(FrameworkElement parent, string name) where T : class =>
         parent.FindName(name) as T ?? throw new InvalidOperationException($"Expected {name} control was not found.");
@@ -419,6 +704,11 @@ internal static class SoftwareSmokeTest
         {
             AssertCaptured(Descendants<TextBlock>(window).Single(text => text.Text.StartsWith(
                 "Install closes this app", StringComparison.Ordinal)), "update installation disclosure");
+        }
+        else if (window is DeviceDetailsWindow)
+        {
+            foreach (var name in new[] { "DesignCapacityText", "FullChargeCapacityText", "HealthPercentageText", "MeasurementDateText" })
+                AssertCaptured(Control<TextBlock>(window, name), name);
         }
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));

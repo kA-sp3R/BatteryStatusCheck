@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using DeviceBatteryStatus.App.Tray;
 using DeviceBatteryStatus.Core.Diagnostics;
 using DeviceBatteryStatus.Core.Hardware;
+using DeviceBatteryStatus.Core.Health;
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Monitoring;
 using DeviceBatteryStatus.Core.Presentation;
@@ -27,11 +28,17 @@ internal sealed class ApplicationController
     private CancellationTokenSource powerCancellation = new();
     private readonly BatteryMonitor monitor;
     private readonly PollingRateService pollingRates;
+    private readonly CapacityHealthService health;
+    private readonly Dictionary<string, DeviceDetailsWindow> detailsWindows = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, DeviceSnapshot> loggedSnapshots = new(StringComparer.Ordinal);
+    private DeviceChangeWatcher? deviceChanges;
     private readonly HashSet<Task> manualOperations = [];
     private readonly FileSettingsStore store = new(Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeviceBatteryStatus", "settings.json"));
     private readonly StartupRegistration startup = new();
     private readonly NotificationPolicy notifications = new();
+    private IReadOnlyList<DeviceSnapshot>? notificationInputs;
+    private AppSettings? notificationSettings;
     private readonly PopupWindow popup = new();
     private readonly DispatcherTimer presentationTimer;
     private readonly TrayIconManager tray;
@@ -44,13 +51,12 @@ internal sealed class ApplicationController
     private string? notifiedUpdateVersion;
     private UpdateWindow? updateWindow;
     internal static string CurrentVersion => typeof(ApplicationController).Assembly
-        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "1.1.0";
-    private readonly PeriodicTimer pollTimer;
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "1.2.0";
+    private readonly DispatcherTimer pollTimer;
     private AppSettings settings;
     private IReadOnlyList<DeviceSnapshot> snapshots = [];
     private SettingsWindow? settingsWindow;
     private PollingWindow? pollingWindow;
-    private Task? polling;
     private Task? activeRefresh;
     private DateTimeOffset? invalidBefore;
     private DateTimeOffset? lastRefresh;
@@ -58,6 +64,10 @@ internal sealed class ApplicationController
     private string? settingsWarning;
     private string? displayError;
     private bool refreshing;
+    private bool refreshQueued;
+    private bool forceQueued;
+    private volatile bool suspended;
+    private long powerEventGeneration;
     private volatile bool stopping;
     private bool cleanedUp;
 
@@ -67,22 +77,26 @@ internal sealed class ApplicationController
         var dataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DeviceBatteryStatus");
         diagnostics = new(Path.Combine(dataDirectory, "logs"), CurrentVersion);
         updates = new(Path.Combine(dataDirectory, "updates"));
+        health = new(Path.Combine(dataDirectory, "capacity-health.json"));
         var discovery = new DiagnosticHidDiscovery(new WindowsHidDiscovery(), diagnostics);
         var transports = new DiagnosticHidTransportFactory(new WindowsHidTransportFactory(), diagnostics);
         var hidOperations = new HidOperationGate();
         monitor = new(discovery, transports,
-            [new RazerBatteryProvider(), new LogitechBatteryProvider(), new AlienwareBatteryProvider()], hidOperations);
+            [new RazerBatteryProvider(), new LogitechBatteryProvider(), new AlienwareBatteryProvider()], hidOperations, new BatteryMonitorOptions());
         pollingRates = new(discovery, transports,
             [new RazerPollingRateController(), new LogitechPollingRateController()], hidOperations);
         var loaded = store.Load();
         settings = loaded.Settings;
         settingsWarning = loaded.Error;
         if (loaded.Error is not null) diagnostics.Record("settings", "Preferences could not be loaded; defaults are in use. Detailed errors are displayed locally, not logged.");
-        pollTimer = new(TimeSpan.FromSeconds(settings.RefreshIntervalSeconds));
+        pollTimer = new DispatcherTimer(DispatcherPriority.Background)
+        { Interval = TimeSpan.FromSeconds(settings.RefreshIntervalSeconds) };
+        pollTimer.Tick += (_, _) => RefreshFromTimer();
         tray = new(TogglePopup, ShowSettings, RefreshFromMenu, ExitFromMenu);
         popup.RefreshRequested += (_, _) => RefreshFromMenu();
         popup.SettingsRequested += (_, _) => ShowSettings();
         popup.ExitRequested += (_, _) => ExitFromMenu();
+        popup.DeviceDetailsRequested += ShowDeviceDetails;
         presentationTimer = new DispatcherTimer(DispatcherPriority.Background)
         {
             Interval = TimeSpan.FromSeconds(5)
@@ -97,46 +111,88 @@ internal sealed class ApplicationController
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
         presentationTimer.Start();
         UpdatePresentation();
-        polling = PollAsync();
+        pollTimer.Start();
+        RefreshFromTimer();
+        try
+        {
+            deviceChanges = new DeviceChangeWatcher();
+            deviceChanges.Changed += OnDevicesChanged;
+            if (!deviceChanges.InterfaceNotificationsRegistered)
+                diagnostics.Record("discovery", "Interface notifications unavailable; device-node notifications and bounded reconciliation remain enabled.");
+        }
+        catch (Exception exception) { diagnostics.RecordException("Device-change notifications", exception); }
         if (showPopup) TogglePopup();
         updateTimer.Start();
         StartUpdateCheck();
     }
 
-    private async Task PollAsync()
+    private async void RefreshFromTimer()
     {
-        try
+        if (stopping || suspended) return;
+        try { await RefreshAsync(); }
+        catch (OperationCanceledException) when (shutdown.IsCancellationRequested || suspended) { }
+        catch (Exception exception) { diagnostics.RecordException("Scheduled refresh", exception); }
+    }
+
+    private Task RefreshAsync(bool force = false)
+    {
+        if (stopping || suspended) return Task.CompletedTask;
+        if (activeRefresh is { IsCompleted: false })
         {
-            await RefreshAsync();
-            while (await pollTimer.WaitForNextTickAsync(shutdown.Token)) await RefreshAsync();
+            // Scheduled ticks join current work. Manual/PnP/resume requests need
+            // exactly one fresh follow-up, rather than being lost or queued forever.
+            if (force) { refreshQueued = true; forceQueued = true; }
+            return activeRefresh;
         }
-        catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { }
+        return activeRefresh = DrainRefreshesAsync(force);
     }
 
-    private Task RefreshAsync()
+    private async Task DrainRefreshesAsync(bool force)
     {
-        if (stopping) return Task.CompletedTask;
-        if (activeRefresh is { IsCompleted: false }) return activeRefresh;
-        return activeRefresh = RefreshCoreAsync();
+        do
+        {
+            refreshQueued = false;
+            forceQueued = false;
+            await RefreshCoreAsync(force);
+            force = forceQueued;
+        } while (refreshQueued && !stopping && !suspended);
     }
 
-    private async Task RefreshCoreAsync()
+    private async Task RefreshCoreAsync(bool force)
     {
         refreshing = true;
         UpdatePresentation();
+        CancellationTokenSource linked;
+        lock (powerGate)
+            linked = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, powerCancellation.Token);
+        using var refreshLifetime = linked;
         try
         {
-            snapshots = await Task.Run(() => monitor.RefreshAsync(shutdown.Token), shutdown.Token);
+            var result = await Task.Run(() => monitor.RefreshAsync(linked.Token, force), linked.Token);
+            if (stopping || suspended || linked.IsCancellationRequested) return;
+            snapshots = result;
+            ExpireCurrentReadings(DateTimeOffset.UtcNow);
+            try { health.Observe(snapshots, DateTimeOffset.UtcNow); }
+            catch (Exception exception) { diagnostics.RecordException("Capacity collection", exception); }
             lastRefresh = DateTimeOffset.Now;
             warning = monitor.DiscoveryError;
-            foreach (var snapshot in snapshots) diagnostics.RecordSnapshot(snapshot);
+            foreach (var snapshot in snapshots)
+            {
+                if (loggedSnapshots.TryGetValue(snapshot.Device.Id, out var logged) && logged == snapshot) continue;
+                diagnostics.RecordSnapshot(snapshot);
+                loggedSnapshots[snapshot.Device.Id] = snapshot;
+            }
             if (warning is not null) diagnostics.Record("discovery", warning);
         }
-        catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+        {
+            if (!stopping) MarkCurrentReadingsStale("Refresh interrupted; waiting for a new reading.");
+        }
         catch (Exception exception)
         {
             diagnostics.RecordException("Battery refresh", exception);
             warning = $"Refresh failed: {exception.Message}";
+            InterruptCapacity("Battery refresh failed.");
             MarkCurrentReadingsStale("The latest refresh failed.");
         }
         finally
@@ -146,22 +202,56 @@ internal sealed class ApplicationController
         }
     }
 
+    private void ExpireCurrentReadings(DateTimeOffset now)
+    {
+        DeviceSnapshot[]? changed = null;
+        for (var index = 0; index < snapshots.Count; index++)
+        {
+            var snapshot = snapshots[index];
+            if (snapshot.Battery.State != ReadingState.Current ||
+                (BatteryPresentation.IsFreshCurrent(snapshot, settings, now) &&
+                 (invalidBefore is null || snapshot.Battery.SampledAt >= invalidBefore))) continue;
+            changed ??= snapshots.ToArray();
+            changed[index] = snapshot with
+            {
+                Battery = snapshot.Battery.AsStale("Waiting for a fresh reading."),
+                Connection = ConnectionState.Unknown, CapacityTelemetry = null
+            };
+        }
+        if (changed is not null) snapshots = changed;
+    }
+
     private void UpdatePresentation(bool includeHiddenPopup = false)
     {
         if (stopping) return;
         var now = DateTimeOffset.UtcNow;
-        snapshots = snapshots.Select(snapshot => snapshot.Battery.State == ReadingState.Current &&
-            (!BatteryPresentation.IsFreshCurrent(snapshot, settings, now) ||
-             (invalidBefore is not null && snapshot.Battery.SampledAt < invalidBefore))
-                ? snapshot with { Battery = snapshot.Battery.AsStale("Waiting for a fresh reading."), Connection = ConnectionState.Unknown }
-                : snapshot).ToArray();
+        try { health.CheckContinuity(now); }
+        catch (Exception exception) { diagnostics.RecordException("Capacity freshness", exception); }
+        ExpireCurrentReadings(now);
         displayError = null;
         try { tray.Update(snapshots, settings, now); }
         catch (Exception exception) { diagnostics.RecordException("Tray display", exception); displayError = $"Tray display unavailable: {exception.Message}"; }
-        foreach (var alert in notifications.Evaluate(snapshots, settings, now))
+        // NotificationPolicy only processes new sample times. Re-evaluating the
+        // same immutable publication on every freshness tick adds no behavior.
+        if (!ReferenceEquals(notificationInputs, snapshots) || !ReferenceEquals(notificationSettings, settings))
         {
-            try { tray.ShowLowBattery(alert); }
-            catch (Exception exception) { diagnostics.RecordException("Tray notification", exception); displayError = $"Notification could not be requested: {exception.Message}"; }
+            foreach (var alert in notifications.Evaluate(snapshots, settings, now))
+            {
+                try { tray.ShowLowBattery(alert); }
+                catch (Exception exception) { diagnostics.RecordException("Tray notification", exception); displayError = $"Notification could not be requested: {exception.Message}"; }
+            }
+            notificationInputs = snapshots;
+            notificationSettings = settings;
+        }
+        foreach (var pair in detailsWindows)
+        {
+            if (!pair.Value.IsVisible) continue;
+            var snapshot = snapshots.FirstOrDefault(value => value.Device.Id == pair.Key);
+            if (snapshot is not null)
+            {
+                try { pair.Value.Update(snapshot); }
+                catch (Exception exception) { diagnostics.RecordException("Capacity details presentation", exception); }
+            }
         }
         var status = warning ?? displayError ?? settingsWarning ?? (refreshing ? "Refreshing…" : lastRefresh is not null
             ? $"Updated {lastRefresh:t}" : "Waiting for devices…");
@@ -174,7 +264,7 @@ internal sealed class ApplicationController
 
     private void MarkCurrentReadingsStale(string reason) => snapshots = snapshots.Select(snapshot =>
         snapshot.Battery.State == ReadingState.Current
-            ? snapshot with { Battery = snapshot.Battery.AsStale(reason), Connection = ConnectionState.Unknown }
+            ? snapshot with { Battery = snapshot.Battery.AsStale(reason), Connection = ConnectionState.Unknown, CapacityTelemetry = null }
             : snapshot).ToArray();
 
     private void TogglePopup()
@@ -187,6 +277,34 @@ internal sealed class ApplicationController
             tray.UpdateDpi(popup.CurrentDpi);
         }
         catch (Exception exception) { diagnostics.RecordException("Open popup", exception); warning = $"The popup could not be opened: {exception.Message}"; }
+    }
+
+    private void InterruptCapacity(string reason)
+    {
+        try { health.Interrupt(reason, DateTimeOffset.UtcNow); }
+        catch (Exception exception) { diagnostics.RecordException("Capacity collection interruption", exception); }
+    }
+
+    private void ShowDeviceDetails(string deviceId)
+    {
+        if (stopping) return;
+        if (detailsWindows.TryGetValue(deviceId, out var existing)) { existing.Activate(); return; }
+        var snapshot = snapshots.FirstOrDefault(value => value.Device.Id == deviceId);
+        if (snapshot is null) return;
+        var window = new DeviceDetailsWindow(snapshot, health,
+            exception => diagnostics.RecordException("Capacity details", exception));
+        detailsWindows.Add(deviceId, window);
+        window.Closed += (_, _) => detailsWindows.Remove(deviceId);
+        window.Show();
+    }
+
+    private void OnDevicesChanged()
+    {
+        if (stopping) return;
+        InterruptCapacity("Windows device topology changed; battery continuity must be established again.");
+        invalidBefore = DateTimeOffset.UtcNow;
+        MarkCurrentReadingsStale("Device change detected; refreshing association.");
+        if (!suspended) RefreshFromMenu();
     }
 
     private void ShowSettings()
@@ -223,6 +341,8 @@ internal sealed class ApplicationController
     private async Task<T> RunManualOperationAsync<T>(Func<CancellationToken, Task<T>> operation,
         CancellationToken cancellationToken)
     {
+        if (stopping || suspended) throw new OperationCanceledException("Manual controls are suspended.");
+        InterruptCapacity("Manual polling-rate operation interrupted capacity collection.");
         CancellationTokenSource linked;
         lock (powerGate)
             linked = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Token, cancellationToken, powerCancellation.Token);
@@ -281,7 +401,7 @@ internal sealed class ApplicationController
             ["trayMode"] = settings.TrayIconMode.ToString(), ["selectedTrayDevices"] = settings.TrayDeviceIds.Count.ToString(),
             ["updateMode"] = settings.UpdateCheckMode.ToString()
         });
-        pollTimer.Period = TimeSpan.FromSeconds(settings.RefreshIntervalSeconds);
+        pollTimer.Interval = TimeSpan.FromSeconds(settings.RefreshIntervalSeconds);
         warning = null;
         settingsWarning = null;
         UpdatePresentation();
@@ -366,46 +486,71 @@ internal sealed class ApplicationController
 
     private async void RefreshFromMenu()
     {
-        try { await RefreshAsync(); }
-        catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { }
+        try { await RefreshAsync(force: true); }
+        catch (OperationCanceledException) when (shutdown.IsCancellationRequested || suspended) { }
+        catch (Exception exception) { diagnostics.RecordException("Requested refresh", exception); }
     }
 
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
         if (e.Mode is not (PowerModes.Suspend or PowerModes.Resume) || stopping || application.Dispatcher.HasShutdownStarted) return;
         // SystemEvents runs outside the dispatcher: revoke write permission before queuing UI work.
+        long generation;
         lock (powerGate)
         {
             if (stopping) return;
+            generation = ++powerEventGeneration;
+            suspended = true; // A resume must establish its new lifetime on the dispatcher first.
             powerCancellation.Cancel();
         }
         try
         {
-            application.Dispatcher.BeginInvoke(e.Mode == PowerModes.Resume
-                ? new Action(ResumeAfterSleep) : new Action(() => pollingWindow?.CancelOperations()));
+            application.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (e.Mode == PowerModes.Resume) ResumeAfterSleep(generation);
+                else SuspendForSleep(generation);
+            }));
         }
         catch (InvalidOperationException) when (application.Dispatcher.HasShutdownStarted) { }
     }
 
-    private async void ResumeAfterSleep()
+    private void SuspendForSleep(long generation)
     {
-        if (stopping) return;
-        pollingWindow?.CancelOperations();
         lock (powerGate)
         {
+            if (stopping || generation != powerEventGeneration) return;
+            suspended = true;
+            powerCancellation.Cancel();
+        }
+        pollTimer.Stop();
+        presentationTimer.Stop();
+        pollingWindow?.CancelOperations();
+        InterruptCapacity("System sleep interrupted capacity collection.");
+        invalidBefore = DateTimeOffset.UtcNow;
+        MarkCurrentReadingsStale("System sleeping; waiting for a new reading.");
+        UpdatePresentation();
+    }
+
+    private async void ResumeAfterSleep(long generation)
+    {
+        if (stopping) return;
+        lock (powerGate)
+        {
+            if (stopping || generation != powerEventGeneration) return;
             powerCancellation.Dispose();
             powerCancellation = new();
+            suspended = false;
         }
+        pollingWindow?.CancelOperations();
         invalidBefore = DateTimeOffset.UtcNow;
         MarkCurrentReadingsStale("Refreshing after sleep.");
+        InterruptCapacity("System resumed; a new complete capacity cycle is required.");
+        presentationTimer.Start();
+        pollTimer.Start();
         UpdatePresentation();
-        var refreshAlreadyRunning = activeRefresh is { IsCompleted: false };
-        try
-        {
-            await RefreshAsync();
-            if (refreshAlreadyRunning && !stopping) await RefreshAsync();
-        }
-        catch (OperationCanceledException) when (shutdown.IsCancellationRequested) { }
+        try { await RefreshAsync(force: true); }
+        catch (OperationCanceledException) when (shutdown.IsCancellationRequested || suspended) { }
+        catch (Exception exception) { diagnostics.RecordException("Resume refresh", exception); }
     }
 
     private async void ExitFromMenu()
@@ -415,7 +560,6 @@ internal sealed class ApplicationController
         try
         {
             var pending = manualOperations.ToList();
-            if (polling is not null) pending.Add(polling);
             if (activeRefresh is not null) pending.Add(activeRefresh);
             if (updateCheck is not null) pending.Add(updateCheck);
             await Task.WhenAll(pending);
@@ -424,7 +568,6 @@ internal sealed class ApplicationController
         catch (Exception exception) { diagnostics.RecordException("Pending operation during exit", exception); }
         finally
         {
-            pollTimer.Dispose();
             shutdown.Dispose();
             lock (powerGate) powerCancellation.Dispose();
             popup.CloseForShutdown();
@@ -445,7 +588,12 @@ internal sealed class ApplicationController
         }
         Cleanup("Cancel application operations", shutdown.Cancel);
         Cleanup("Cancel manual polling", () => pollingWindow?.CancelOperations());
+        Cleanup("Stop battery timer", pollTimer.Stop);
         Cleanup("Stop presentation timer", presentationTimer.Stop);
+        Cleanup("Dispose device notifications", () => deviceChanges?.Dispose());
+        Cleanup("Interrupt capacity collection", () => health.Interrupt("Application stopped before a complete cycle.", DateTimeOffset.UtcNow));
+        Cleanup("Close device details", () => { foreach (var window in detailsWindows.Values.ToArray()) window.Close(); });
+        Cleanup("Dispose capacity history", health.Dispose);
         Cleanup("Stop update timer", updateTimer.Stop);
         Cleanup("Cancel update operations", updateCancellation.Cancel);
         Cleanup("Close update window", () => updateWindow?.Close());
