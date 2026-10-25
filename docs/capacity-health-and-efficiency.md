@@ -34,6 +34,10 @@ The reproducible workload uses two fake receivers, forty scheduled refreshes at 
 
 The existing eight WPF smoke checks are retained. Added checks cover current/power integration, full versus remaining capacity, rejected interruptions, durable restart history, actual details rendering/design entry, unchanged presentation, synthetic PnP event coalescing/disposal and the efficiency workload. Installer smoke additionally preserves capacity history and its backup through install, upgrade and both uninstall cycles.
 
+## Failures found and corrected
+
+The initial Windows run at source `d53a1732a8e4698a5471df4a8833f78abdd6a427` stopped at compilation because the new monitoring test file omitted `using Xunit;`. The import was added. Its skipped smoke jobs are not passing results; the full checks are being repeated against the corrected source.
+
 ## Existing functions and remaining boundaries
 
 Single and selected-device tray modes, circular centred percentage rendering, native Logitech categories, zero values, original timestamps, notifications, aliases/preferences, installation/update options and deliberate manual polling controls remain in scope. New details actions use the existing popup; battery providers remain read-only. Source-aware collection is passive and introduces no service or additional device queries.

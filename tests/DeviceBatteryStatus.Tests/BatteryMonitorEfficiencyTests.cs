@@ -1,3 +1,4 @@
+using Xunit;
 using DeviceBatteryStatus.Core.Hardware;
 using DeviceBatteryStatus.Core.Models;
 using DeviceBatteryStatus.Core.Health;
