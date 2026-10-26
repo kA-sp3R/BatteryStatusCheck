@@ -1,6 +1,6 @@
 # Capacity health and background efficiency
 
-Verified software candidate: **1.2.0**, following published v1.1.0. Tested source: `fb41c9e63ce24cf68dbf63d6add4503597bc474c`. Publication awaits the user's decision. The [source/run/hash record](../.github/reviews/1.2.0.json) and [proposed release notes](../.github/reviews/1.2.0.md) are saved for review. Windows compilation, software tests, isolated runtime smoke, installer lifecycle and physical-device results are tracked separately.
+Historical capacity/efficiency snapshot for **1.2.0**, now included in [published v1.2.0](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.2.0). Tested source: `fb41c9e63ce24cf68dbf63d6add4503597bc474c`. The [fresh release/failure report](release-1.2.0-verification.md) records final publication; results below remain tied to this earlier source. The [source/run/hash record](../.github/reviews/1.2.0.json) and [proposed release notes](../.github/reviews/1.2.0.md) are saved for review. Windows compilation, software tests, isolated runtime smoke, installer lifecycle and physical-device results are tracked separately.
 
 ## Completed behavior
 

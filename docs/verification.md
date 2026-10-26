@@ -1,18 +1,26 @@
 # Verification
 
-## 1.2.0 lightweight candidate
+## v1.2.0 release
+
+[v1.2.0](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.2.0) is published stable/latest and unsigned, at exact source `d76cd565b6a9ff2e62e51e5092685e2b063984e7`. Fresh Windows verification passed: 1,116 C# tests each Debug/Release, 5 parser/39 automation cases, 18 companion checks per flavor and 64 installer assertions. Publication policy reran 22 cases. **Zero failed/skipped tests; 0 compiler errors and 18 reviewed existing warnings.** One local release-ID mismatch was corrected before publication; binaries were unchanged. [Complete verification/failure report](release-1.2.0-verification.md).
+
+[Build/package/companion/installer run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40306127179), [full suite](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40306132491), [publication run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40307745102). [Manifest](../.github/releases/1.2.0.json), [receipt](../.github/releases/1.2.0-publication.json), [independent verification](../.github/releases/1.2.0-verification.json). All eight downloaded assets match API/receipt/checksum and source. Verification ZIP SHA-256: `e8223cd978f66a11dff75b1f248d6348f32b3d6c48f292fcc4370be74776cb51`.
+
+Companion software runtime, installer lifecycle and physical hardware are separate outcomes. Production startup/controller, actual devices, games/input routing, physical DPI/OS events and endurance remain unverified. No physical capacity-health support was invented. Later documentation/evidence commits do not modify released binaries.
+
+## Earlier lightweight 1.2.0 snapshot
 
 The optimized unpublished candidate passed at source `46123738ffa203b4978bc06d8fa94e97d34c75ab`: Windows compilation, 1,116 C# cases each in Debug/Release, 5 parser/39 automation cases, both portable inspections, 18 companion checks per flavor and 64 installer lifecycle assertions. [Build/packages/companion run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40236243538), [full software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40236244173), [source/run/count/hash record](../.github/reviews/1.2.0-lightweight.json).
 
 Framework-dependent download fell 391,744→336,205 bytes (14.18%); self-contained 76,418,618→73,783,640 (3.45%). Extracted payload fell by 140,239 bytes each. All 468 bundled runtime/localisation files and notices retain their hashes. [Full report](lightweight-optimization.md) records exact package/extracted sizes, contributors, file/dependency changes, actual synthetic CPU/memory/handle observations, tradeoffs and remaining limits.
 
-Verification fixtures now run in a separate companion that loads the exact packaged DLLs and, for self-contained, the actual bundled runtime. The production apphost/startup/controller is not launched. Screenshots match the baseline exactly; no physical hardware, network, startup registration or games are accessed. Startup/idle performance, real input routing, physical DPI/power/PnP/Explorer events and endurance remain unverified. Size reduction does not establish lower CPU/memory. No new release exists; v1.1.0 remains published.
+Verification fixtures now run in a separate companion that loads the exact packaged DLLs and, for self-contained, the actual bundled runtime. The production apphost/startup/controller is not launched. Screenshots match the baseline exactly; no physical hardware, network, startup registration or games are accessed. Startup/idle performance, real input routing, physical DPI/power/PnP/Explorer events and endurance remain unverified. Size reduction does not establish lower CPU/memory. At that earlier snapshot no new release existed; v1.1.0 was published.
 
 ## Earlier runtime/gaming 1.2.0 snapshot
 
 The expanded unpublished 1.2.0 candidate passed at source `1ca669c2b90770d7074cad4b98f156b0031a9240`: Windows compilation; 1,095 C# cases each in Debug/Release (zero failed/skipped); 5 parser/18 release-policy cases; both portable inspections; 18 isolated application checks per flavor; and 64 installer lifecycle assertions. [Build/package/smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40233889412), [full-software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40233889759), [source/run/hash review](../.github/reviews/1.2.0-gaming.json).
 
-The [full change report](runtime-and-gaming-alerts.md) lists all files, behavior, affected existing functions, exact test scope and remaining limits. Native alert styles/hooks and unchanged foreground snapshot passed on the CI desktop; twenty simulated events coalesced to one. Actual cross-process click routing and real-game/exclusive fullscreen compatibility remain unverified. Software smoke bypasses the normal controller/HID/network/startup and uses synthetic battery/monitor/fullscreen/sound inputs. Capacity health remains unavailable on all admitted physical devices for insufficient telemetry. No new release or draft exists; v1.1.0 remains published.
+The [full change report](runtime-and-gaming-alerts.md) lists all files, behavior, affected existing functions, exact test scope and remaining limits. Native alert styles/hooks and unchanged foreground snapshot passed on the CI desktop; twenty simulated events coalesced to one. Actual cross-process click routing and real-game/exclusive fullscreen compatibility remain unverified. Software smoke bypasses the normal controller/HID/network/startup and uses synthetic battery/monitor/fullscreen/sound inputs. Capacity health remains unavailable on all admitted physical devices for insufficient telemetry. At that earlier snapshot no new release or draft existed; v1.1.0 was published.
 
 ## Earlier capacity-only 1.2.0 snapshot
 
@@ -20,7 +28,7 @@ The earlier capacity-only snapshot passed Windows verification at source `fb41c9
 
 The [complete change report](capacity-health-and-efficiency.md) records all edited files, affected functions, failed/fixed verification, actual CPU/memory/handle observations and remaining limits. Synthetic workload results: discovery 8000→800, queries 16000→12200 with healthy reads 8000→8000. CPU observations were 187.5→125 ms and 93.75→62.5 ms across the two flavors; memory/GC snapshots are reported without steady-state or physical claims.
 
-No admitted real model exposes sufficient capacity telemetry for health. Calculation/continuity/history, actual details rendering/design editing, unchanged presentation, simulated notifications and installer preservation passed software checks. Normal live monitoring, actual OS power/PnP/Explorer events, physical battery behavior and endurance remain unverified. The normal controller/HID/network/startup/preferences were bypassed by application smoke. No 1.2.0 release or draft has been created.
+No admitted real model exposes sufficient capacity telemetry for health. Calculation/continuity/history, actual details rendering/design editing, unchanged presentation, simulated notifications and installer preservation passed software checks. Normal live monitoring, actual OS power/PnP/Explorer events, physical battery behavior and endurance remain unverified. The normal controller/HID/network/startup/preferences were bypassed by application smoke. At that earlier snapshot no 1.2.0 release or draft had been created.
 
 ## V1.1.0 release checks
 

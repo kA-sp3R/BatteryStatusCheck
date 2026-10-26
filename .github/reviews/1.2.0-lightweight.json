@@ -38,7 +38,7 @@
       "sha256": "67ff1787e09a96d553b6d12868cc0a2965a9eca394fb1c9de11ddec33f6bc8ba"
     }
   },
-  "status": "verified-unpublished",
+  "status": "superseded-by-published-release",
   "published": false,
   "repository": "kA-sp3R/BatteryStatusCheck",
   "supersedes": ".github/reviews/1.2.0-gaming.json",
@@ -1708,5 +1708,12 @@
     ".github/reviews/1.2.0-gaming.json",
     ".github/reviews/1.2.0-lightweight.json",
     ".github/reviews/1.2.0-lightweight.md"
-  ]
+  ],
+  "successorRelease": {
+    "version": "1.2.0",
+    "url": "https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.2.0",
+    "sourceCommit": "d76cd565b6a9ff2e62e51e5092685e2b063984e7",
+    "manifest": ".github/releases/1.2.0.json",
+    "receipt": ".github/releases/1.2.0-publication.json"
+  }
 }

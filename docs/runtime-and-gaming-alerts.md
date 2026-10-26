@@ -1,6 +1,6 @@
 # Remaining runtime and gaming alerts
 
-This work extends the unpublished 1.2.0 candidate. The published release remains v1.1.0. Runtime estimates describe observed discharge; capacity-based battery health remains a separate calculation with its existing telemetry requirements.
+These features are included in [published v1.2.0](https://github.com/kA-sp3R/BatteryStatusCheck/releases/tag/v1.2.0). This report retains the earlier runtime/gaming snapshot; see the [fresh release/failure report](release-1.2.0-verification.md) for final source/assets. Runtime estimates describe observed discharge; capacity-based battery health remains a separate calculation with its existing telemetry requirements.
 
 ## Runtime behavior
 
@@ -80,7 +80,7 @@ All Windows jobs passed on the first attempt; no failing Windows check required 
 
 The existing synthetic monitor workload still exercises 8,000 healthy reads in both modes, discovery 8,000→800 and total queries 16,000→12,200 over 200 simulated trials. Its detailed process CPU/memory/handle observations remain in the review JSON; it is a monitor-policy workload, not a direct measurement of runtime-estimator/alert overhead. No new physical or endurance performance claim is made.
 
-The review record supersedes the earlier capacity-only 1.2.0 snapshot. Documentation/evidence-only commits after the tested source do not change the verified binaries. No new tag, release or draft was created. v1.1.0 remains the published release.
+The review record supersedes the earlier capacity-only 1.2.0 snapshot. Documentation/evidence-only commits after the tested source do not change the verified binaries. No tag/release/draft was created at that earlier snapshot. The user later authorised fresh full testing and [v1.2.0 publication](release-1.2.0-verification.md).
 
 Physical battery behavior, real-game/exclusive fullscreen compatibility, actual cross-process click routing, physical monitor hotplug/mixed-DPI behavior, normal live HID monitoring, OS power/Explorer events and extended endurance remain unverified. Synthetic estimates and simulated fullscreen conditions are not evidence of compatibility with real games.
 
