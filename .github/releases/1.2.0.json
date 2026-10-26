@@ -1,0 +1,47 @@
+{
+  "version": "1.2.0",
+  "tag": "v1.2.0",
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "sourceCommit": "d76cd565b6a9ff2e62e51e5092685e2b063984e7",
+  "buildRun": 40306127179,
+  "buildAttempt": 1,
+  "fullTestRun": 40306132491,
+  "fullTestAttempt": 1,
+  "testAutomationCommit": "d76cd565b6a9ff2e62e51e5092685e2b063984e7",
+  "testCount": 1116,
+  "parserTestCount": 5,
+  "automationTestCount": 39,
+  "appSmoke": true,
+  "appSmokeMode": "companion",
+  "appSmokeCheckCount": 18,
+  "appSmokeAssemblyHashes": {
+    "framework-dependent": {
+      "DeviceBatteryStatus.dll": "dddfe93d9656b7791678d2a477bbcac8972c1a305e672558da7f7ec31f53bad1",
+      "DeviceBatteryStatus.Core.dll": "f6a3e7a3a292421c6d9578754c302bd64e60648e8a45d874a5198a38ec6abcc6",
+      "DeviceBatteryStatus.Windows.dll": "fd7c2d097f70ea5779927eb5da303e2efe25e44c8975168f1164bc5750731444"
+    },
+    "self-contained": {
+      "DeviceBatteryStatus.dll": "dddfe93d9656b7791678d2a477bbcac8972c1a305e672558da7f7ec31f53bad1",
+      "DeviceBatteryStatus.Core.dll": "f6a3e7a3a292421c6d9578754c302bd64e60648e8a45d874a5198a38ec6abcc6",
+      "DeviceBatteryStatus.Windows.dll": "fd7c2d097f70ea5779927eb5da303e2efe25e44c8975168f1164bc5750731444"
+    }
+  },
+  "packages": {
+    "framework-dependent": {
+      "bytes": 336191,
+      "sha256": "dab6700bfa79c1779b65060926e8663145ddfe3e52399639a69906354ecf16f3"
+    },
+    "self-contained": {
+      "bytes": 73783628,
+      "sha256": "7e4f9142a2942c9d767674808f3a4f042b0df546774a04715e10785cbec3924e"
+    }
+  },
+  "installer": {
+    "bytes": 54806011,
+    "sha256": "4cde1f56611d47040a675c7efb89a8dc65091d3369693abc8ac333be68b28cfa"
+  },
+  "reviewedNotesSha256": "5b124a7ae978a614ebf8bc32d04b9ac423847fdbc399a403ece581a445cb1659",
+  "releaseId": 424110328
+}
