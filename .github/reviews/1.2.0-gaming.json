@@ -25,7 +25,7 @@
       "sha256": "179c5554c33f0b8d668c032c77a9e10c4f2200b3ab7cf2fdc8fd7894306bb21a"
     }
   },
-  "status": "awaiting-publication-decision",
+  "status": "superseded-by-lightweight-candidate",
   "published": false,
   "repository": "kA-sp3R/BatteryStatusCheck",
   "supersedes": ".github/reviews/1.2.0.json",
@@ -710,5 +710,6 @@
     "full/full-software-tests-Release-1/TestResults/full-Release.json": "f1d98e0a5f958c99dc6fb2bf5a4a1588cb18c200955159fa0a7cd639406e34b1",
     "full/full-software-tests-Release-1/TestResults/runneradmin_runnervmdaln5_2026-10-25_21_07_27_net10.0.trx": "8e4688c9181a916aa6386773bbd7fd9996dbf10b5f98864433b65547fc492339",
     "full/full-software-tests-Release-1/ci-logs/full-Release.log": "fd14c5f1cc7f857f33504e52120a65f53f17a4f92123e6bcb0ac729cf1e58706"
-  }
+  },
+  "supersededBy": ".github/reviews/1.2.0-lightweight.json"
 }

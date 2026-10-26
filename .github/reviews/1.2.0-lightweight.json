@@ -1,0 +1,1712 @@
+{
+  "version": "1.2.0",
+  "tag": "v1.2.0",
+  "prerelease": false,
+  "latest": true,
+  "signed": false,
+  "sourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab",
+  "buildRun": 40236243538,
+  "buildAttempt": 1,
+  "fullTestRun": 40236244173,
+  "fullTestAttempt": 1,
+  "testAutomationCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab",
+  "testCount": 1116,
+  "parserTestCount": 5,
+  "automationTestCount": 39,
+  "appSmoke": true,
+  "appSmokeMode": "companion",
+  "appSmokeCheckCount": 18,
+  "appSmokeAssemblyHashes": {
+    "framework-dependent": {
+      "DeviceBatteryStatus.dll": "e62b6429a5cd162d7f8d36675c7ef07498d55ff2e609fdac18ce46a7035e80c1",
+      "DeviceBatteryStatus.Core.dll": "81234329e857022a8aa62c4dfe265ea665dca73061859275fc65b33ab3f7fa50",
+      "DeviceBatteryStatus.Windows.dll": "6a2dd2aa7e680cf6ab7a04eb2df9b6ab01da1b7634d61d55e3065fecb9270491"
+    },
+    "self-contained": {
+      "DeviceBatteryStatus.dll": "e62b6429a5cd162d7f8d36675c7ef07498d55ff2e609fdac18ce46a7035e80c1",
+      "DeviceBatteryStatus.Core.dll": "81234329e857022a8aa62c4dfe265ea665dca73061859275fc65b33ab3f7fa50",
+      "DeviceBatteryStatus.Windows.dll": "6a2dd2aa7e680cf6ab7a04eb2df9b6ab01da1b7634d61d55e3065fecb9270491"
+    }
+  },
+  "packages": {
+    "framework-dependent": {
+      "bytes": 336205,
+      "sha256": "ca883ce5a675eaf8c84ec04dc244ab1b3837e3ec4c617b399411903e6b237fd2"
+    },
+    "self-contained": {
+      "bytes": 73783640,
+      "sha256": "67ff1787e09a96d553b6d12868cc0a2965a9eca394fb1c9de11ddec33f6bc8ba"
+    }
+  },
+  "status": "verified-unpublished",
+  "published": false,
+  "repository": "kA-sp3R/BatteryStatusCheck",
+  "supersedes": ".github/reviews/1.2.0-gaming.json",
+  "reviewDateAustraliaSydney": "2026-10-26",
+  "installer": {
+    "bytes": 54824007,
+    "sha256": "a3dfe5f19d93be493d4ea4bdcd9f046500690b3baf0f3931ab04833ff115cd11"
+  },
+  "reviewedNotesSha256": "ded6f63baeca380e48c27d0f90bf31969d1b71ea4e32a6364cf8d2445be09cf5",
+  "sizeComparison": {
+    "baselineSource": "1ca669c2b90770d7074cad4b98f156b0031a9240",
+    "baselineBuildRun": 40233889412,
+    "consistentSdk": "10.0.403",
+    "selfContainedRuntimeVersion": "10.0.14",
+    "packages": {
+      "framework-dependent": {
+        "baseline": {
+          "schemaVersion": 1,
+          "mode": "read-only-windows-package-size-inventory",
+          "appVersion": "1.2.0",
+          "sourceCommit": "1ca669c2b90770d7074cad4b98f156b0031a9240",
+          "repository": "kA-sp3R/BatteryStatusCheck",
+          "workflowRun": "40233889412",
+          "workflowAttempt": "1",
+          "sdkVersion": "10.0.403",
+          "flavor": "framework-dependent",
+          "runtimeIdentifier": "win-x64",
+          "runtimeOptions": {
+            "tfm": "net10.0",
+            "frameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "10.0.0"
+              },
+              {
+                "name": "Microsoft.WindowsDesktop.App",
+                "version": "10.0.0"
+              }
+            ],
+            "configProperties": {
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+              "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+            }
+          },
+          "payloadHashesVerified": true,
+          "applicationLaunched": false,
+          "hardwareAccessed": false,
+          "archiveExtracted": false,
+          "package": {
+            "name": "DeviceBatteryStatus-1.2.0-win-x64-framework-dependent.zip",
+            "bytes": 391744,
+            "sha256": "50350a3b324227b42a941bde607ca78dbfe0e2742808e4a664e644a26e48586d",
+            "entryCount": 11,
+            "extractedBytes": 1028292,
+            "compressedEntryBytes": 390258,
+            "zipOverheadBytes": 1486
+          },
+          "categories": {
+            "app": {
+              "fileCount": 6,
+              "extractedBytes": 926626,
+              "compressedBytes": 368321
+            },
+            "runtime": {
+              "fileCount": 0,
+              "extractedBytes": 0,
+              "compressedBytes": 0
+            },
+            "localization": {
+              "fileCount": 0,
+              "extractedBytes": 0,
+              "compressedBytes": 0
+            },
+            "notices": {
+              "fileCount": 3,
+              "extractedBytes": 89863,
+              "compressedBytes": 16716
+            },
+            "metadata": {
+              "fileCount": 2,
+              "extractedBytes": 11803,
+              "compressedBytes": 5221
+            },
+            "other": {
+              "fileCount": 0,
+              "extractedBytes": 0,
+              "compressedBytes": 0
+            }
+          },
+          "largestFiles": [
+            {
+              "path": "DeviceBatteryStatus.Core.dll",
+              "extractedBytes": 384512,
+              "compressedBytes": 146235,
+              "compressionMethod": 8,
+              "sha256": "df56c12397fa652d9504791c850eee60b18a8805920f14f4725c4faf114b509a",
+              "category": "app"
+            },
+            {
+              "path": "DeviceBatteryStatus.dll",
+              "extractedBytes": 349184,
+              "compressedBytes": 134557,
+              "compressionMethod": 8,
+              "sha256": "aa3f39420995afdd10b18974ec5a73ecc3436b1d20b1f27fbf986269ebec3129",
+              "category": "app"
+            },
+            {
+              "path": "DeviceBatteryStatus.exe",
+              "extractedBytes": 163328,
+              "compressedBytes": 73898,
+              "compressionMethod": 8,
+              "sha256": "5d475a4bc75cd0b2defb3489946cac179311ed7dfbc2c9d35b27b5a8a20262b5",
+              "category": "app"
+            },
+            {
+              "path": "licenses/dotnet-distribution/ThirdPartyNotices.txt",
+              "extractedBytes": 78887,
+              "compressedBytes": 11778,
+              "compressionMethod": 8,
+              "sha256": "deb4427a295e1ed474b0d81c5a0d972c1b550b9a715cda939cdfa9236b1b418f",
+              "category": "notices"
+            },
+            {
+              "path": "DeviceBatteryStatus.Windows.dll",
+              "extractedBytes": 27648,
+              "compressedBytes": 13018,
+              "compressionMethod": 8,
+              "sha256": "c3b1108026939a32c036052f7c552f7691ba8da9dc30d0ab7aaa170cfdbaad87",
+              "category": "app"
+            },
+            {
+              "path": "licenses/dotnet-distribution/LICENSE.txt",
+              "extractedBytes": 9519,
+              "compressedBytes": 4053,
+              "compressionMethod": 8,
+              "sha256": "7f6839a61ce892b79c6549e2dc5a81fdbd240a0b260f8881216b45b7fda8b45d",
+              "category": "notices"
+            },
+            {
+              "path": "README.md",
+              "extractedBytes": 9421,
+              "compressedBytes": 4083,
+              "compressionMethod": 8,
+              "sha256": "67055a307c4366c450e77090afdcc83711e42e96549fb94ead81550324555295",
+              "category": "metadata"
+            },
+            {
+              "path": "package-manifest.json",
+              "extractedBytes": 2382,
+              "compressedBytes": 1138,
+              "compressionMethod": 8,
+              "sha256": "baf496e8373cd6aca9b141e284c7d3acd408905a2237c09dfe91079cbe50872d",
+              "category": "metadata"
+            },
+            {
+              "path": "THIRD_PARTY_NOTICES.md",
+              "extractedBytes": 1457,
+              "compressedBytes": 885,
+              "compressionMethod": 8,
+              "sha256": "27100e7738391173a6294f0f2cc79d707cc3017fd5e464bbc9c374e3ea19c1a1",
+              "category": "notices"
+            },
+            {
+              "path": "DeviceBatteryStatus.deps.json",
+              "extractedBytes": 1435,
+              "compressedBytes": 335,
+              "compressionMethod": 8,
+              "sha256": "bd63817a69249074dd19842fec2452e42c5601ab6c6483bd9244b6f7905dfb7c",
+              "category": "app"
+            },
+            {
+              "path": "DeviceBatteryStatus.runtimeconfig.json",
+              "extractedBytes": 519,
+              "compressedBytes": 278,
+              "compressionMethod": 8,
+              "sha256": "96bc2946dff8790400d652ec7f8de7bb043e954980d59470c112788b68a1fbd3",
+              "category": "app"
+            }
+          ]
+        },
+        "optimized": {
+          "schemaVersion": 1,
+          "mode": "read-only-windows-package-size-inventory",
+          "appVersion": "1.2.0",
+          "sourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab",
+          "repository": "kA-sp3R/BatteryStatusCheck",
+          "workflowRun": "40236243538",
+          "workflowAttempt": "1",
+          "sdkVersion": "10.0.403",
+          "flavor": "framework-dependent",
+          "runtimeIdentifier": "win-x64",
+          "runtimeOptions": {
+            "tfm": "net10.0",
+            "frameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "10.0.0"
+              },
+              {
+                "name": "Microsoft.WindowsDesktop.App",
+                "version": "10.0.0"
+              }
+            ],
+            "configProperties": {
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+              "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+            }
+          },
+          "payloadHashesVerified": true,
+          "applicationLaunched": false,
+          "hardwareAccessed": false,
+          "archiveExtracted": false,
+          "package": {
+            "name": "DeviceBatteryStatus-1.2.0-win-x64-framework-dependent.zip",
+            "bytes": 336205,
+            "sha256": "ca883ce5a675eaf8c84ec04dc244ab1b3837e3ec4c617b399411903e6b237fd2",
+            "entryCount": 11,
+            "extractedBytes": 888053,
+            "compressedEntryBytes": 334719,
+            "zipOverheadBytes": 1486
+          },
+          "categories": {
+            "app": {
+              "fileCount": 6,
+              "extractedBytes": 786338,
+              "compressedBytes": 313014
+            },
+            "runtime": {
+              "fileCount": 0,
+              "extractedBytes": 0,
+              "compressedBytes": 0
+            },
+            "localization": {
+              "fileCount": 0,
+              "extractedBytes": 0,
+              "compressedBytes": 0
+            },
+            "notices": {
+              "fileCount": 3,
+              "extractedBytes": 89863,
+              "compressedBytes": 16441
+            },
+            "metadata": {
+              "fileCount": 2,
+              "extractedBytes": 11852,
+              "compressedBytes": 5264
+            },
+            "other": {
+              "fileCount": 0,
+              "extractedBytes": 0,
+              "compressedBytes": 0
+            }
+          },
+          "largestFiles": [
+            {
+              "path": "DeviceBatteryStatus.Core.dll",
+              "extractedBytes": 388096,
+              "compressedBytes": 146190,
+              "compressionMethod": 8,
+              "sha256": "81234329e857022a8aa62c4dfe265ea665dca73061859275fc65b33ab3f7fa50",
+              "category": "app"
+            },
+            {
+              "path": "DeviceBatteryStatus.dll",
+              "extractedBytes": 205312,
+              "compressedBytes": 82221,
+              "compressionMethod": 8,
+              "sha256": "e62b6429a5cd162d7f8d36675c7ef07498d55ff2e609fdac18ce46a7035e80c1",
+              "category": "app"
+            },
+            {
+              "path": "DeviceBatteryStatus.exe",
+              "extractedBytes": 163328,
+              "compressedBytes": 71271,
+              "compressionMethod": 8,
+              "sha256": "a26f21ec3712b084e68f7a0dff4f0b24ba0e912373ebfc4729549743e0648eca",
+              "category": "app"
+            },
+            {
+              "path": "licenses/dotnet-distribution/ThirdPartyNotices.txt",
+              "extractedBytes": 78887,
+              "compressedBytes": 11533,
+              "compressionMethod": 8,
+              "sha256": "deb4427a295e1ed474b0d81c5a0d972c1b550b9a715cda939cdfa9236b1b418f",
+              "category": "notices"
+            },
+            {
+              "path": "DeviceBatteryStatus.Windows.dll",
+              "extractedBytes": 27648,
+              "compressedBytes": 12730,
+              "compressionMethod": 8,
+              "sha256": "6a2dd2aa7e680cf6ab7a04eb2df9b6ab01da1b7634d61d55e3065fecb9270491",
+              "category": "app"
+            },
+            {
+              "path": "licenses/dotnet-distribution/LICENSE.txt",
+              "extractedBytes": 9519,
+              "compressedBytes": 4037,
+              "compressionMethod": 8,
+              "sha256": "7f6839a61ce892b79c6549e2dc5a81fdbd240a0b260f8881216b45b7fda8b45d",
+              "category": "notices"
+            },
+            {
+              "path": "README.md",
+              "extractedBytes": 9421,
+              "compressedBytes": 4096,
+              "compressionMethod": 8,
+              "sha256": "67055a307c4366c450e77090afdcc83711e42e96549fb94ead81550324555295",
+              "category": "metadata"
+            },
+            {
+              "path": "package-manifest.json",
+              "extractedBytes": 2431,
+              "compressedBytes": 1168,
+              "compressionMethod": 8,
+              "sha256": "355e69f02387ebb6e9648460361dc794530f52a7c300ea31ba01d8df0a87aff6",
+              "category": "metadata"
+            },
+            {
+              "path": "THIRD_PARTY_NOTICES.md",
+              "extractedBytes": 1457,
+              "compressedBytes": 871,
+              "compressionMethod": 8,
+              "sha256": "27100e7738391173a6294f0f2cc79d707cc3017fd5e464bbc9c374e3ea19c1a1",
+              "category": "notices"
+            },
+            {
+              "path": "DeviceBatteryStatus.deps.json",
+              "extractedBytes": 1435,
+              "compressedBytes": 331,
+              "compressionMethod": 8,
+              "sha256": "bd63817a69249074dd19842fec2452e42c5601ab6c6483bd9244b6f7905dfb7c",
+              "category": "app"
+            },
+            {
+              "path": "DeviceBatteryStatus.runtimeconfig.json",
+              "extractedBytes": 519,
+              "compressedBytes": 271,
+              "compressionMethod": 8,
+              "sha256": "96bc2946dff8790400d652ec7f8de7bb043e954980d59470c112788b68a1fbd3",
+              "category": "app"
+            }
+          ]
+        },
+        "downloadDeltaBytes": -55539,
+        "downloadReductionPercent": 14.177370936121548,
+        "extractedDeltaBytes": -140239,
+        "runtimeFilesUnchanged": 0,
+        "runtimeAndLocalizationHashesUnchanged": true,
+        "noticeHashesUnchanged": true,
+        "runtimeCompressedDeltaBytes": 0,
+        "applicationAssembly": {
+          "beforeExtractedBytes": 349184,
+          "afterExtractedBytes": 205312
+        },
+        "coreAssembly": {
+          "beforeExtractedBytes": 384512,
+          "afterExtractedBytes": 388096
+        }
+      },
+      "self-contained": {
+        "baseline": {
+          "schemaVersion": 1,
+          "mode": "read-only-windows-package-size-inventory",
+          "appVersion": "1.2.0",
+          "sourceCommit": "1ca669c2b90770d7074cad4b98f156b0031a9240",
+          "repository": "kA-sp3R/BatteryStatusCheck",
+          "workflowRun": "40233889412",
+          "workflowAttempt": "1",
+          "sdkVersion": "10.0.403",
+          "flavor": "self-contained",
+          "runtimeIdentifier": "win-x64",
+          "runtimeOptions": {
+            "tfm": "net10.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "10.0.14"
+              },
+              {
+                "name": "Microsoft.WindowsDesktop.App",
+                "version": "10.0.14"
+              }
+            ],
+            "configProperties": {
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+              "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+            }
+          },
+          "payloadHashesVerified": true,
+          "applicationLaunched": false,
+          "hardwareAccessed": false,
+          "archiveExtracted": false,
+          "package": {
+            "name": "DeviceBatteryStatus-1.2.0-win-x64-self-contained.zip",
+            "bytes": 76418618,
+            "sha256": "179c5554c33f0b8d668c032c77a9e10c4f2200b3ab7cf2fdc8fd7894306bb21a",
+            "entryCount": 482,
+            "extractedBytes": 180485731,
+            "compressedEntryBytes": 76349594,
+            "zipOverheadBytes": 69024
+          },
+          "categories": {
+            "app": {
+              "fileCount": 6,
+              "extractedBytes": 963395,
+              "compressedBytes": 370509
+            },
+            "runtime": {
+              "fileCount": 247,
+              "extractedBytes": 161443872,
+              "compressedBytes": 69807364
+            },
+            "localization": {
+              "fileCount": 221,
+              "extractedBytes": 17843472,
+              "compressedBytes": 6113793
+            },
+            "notices": {
+              "fileCount": 6,
+              "extractedBytes": 170180,
+              "compressedBytes": 31600
+            },
+            "metadata": {
+              "fileCount": 2,
+              "extractedBytes": 64812,
+              "compressedBytes": 26328
+            },
+            "other": {
+              "fileCount": 0,
+              "extractedBytes": 0,
+              "compressedBytes": 0
+            }
+          },
+          "largestFiles": [
+            {
+              "path": "System.Private.CoreLib.dll",
+              "extractedBytes": 16033616,
+              "compressedBytes": 6854781,
+              "compressionMethod": 8,
+              "sha256": "69d56e12535d3a8f2f8f89ac8f97577e6dc788d26f2e7b69be8fb5f6ff17ff28",
+              "category": "runtime"
+            },
+            {
+              "path": "PresentationFramework.dll",
+              "extractedBytes": 15824680,
+              "compressedBytes": 7261243,
+              "compressionMethod": 8,
+              "sha256": "15ec7ac7eaecdeabf3bfb378711f2c45bcd8a59d77bcd8254b9e90b776385189",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Windows.Forms.dll",
+              "extractedBytes": 13715240,
+              "compressedBytes": 4991946,
+              "compressionMethod": 8,
+              "sha256": "ea1f6fd012bd9e10e8774733774691a03683eae2c76169aff406f0aff9a7ea83",
+              "category": "runtime"
+            },
+            {
+              "path": "PresentationCore.dll",
+              "extractedBytes": 8324904,
+              "compressedBytes": 3664217,
+              "compressionMethod": 8,
+              "sha256": "131faa87bce352c2c7ea02fa6d6c36533992fd77a3bf429d1145d21ef3650f1d",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Private.Xml.dll",
+              "extractedBytes": 7788328,
+              "compressedBytes": 3543537,
+              "compressionMethod": 8,
+              "sha256": "3467185933c682c10a67eb6b4eb78df5a1debc63d4def7708d23db9fb79780fc",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Windows.Forms.Design.dll",
+              "extractedBytes": 6092624,
+              "compressedBytes": 1941553,
+              "compressionMethod": 8,
+              "sha256": "46c28e8236e1837d7485df07bd51fa0df9e2e33dc2fc96bd7d4fe117958fc9cb",
+              "category": "runtime"
+            },
+            {
+              "path": "D3DCompiler_47_cor3.dll",
+              "extractedBytes": 4741488,
+              "compressedBytes": 2219027,
+              "compressionMethod": 8,
+              "sha256": "a05f99734f7c4822fefc12b367af21fd0976ed6608752fb1e1e80b6ece7ecbbb",
+              "category": "runtime"
+            },
+            {
+              "path": "coreclr.dll",
+              "extractedBytes": 4613456,
+              "compressedBytes": 2382866,
+              "compressionMethod": 8,
+              "sha256": "1bc65b8d45474b19adf3ca85ce881087aff599ffc72b2c1a323e878227757b65",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Linq.Expressions.dll",
+              "extractedBytes": 3639080,
+              "compressedBytes": 1279021,
+              "compressionMethod": 8,
+              "sha256": "eb9139d158b544c11b65cd32c6bfbbc2a11bfe5e9ec61ecc94999843afd5cd2c",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Windows.Forms.Primitives.dll",
+              "extractedBytes": 3622736,
+              "compressedBytes": 1039968,
+              "compressionMethod": 8,
+              "sha256": "93e54d724afd731164c8de2a78e0eeea57b9f616cd9ef75547f576b4170188c0",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Data.Common.dll",
+              "extractedBytes": 2770768,
+              "compressedBytes": 1317935,
+              "compressionMethod": 8,
+              "sha256": "e6be5f74d117b7300523041ec239d2c7b64fc495ef954f48f81ca71507e510c6",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Security.Cryptography.dll",
+              "extractedBytes": 2549544,
+              "compressedBytes": 1122838,
+              "compressionMethod": 8,
+              "sha256": "b043b1ed136164fd69606a9e7f26f1fc05d0c7cb888c0c00e3b58544623cc7e5",
+              "category": "runtime"
+            },
+            {
+              "path": "Microsoft.DiaSymReader.Native.amd64.dll",
+              "extractedBytes": 2377016,
+              "compressedBytes": 1097241,
+              "compressionMethod": 8,
+              "sha256": "70e4b89978ce57ef87b28f4921f3140c383b04aa96e7f3bdb3c4ebb898fd8a72",
+              "category": "runtime"
+            },
+            {
+              "path": "WindowsBase.dll",
+              "extractedBytes": 2176848,
+              "compressedBytes": 973548,
+              "compressionMethod": 8,
+              "sha256": "e960804a80a3623ef7f4de714c008dcc3333a154e38fcae44cad2a65204b7277",
+              "category": "runtime"
+            },
+            {
+              "path": "clrjit.dll",
+              "extractedBytes": 2095912,
+              "compressedBytes": 1163459,
+              "compressionMethod": 8,
+              "sha256": "e33038c23f32074683e170b0ea74dae6ee74a05bb5e8ef6c9fd4cc43771b34cf",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Private.DataContractSerialization.dll",
+              "extractedBytes": 2062120,
+              "compressedBytes": 922866,
+              "compressionMethod": 8,
+              "sha256": "4e329edac8f17617d2d46d2d472e21c48614276a9879f3f7b4be2cb2841ed3f6",
+              "category": "runtime"
+            },
+            {
+              "path": "wpfgfx_cor3.dll",
+              "extractedBytes": 1956648,
+              "compressedBytes": 895614,
+              "compressionMethod": 8,
+              "sha256": "48a8e8100fd38183a0fabfe7fad0bf9e9d28d65a0827298ef0910b31e6e94cbd",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Private.Windows.Core.dll",
+              "extractedBytes": 1906472,
+              "compressedBytes": 679455,
+              "compressionMethod": 8,
+              "sha256": "f4c8f8218280630e2d44c185f70da7bca716d058cd6ea9411b55873fbf34bd23",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Text.Json.dll",
+              "extractedBytes": 1890088,
+              "compressedBytes": 824297,
+              "compressionMethod": 8,
+              "sha256": "ff440fd7d4ae3d5a6d080c1ebaaae7d5f4145ea162ab12bf8931e92b4311f469",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Net.Http.dll",
+              "extractedBytes": 1746728,
+              "compressedBytes": 841766,
+              "compressionMethod": 8,
+              "sha256": "fc7ad004bdaca8763dcb23ab3a5fb01c9aed9735f678563f4f03254c9c956f8f",
+              "category": "runtime"
+            }
+          ]
+        },
+        "optimized": {
+          "schemaVersion": 1,
+          "mode": "read-only-windows-package-size-inventory",
+          "appVersion": "1.2.0",
+          "sourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab",
+          "repository": "kA-sp3R/BatteryStatusCheck",
+          "workflowRun": "40236243538",
+          "workflowAttempt": "1",
+          "sdkVersion": "10.0.403",
+          "flavor": "self-contained",
+          "runtimeIdentifier": "win-x64",
+          "runtimeOptions": {
+            "tfm": "net10.0",
+            "includedFrameworks": [
+              {
+                "name": "Microsoft.NETCore.App",
+                "version": "10.0.14"
+              },
+              {
+                "name": "Microsoft.WindowsDesktop.App",
+                "version": "10.0.14"
+              }
+            ],
+            "configProperties": {
+              "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+              "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+              "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+            }
+          },
+          "payloadHashesVerified": true,
+          "applicationLaunched": false,
+          "hardwareAccessed": false,
+          "archiveExtracted": false,
+          "package": {
+            "name": "DeviceBatteryStatus-1.2.0-win-x64-self-contained.zip",
+            "bytes": 73783640,
+            "sha256": "67ff1787e09a96d553b6d12868cc0a2965a9eca394fb1c9de11ddec33f6bc8ba",
+            "entryCount": 482,
+            "extractedBytes": 180345492,
+            "compressedEntryBytes": 73714616,
+            "zipOverheadBytes": 69024
+          },
+          "categories": {
+            "app": {
+              "fileCount": 6,
+              "extractedBytes": 823107,
+              "compressedBytes": 315219
+            },
+            "runtime": {
+              "fileCount": 247,
+              "extractedBytes": 161443872,
+              "compressedBytes": 67276781
+            },
+            "localization": {
+              "fileCount": 221,
+              "extractedBytes": 17843472,
+              "compressedBytes": 6063467
+            },
+            "notices": {
+              "fileCount": 6,
+              "extractedBytes": 170180,
+              "compressedBytes": 31165
+            },
+            "metadata": {
+              "fileCount": 2,
+              "extractedBytes": 64861,
+              "compressedBytes": 27984
+            },
+            "other": {
+              "fileCount": 0,
+              "extractedBytes": 0,
+              "compressedBytes": 0
+            }
+          },
+          "largestFiles": [
+            {
+              "path": "System.Private.CoreLib.dll",
+              "extractedBytes": 16033616,
+              "compressedBytes": 6580112,
+              "compressionMethod": 8,
+              "sha256": "69d56e12535d3a8f2f8f89ac8f97577e6dc788d26f2e7b69be8fb5f6ff17ff28",
+              "category": "runtime"
+            },
+            {
+              "path": "PresentationFramework.dll",
+              "extractedBytes": 15824680,
+              "compressedBytes": 6973988,
+              "compressionMethod": 8,
+              "sha256": "15ec7ac7eaecdeabf3bfb378711f2c45bcd8a59d77bcd8254b9e90b776385189",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Windows.Forms.dll",
+              "extractedBytes": 13715240,
+              "compressedBytes": 4800434,
+              "compressionMethod": 8,
+              "sha256": "ea1f6fd012bd9e10e8774733774691a03683eae2c76169aff406f0aff9a7ea83",
+              "category": "runtime"
+            },
+            {
+              "path": "PresentationCore.dll",
+              "extractedBytes": 8324904,
+              "compressedBytes": 3511612,
+              "compressionMethod": 8,
+              "sha256": "131faa87bce352c2c7ea02fa6d6c36533992fd77a3bf429d1145d21ef3650f1d",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Private.Xml.dll",
+              "extractedBytes": 7788328,
+              "compressedBytes": 3425095,
+              "compressionMethod": 8,
+              "sha256": "3467185933c682c10a67eb6b4eb78df5a1debc63d4def7708d23db9fb79780fc",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Windows.Forms.Design.dll",
+              "extractedBytes": 6092624,
+              "compressedBytes": 1872006,
+              "compressionMethod": 8,
+              "sha256": "46c28e8236e1837d7485df07bd51fa0df9e2e33dc2fc96bd7d4fe117958fc9cb",
+              "category": "runtime"
+            },
+            {
+              "path": "D3DCompiler_47_cor3.dll",
+              "extractedBytes": 4741488,
+              "compressedBytes": 2143858,
+              "compressionMethod": 8,
+              "sha256": "a05f99734f7c4822fefc12b367af21fd0976ed6608752fb1e1e80b6ece7ecbbb",
+              "category": "runtime"
+            },
+            {
+              "path": "coreclr.dll",
+              "extractedBytes": 4613456,
+              "compressedBytes": 2286317,
+              "compressionMethod": 8,
+              "sha256": "1bc65b8d45474b19adf3ca85ce881087aff599ffc72b2c1a323e878227757b65",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Linq.Expressions.dll",
+              "extractedBytes": 3639080,
+              "compressedBytes": 1212380,
+              "compressionMethod": 8,
+              "sha256": "eb9139d158b544c11b65cd32c6bfbbc2a11bfe5e9ec61ecc94999843afd5cd2c",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Windows.Forms.Primitives.dll",
+              "extractedBytes": 3622736,
+              "compressedBytes": 990483,
+              "compressionMethod": 8,
+              "sha256": "93e54d724afd731164c8de2a78e0eeea57b9f616cd9ef75547f576b4170188c0",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Data.Common.dll",
+              "extractedBytes": 2770768,
+              "compressedBytes": 1274281,
+              "compressionMethod": 8,
+              "sha256": "e6be5f74d117b7300523041ec239d2c7b64fc495ef954f48f81ca71507e510c6",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Security.Cryptography.dll",
+              "extractedBytes": 2549544,
+              "compressedBytes": 1081640,
+              "compressionMethod": 8,
+              "sha256": "b043b1ed136164fd69606a9e7f26f1fc05d0c7cb888c0c00e3b58544623cc7e5",
+              "category": "runtime"
+            },
+            {
+              "path": "Microsoft.DiaSymReader.Native.amd64.dll",
+              "extractedBytes": 2377016,
+              "compressedBytes": 1059909,
+              "compressionMethod": 8,
+              "sha256": "70e4b89978ce57ef87b28f4921f3140c383b04aa96e7f3bdb3c4ebb898fd8a72",
+              "category": "runtime"
+            },
+            {
+              "path": "WindowsBase.dll",
+              "extractedBytes": 2176848,
+              "compressedBytes": 936259,
+              "compressionMethod": 8,
+              "sha256": "e960804a80a3623ef7f4de714c008dcc3333a154e38fcae44cad2a65204b7277",
+              "category": "runtime"
+            },
+            {
+              "path": "clrjit.dll",
+              "extractedBytes": 2095912,
+              "compressedBytes": 1121308,
+              "compressionMethod": 8,
+              "sha256": "e33038c23f32074683e170b0ea74dae6ee74a05bb5e8ef6c9fd4cc43771b34cf",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Private.DataContractSerialization.dll",
+              "extractedBytes": 2062120,
+              "compressedBytes": 890920,
+              "compressionMethod": 8,
+              "sha256": "4e329edac8f17617d2d46d2d472e21c48614276a9879f3f7b4be2cb2841ed3f6",
+              "category": "runtime"
+            },
+            {
+              "path": "wpfgfx_cor3.dll",
+              "extractedBytes": 1956648,
+              "compressedBytes": 859281,
+              "compressionMethod": 8,
+              "sha256": "48a8e8100fd38183a0fabfe7fad0bf9e9d28d65a0827298ef0910b31e6e94cbd",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Private.Windows.Core.dll",
+              "extractedBytes": 1906472,
+              "compressedBytes": 660436,
+              "compressionMethod": 8,
+              "sha256": "f4c8f8218280630e2d44c185f70da7bca716d058cd6ea9411b55873fbf34bd23",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Text.Json.dll",
+              "extractedBytes": 1890088,
+              "compressedBytes": 794636,
+              "compressionMethod": 8,
+              "sha256": "ff440fd7d4ae3d5a6d080c1ebaaae7d5f4145ea162ab12bf8931e92b4311f469",
+              "category": "runtime"
+            },
+            {
+              "path": "System.Net.Http.dll",
+              "extractedBytes": 1746728,
+              "compressedBytes": 811507,
+              "compressionMethod": 8,
+              "sha256": "fc7ad004bdaca8763dcb23ab3a5fb01c9aed9735f678563f4f03254c9c956f8f",
+              "category": "runtime"
+            }
+          ]
+        },
+        "downloadDeltaBytes": -2634978,
+        "downloadReductionPercent": 3.4480838164333227,
+        "extractedDeltaBytes": -140239,
+        "runtimeFilesUnchanged": 468,
+        "runtimeAndLocalizationHashesUnchanged": true,
+        "noticeHashesUnchanged": true,
+        "runtimeCompressedDeltaBytes": -2580909,
+        "applicationAssembly": {
+          "beforeExtractedBytes": 349184,
+          "afterExtractedBytes": 205312
+        },
+        "coreAssembly": {
+          "beforeExtractedBytes": 384512,
+          "afterExtractedBytes": 388096
+        }
+      }
+    },
+    "installer": {
+      "baselineBytes": 54855102,
+      "optimizedBytes": 54824007,
+      "downloadDeltaBytes": -31095,
+      "compressionUnchanged": "lzma2/normal;solid"
+    },
+    "definition": "Extracted bytes=sum of file lengths, excludes allocation overhead/userdata/shared framework. Runtime includes localization."
+  },
+  "verification": {
+    "testResults": {
+      "installerSmoke": {
+        "executed": 64,
+        "passed": 64,
+        "failed": 0,
+        "installerExecuted": true,
+        "applicationLaunched": false,
+        "hardwareVerified": false
+      },
+      "Debug": {
+        "total": 1116,
+        "executed": 1116,
+        "passed": 1116,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "Release": {
+        "total": 1116,
+        "executed": 1116,
+        "passed": 1116,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "offlineParser": {
+        "executed": 5,
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "releasePolicy": {
+        "executed": 39,
+        "passed": 39,
+        "failed": 0,
+        "skipped": 0
+      },
+      "applicationSmoke": {
+        "framework-dependent": {
+          "total": 18,
+          "executed": 18,
+          "passed": 18,
+          "failed": 0,
+          "applicationLaunched": false,
+          "normalApplicationControllerStarted": false,
+          "hardwareAccessed": false,
+          "networkAccessed": false,
+          "harnessLaunched": true,
+          "packagedApplicationAssembliesLoaded": true,
+          "loadedApplicationAssemblies": {
+            "DeviceBatteryStatus.dll": "e62b6429a5cd162d7f8d36675c7ef07498d55ff2e609fdac18ce46a7035e80c1",
+            "DeviceBatteryStatus.Core.dll": "81234329e857022a8aa62c4dfe265ea665dca73061859275fc65b33ab3f7fa50",
+            "DeviceBatteryStatus.Windows.dll": "6a2dd2aa7e680cf6ab7a04eb2df9b6ab01da1b7634d61d55e3065fecb9270491"
+          },
+          "harnessSourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab"
+        },
+        "self-contained": {
+          "total": 18,
+          "executed": 18,
+          "passed": 18,
+          "failed": 0,
+          "applicationLaunched": false,
+          "normalApplicationControllerStarted": false,
+          "hardwareAccessed": false,
+          "networkAccessed": false,
+          "harnessLaunched": true,
+          "packagedApplicationAssembliesLoaded": true,
+          "loadedApplicationAssemblies": {
+            "DeviceBatteryStatus.dll": "e62b6429a5cd162d7f8d36675c7ef07498d55ff2e609fdac18ce46a7035e80c1",
+            "DeviceBatteryStatus.Core.dll": "81234329e857022a8aa62c4dfe265ea665dca73061859275fc65b33ab3f7fa50",
+            "DeviceBatteryStatus.Windows.dll": "6a2dd2aa7e680cf6ab7a04eb2df9b6ab01da1b7634d61d55e3065fecb9270491"
+          },
+          "harnessSourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab"
+        }
+      }
+    },
+    "packageInspections": {
+      "framework-dependent": {
+        "files": 11,
+        "payloadHashesVerified": true,
+        "pe": "win-x64/GUI",
+        "harnessExcluded": true,
+        "debugSymbolsExcluded": true,
+        "runtimeOptions": {
+          "tfm": "net10.0",
+          "frameworks": [
+            {
+              "name": "Microsoft.NETCore.App",
+              "version": "10.0.0"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App",
+              "version": "10.0.0"
+            }
+          ],
+          "configProperties": {
+            "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+            "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+          }
+        }
+      },
+      "self-contained": {
+        "files": 482,
+        "payloadHashesVerified": true,
+        "pe": "win-x64/GUI",
+        "harnessExcluded": true,
+        "debugSymbolsExcluded": true,
+        "runtimeOptions": {
+          "tfm": "net10.0",
+          "includedFrameworks": [
+            {
+              "name": "Microsoft.NETCore.App",
+              "version": "10.0.14"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App",
+              "version": "10.0.14"
+            }
+          ],
+          "configProperties": {
+            "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+            "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false,
+            "CSWINRT_USE_WINDOWS_UI_XAML_PROJECTIONS": false
+          }
+        }
+      }
+    },
+    "syntheticMeasurements": {
+      "framework-dependent": {
+        "metrics": {
+          "taskbarCreatedWindowsMessaged": 5,
+          "gdiBefore": 40,
+          "gdiAfter": 40,
+          "userBefore": 32,
+          "userAfter": 31,
+          "trayLifecycleIterations": 20
+        },
+        "efficiency": {
+          "schemaVersion": 1,
+          "mode": "synthetic-software-efficiency-smoke",
+          "sourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab",
+          "appVersion": "1.2.0",
+          "flavor": "framework-dependent",
+          "repository": "kA-sp3R/BatteryStatusCheck",
+          "workflowRun": "40236243538",
+          "workflowAttempt": "1",
+          "measuredAtUtc": "2026-10-25T21:41:29.2746968+00:00",
+          "physicalDevicesAccessed": false,
+          "normalApplicationControllerStarted": false,
+          "monitorWorkload": {
+            "schemaVersion": 1,
+            "workload": "deterministic-synthetic-healthy-and-nonresponsive-usb-receivers",
+            "physicalDevicesAccessed": false,
+            "normalApplicationControllerStarted": false,
+            "warmupTrialsPerPolicy": 3,
+            "measuredTrialsPerPolicy": 200,
+            "simulatedMinutesPerTrial": 20,
+            "scheduledRefreshIntervalSeconds": 30,
+            "receiverCount": 2,
+            "legacy": {
+              "policy": "legacy refresh policy",
+              "trials": 200,
+              "scheduledRefreshes": 8000,
+              "discoveryEnumerations": 8000,
+              "transportOpens": 16000,
+              "healthyReads": 8000,
+              "nonResponsiveReads": 8000,
+              "featureQueries": 16000,
+              "wallMilliseconds": 115.0419,
+              "cpuMilliseconds": 109.375,
+              "allocatedBytes": 49509944,
+              "before": {
+                "cpuMilliseconds": 2906.25,
+                "workingSetBytes": 144785408,
+                "privateBytes": 55902208,
+                "managedHeapBytes": 10632224,
+                "totalAllocatedBytes": 21325792,
+                "processHandles": 529,
+                "gdiHandles": 46,
+                "userHandles": 33,
+                "gen0Collections": 4,
+                "gen1Collections": 4,
+                "gen2Collections": 4
+              },
+              "after": {
+                "cpuMilliseconds": 3015.625,
+                "workingSetBytes": 193699840,
+                "privateBytes": 104857600,
+                "managedHeapBytes": 60282360,
+                "totalAllocatedBytes": 70835736,
+                "processHandles": 531,
+                "gdiHandles": 46,
+                "userHandles": 33,
+                "gen0Collections": 4,
+                "gen1Collections": 4,
+                "gen2Collections": 4
+              },
+              "featureQueriesPerSimulatedMinute": 4
+            },
+            "optimized": {
+              "policy": "cached discovery and bounded receiver backoff",
+              "trials": 200,
+              "scheduledRefreshes": 8000,
+              "discoveryEnumerations": 800,
+              "transportOpens": 12200,
+              "healthyReads": 8000,
+              "nonResponsiveReads": 4200,
+              "featureQueries": 12200,
+              "wallMilliseconds": 72.4771,
+              "cpuMilliseconds": 78.125,
+              "allocatedBytes": 25329096,
+              "before": {
+                "cpuMilliseconds": 3015.625,
+                "workingSetBytes": 193699840,
+                "privateBytes": 104857600,
+                "managedHeapBytes": 60290584,
+                "totalAllocatedBytes": 70840072,
+                "processHandles": 531,
+                "gdiHandles": 46,
+                "userHandles": 33,
+                "gen0Collections": 4,
+                "gen1Collections": 4,
+                "gen2Collections": 4
+              },
+              "after": {
+                "cpuMilliseconds": 3093.75,
+                "workingSetBytes": 219385856,
+                "privateBytes": 130519040,
+                "managedHeapBytes": 85693336,
+                "totalAllocatedBytes": 96169168,
+                "processHandles": 531,
+                "gdiHandles": 46,
+                "userHandles": 33,
+                "gen0Collections": 4,
+                "gen1Collections": 4,
+                "gen2Collections": 4
+              },
+              "featureQueriesPerSimulatedMinute": 3.05
+            },
+            "recovery": {
+              "manualRefreshBypassedBackoff": true,
+              "deviceChangeBypassedBackoff": true,
+              "staleStateAndOriginalSamplePreserved": true
+            },
+            "limitations": [
+              "Synthetic feature replies and immediate synthetic timeouts; no USB latency, real radio traffic or battery drain was measured.",
+              "Simulated time advances without sleeping; this is a short software smoke workload, not a 20-minute physical run or endurance test.",
+              "CPU, allocations, working/private memory and handles are process-wide before/after observations; other runtime/WPF work and JIT/GC/scheduler noise may contribute.",
+              "Memory figures are snapshots, not peak or steady-state memory; CPU/memory deltas are reported without a performance pass threshold.",
+              "Legacy is the same managed monitor with efficiency options omitted; optimized uses the new default cache/backoff policy. Healthy refresh cadence is identical.",
+              "Policy measurements run sequentially after warmup; query/enumeration counts are deterministic, but one short CPU/memory sample does not establish a causal performance percentage."
+            ]
+          },
+          "presentation": {
+            "unchangedIterations": 200,
+            "popupUpdatesBefore": 1,
+            "popupUpdatesAfterUnchanged": 1,
+            "trayBefore": {
+              "presentationUpdates": 12,
+              "iconRenders": 7,
+              "iconAssignments": 7,
+              "tooltipAssignments": 12,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 1,
+              "unchangedSelections": 0
+            },
+            "afterUnchanged": {
+              "presentationUpdates": 12,
+              "iconRenders": 7,
+              "iconAssignments": 7,
+              "tooltipAssignments": 12,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 1,
+              "unchangedSelections": 200
+            },
+            "afterAlias": {
+              "presentationUpdates": 17,
+              "iconRenders": 7,
+              "iconAssignments": 7,
+              "tooltipAssignments": 13,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 2,
+              "unchangedSelections": 200
+            },
+            "afterPercentage": {
+              "presentationUpdates": 22,
+              "iconRenders": 8,
+              "iconAssignments": 8,
+              "tooltipAssignments": 14,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 3,
+              "unchangedSelections": 200
+            },
+            "afterFreshness": {
+              "presentationUpdates": 27,
+              "iconRenders": 9,
+              "iconAssignments": 9,
+              "tooltipAssignments": 16,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 4,
+              "unchangedSelections": 200
+            },
+            "afterDpi": {
+              "presentationUpdates": 32,
+              "iconRenders": 14,
+              "iconAssignments": 14,
+              "tooltipAssignments": 16,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 22,
+              "menuCreations": 6,
+              "selectionReconciliations": 4,
+              "unchangedSelections": 200
+            },
+            "syntheticDeviceChangeRequests": 20,
+            "coalescedDeviceChangeCallbacks": 1,
+            "baselineNote": "The previous release already cached icon bitmaps and menus. Zero redundant renders/menu creations verifies preservation; selection and shared-DPI probe counts exercise the new reductions.",
+            "limitations": "Native property-assignment counters do not trace Shell_NotifyIcon syscalls. Actual USB events and physical mixed-DPI behavior were not exercised."
+          },
+          "capacityPresentation": {
+            "unchangedIterations": 200,
+            "updatesBefore": 1,
+            "updatesAfterUnchanged": 1,
+            "updatesAfterDesignSave": 2
+          }
+        },
+        "runtimeHost": {
+          "usesPackagedRuntime": false,
+          "coreClrPath": "C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App\\10.0.14\\coreclr.dll",
+          "coreClrSha256": "1bc65b8d45474b19adf3ca85ce881087aff599ffc72b2c1a323e878227757b65",
+          "coreLibraryPath": "C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App\\10.0.14\\System.Private.CoreLib.dll",
+          "coreLibrarySha256": "69d56e12535d3a8f2f8f89ac8f97577e6dc788d26f2e7b69be8fb5f6ff17ff28"
+        },
+        "harnessAssemblySha256": "31746d313fbd394e29aad7536cb3c12ff3d522fb9e5484290cc1e68aaf50d28f",
+        "harnessPayload": {
+          "schemaVersion": 1,
+          "mode": "separate-synthetic-wpf-harness",
+          "sourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab",
+          "targetVersion": "1.2.0",
+          "targetFlavor": "framework-dependent",
+          "applicationManifestSha256": "355e69f02387ebb6e9648460361dc794530f52a7c300ea31ba01d8df0a87aff6",
+          "files": {
+            "DeviceBatteryStatus.Smoke.exe": "f168d2d2924a0a4c1ab0ff8e0f5820304bec2052c094a739c21ab987fbed168e",
+            "DeviceBatteryStatus.Smoke.dll": "31746d313fbd394e29aad7536cb3c12ff3d522fb9e5484290cc1e68aaf50d28f",
+            "DeviceBatteryStatus.Smoke.runtimeconfig.json": "96bc2946dff8790400d652ec7f8de7bb043e954980d59470c112788b68a1fbd3",
+            "DeviceBatteryStatus.Smoke.deps.json": "de850a4539fb87de4ae623e1d00363acdceae3c0df3e38664e05f4b4b7984326"
+          }
+        }
+      },
+      "self-contained": {
+        "metrics": {
+          "taskbarCreatedWindowsMessaged": 5,
+          "gdiBefore": 40,
+          "gdiAfter": 40,
+          "userBefore": 30,
+          "userAfter": 30,
+          "trayLifecycleIterations": 20
+        },
+        "efficiency": {
+          "schemaVersion": 1,
+          "mode": "synthetic-software-efficiency-smoke",
+          "sourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab",
+          "appVersion": "1.2.0",
+          "flavor": "self-contained",
+          "repository": "kA-sp3R/BatteryStatusCheck",
+          "workflowRun": "40236243538",
+          "workflowAttempt": "1",
+          "measuredAtUtc": "2026-10-25T21:41:42.3863651+00:00",
+          "physicalDevicesAccessed": false,
+          "normalApplicationControllerStarted": false,
+          "monitorWorkload": {
+            "schemaVersion": 1,
+            "workload": "deterministic-synthetic-healthy-and-nonresponsive-usb-receivers",
+            "physicalDevicesAccessed": false,
+            "normalApplicationControllerStarted": false,
+            "warmupTrialsPerPolicy": 3,
+            "measuredTrialsPerPolicy": 200,
+            "simulatedMinutesPerTrial": 20,
+            "scheduledRefreshIntervalSeconds": 30,
+            "receiverCount": 2,
+            "legacy": {
+              "policy": "legacy refresh policy",
+              "trials": 200,
+              "scheduledRefreshes": 8000,
+              "discoveryEnumerations": 8000,
+              "transportOpens": 16000,
+              "healthyReads": 8000,
+              "nonResponsiveReads": 8000,
+              "featureQueries": 16000,
+              "wallMilliseconds": 340.4076,
+              "cpuMilliseconds": 343.75,
+              "allocatedBytes": 49511256,
+              "before": {
+                "cpuMilliseconds": 4437.5,
+                "workingSetBytes": 143110144,
+                "privateBytes": 52998144,
+                "managedHeapBytes": 10802256,
+                "totalAllocatedBytes": 22362496,
+                "processHandles": 527,
+                "gdiHandles": 46,
+                "userHandles": 33,
+                "gen0Collections": 4,
+                "gen1Collections": 4,
+                "gen2Collections": 4
+              },
+              "after": {
+                "cpuMilliseconds": 4781.25,
+                "workingSetBytes": 154591232,
+                "privateBytes": 64184320,
+                "managedHeapBytes": 11479336,
+                "totalAllocatedBytes": 71873752,
+                "processHandles": 529,
+                "gdiHandles": 40,
+                "userHandles": 33,
+                "gen0Collections": 7,
+                "gen1Collections": 5,
+                "gen2Collections": 4
+              },
+              "featureQueriesPerSimulatedMinute": 4
+            },
+            "optimized": {
+              "policy": "cached discovery and bounded receiver backoff",
+              "trials": 200,
+              "scheduledRefreshes": 8000,
+              "discoveryEnumerations": 800,
+              "transportOpens": 12200,
+              "healthyReads": 8000,
+              "nonResponsiveReads": 4200,
+              "featureQueries": 12200,
+              "wallMilliseconds": 131.5698,
+              "cpuMilliseconds": 125,
+              "allocatedBytes": 25328968,
+              "before": {
+                "cpuMilliseconds": 4796.875,
+                "workingSetBytes": 154595328,
+                "privateBytes": 64184320,
+                "managedHeapBytes": 11487560,
+                "totalAllocatedBytes": 71878184,
+                "processHandles": 529,
+                "gdiHandles": 40,
+                "userHandles": 33,
+                "gen0Collections": 7,
+                "gen1Collections": 5,
+                "gen2Collections": 4
+              },
+              "after": {
+                "cpuMilliseconds": 4921.875,
+                "workingSetBytes": 154677248,
+                "privateBytes": 64184320,
+                "managedHeapBytes": 20119952,
+                "totalAllocatedBytes": 97207152,
+                "processHandles": 529,
+                "gdiHandles": 40,
+                "userHandles": 33,
+                "gen0Collections": 8,
+                "gen1Collections": 5,
+                "gen2Collections": 4
+              },
+              "featureQueriesPerSimulatedMinute": 3.05
+            },
+            "recovery": {
+              "manualRefreshBypassedBackoff": true,
+              "deviceChangeBypassedBackoff": true,
+              "staleStateAndOriginalSamplePreserved": true
+            },
+            "limitations": [
+              "Synthetic feature replies and immediate synthetic timeouts; no USB latency, real radio traffic or battery drain was measured.",
+              "Simulated time advances without sleeping; this is a short software smoke workload, not a 20-minute physical run or endurance test.",
+              "CPU, allocations, working/private memory and handles are process-wide before/after observations; other runtime/WPF work and JIT/GC/scheduler noise may contribute.",
+              "Memory figures are snapshots, not peak or steady-state memory; CPU/memory deltas are reported without a performance pass threshold.",
+              "Legacy is the same managed monitor with efficiency options omitted; optimized uses the new default cache/backoff policy. Healthy refresh cadence is identical.",
+              "Policy measurements run sequentially after warmup; query/enumeration counts are deterministic, but one short CPU/memory sample does not establish a causal performance percentage."
+            ]
+          },
+          "presentation": {
+            "unchangedIterations": 200,
+            "popupUpdatesBefore": 1,
+            "popupUpdatesAfterUnchanged": 1,
+            "trayBefore": {
+              "presentationUpdates": 12,
+              "iconRenders": 7,
+              "iconAssignments": 7,
+              "tooltipAssignments": 12,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 1,
+              "unchangedSelections": 0
+            },
+            "afterUnchanged": {
+              "presentationUpdates": 12,
+              "iconRenders": 7,
+              "iconAssignments": 7,
+              "tooltipAssignments": 12,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 1,
+              "unchangedSelections": 200
+            },
+            "afterAlias": {
+              "presentationUpdates": 17,
+              "iconRenders": 7,
+              "iconAssignments": 7,
+              "tooltipAssignments": 13,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 2,
+              "unchangedSelections": 200
+            },
+            "afterPercentage": {
+              "presentationUpdates": 22,
+              "iconRenders": 8,
+              "iconAssignments": 8,
+              "tooltipAssignments": 14,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 3,
+              "unchangedSelections": 200
+            },
+            "afterFreshness": {
+              "presentationUpdates": 27,
+              "iconRenders": 9,
+              "iconAssignments": 9,
+              "tooltipAssignments": 16,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 12,
+              "menuCreations": 6,
+              "selectionReconciliations": 4,
+              "unchangedSelections": 200
+            },
+            "afterDpi": {
+              "presentationUpdates": 32,
+              "iconRenders": 14,
+              "iconAssignments": 14,
+              "tooltipAssignments": 16,
+              "dpiProbes": 1,
+              "dpiMetricQueries": 22,
+              "menuCreations": 6,
+              "selectionReconciliations": 4,
+              "unchangedSelections": 200
+            },
+            "syntheticDeviceChangeRequests": 20,
+            "coalescedDeviceChangeCallbacks": 1,
+            "baselineNote": "The previous release already cached icon bitmaps and menus. Zero redundant renders/menu creations verifies preservation; selection and shared-DPI probe counts exercise the new reductions.",
+            "limitations": "Native property-assignment counters do not trace Shell_NotifyIcon syscalls. Actual USB events and physical mixed-DPI behavior were not exercised."
+          },
+          "capacityPresentation": {
+            "unchangedIterations": 200,
+            "updatesBefore": 1,
+            "updatesAfterUnchanged": 1,
+            "updatesAfterDesignSave": 2
+          }
+        },
+        "runtimeHost": {
+          "usesPackagedRuntime": true,
+          "coreClrPath": "D:\\a\\BatteryStatusCheck\\BatteryStatusCheck\\artifacts\\smoke-harness\\launch\\coreclr.dll",
+          "coreClrSha256": "1bc65b8d45474b19adf3ca85ce881087aff599ffc72b2c1a323e878227757b65",
+          "coreLibraryPath": "D:\\a\\BatteryStatusCheck\\BatteryStatusCheck\\artifacts\\smoke-harness\\launch\\System.Private.CoreLib.dll",
+          "coreLibrarySha256": "69d56e12535d3a8f2f8f89ac8f97577e6dc788d26f2e7b69be8fb5f6ff17ff28"
+        },
+        "harnessAssemblySha256": "31746d313fbd394e29aad7536cb3c12ff3d522fb9e5484290cc1e68aaf50d28f",
+        "harnessPayload": {
+          "schemaVersion": 1,
+          "mode": "separate-synthetic-wpf-harness",
+          "sourceCommit": "46123738ffa203b4978bc06d8fa94e97d34c75ab",
+          "targetVersion": "1.2.0",
+          "targetFlavor": "self-contained",
+          "applicationManifestSha256": "1016dd8553da97d07b14741966f5e6af80cb0310755339cfa8a7a3e0e12e644e",
+          "files": {
+            "DeviceBatteryStatus.Smoke.exe": "f168d2d2924a0a4c1ab0ff8e0f5820304bec2052c094a739c21ab987fbed168e",
+            "DeviceBatteryStatus.Smoke.dll": "31746d313fbd394e29aad7536cb3c12ff3d522fb9e5484290cc1e68aaf50d28f",
+            "DeviceBatteryStatus.Smoke.runtimeconfig.json": "f93088763df733474d8df16646186166e13deab5d67f2be583356c75a31207c0",
+            "DeviceBatteryStatus.Smoke.deps.json": "b620fe80ce39eb3eb69111374e88e0ef04c7b539ca78afb78f6f50597543b11d"
+          }
+        }
+      }
+    },
+    "gaming": {
+      "framework-dependent": {
+        "mode": "synthetic-desktop-gaming-alert-smoke",
+        "physicalDevicesAccessed": false,
+        "gamesLaunched": false,
+        "runtime": {
+          "state": 2,
+          "text": "1\u20133 hours remaining",
+          "isConfident": true,
+          "sampleCount": 32,
+          "coverage": "00:31:00",
+          "remaining": "01:59:33.9164641",
+          "lowerBound": "01:37:47.3268675",
+          "upperBound": "02:33:05.6496525"
+        },
+        "nativeSafety": {
+          "noActivate": true,
+          "clickThrough": true,
+          "toolWindow": true,
+          "layered": true,
+          "foregroundUnchanged": true,
+          "mouseActivateResult": 3,
+          "hitTestResult": -1,
+          "bounds": {
+            "x": -558,
+            "y": 674,
+            "width": 540,
+            "height": 168
+          },
+          "monitor": "synthetic-selected-work-area",
+          "dpi": 144
+        },
+        "repeatedEvents": 20,
+        "coalescedDeliveries": 1,
+        "revalidations": 2,
+        "previewAcknowledged": 0,
+        "soundCallbacks": 1,
+        "audioHardwareAccessed": false,
+        "settingsStorage": "Synthetic fixture beneath the smoke report directory only",
+        "limits": "No physical-device trend, real game, exclusive-fullscreen compatibility, actual monitor switching, hardware DPI transition or user-input delivery was tested. Native safety styles and direct message-hook responses are measured in the CI desktop only."
+      },
+      "self-contained": {
+        "mode": "synthetic-desktop-gaming-alert-smoke",
+        "physicalDevicesAccessed": false,
+        "gamesLaunched": false,
+        "runtime": {
+          "state": 2,
+          "text": "1\u20133 hours remaining",
+          "isConfident": true,
+          "sampleCount": 32,
+          "coverage": "00:31:00",
+          "remaining": "01:59:33.9164641",
+          "lowerBound": "01:37:47.3268675",
+          "upperBound": "02:33:05.6496525"
+        },
+        "nativeSafety": {
+          "noActivate": true,
+          "clickThrough": true,
+          "toolWindow": true,
+          "layered": true,
+          "foregroundUnchanged": true,
+          "mouseActivateResult": 3,
+          "hitTestResult": -1,
+          "bounds": {
+            "x": -558,
+            "y": 674,
+            "width": 540,
+            "height": 168
+          },
+          "monitor": "synthetic-selected-work-area",
+          "dpi": 144
+        },
+        "repeatedEvents": 20,
+        "coalescedDeliveries": 1,
+        "revalidations": 2,
+        "previewAcknowledged": 0,
+        "soundCallbacks": 1,
+        "audioHardwareAccessed": false,
+        "settingsStorage": "Synthetic fixture beneath the smoke report directory only",
+        "limits": "No physical-device trend, real game, exclusive-fullscreen compatibility, actual monitor switching, hardware DPI transition or user-input delivery was tested. Native safety styles and direct message-hook responses are measured in the CI desktop only."
+      }
+    },
+    "allWindowsJobsPassedFirstAttempt": true,
+    "screenshotsIdenticalToBaseline": true,
+    "screenshotsReviewed": [
+      "runtime-popup.png",
+      "gaming-alert.png",
+      "gaming-alert-settings.png",
+      "settings.png",
+      "settings-selected.png"
+    ],
+    "applicationLaunched": false,
+    "harnessLaunched": true,
+    "packagedApplicationAssembliesLoaded": true,
+    "hardwareVerified": false,
+    "limits": [
+      "Normal production apphost/controller/startup, live idle CPU/memory and lazy-popup integration were not run or timed.",
+      "Synthetic monitor workload is not startup/idle/physical performance; host changed from embedded app to companion so process snapshots are not a before-after product comparison.",
+      "Native styles/hooks/foreground snapshot only; actual game/input routing and physical DPI/power/Explorer/PnP events unverified.",
+      "No physical battery/device/endurance testing or new evidence of hardware capacity-health support.",
+      "Installer lifecycle uses current app bytes in its earlier-version fixture; no historical-binary migration claim.",
+      "No third-party production NuGet dependencies changed; all runtime/localization/license/notice bytes retained."
+    ]
+  },
+  "evidenceFileHashes": {
+    "build/application-smoke-evidence-framework-dependent-1/application-smoke.json": "7b637af87330e06b8a5a90240a39d95b8387bffd28630a7f3bb5e090a5378827",
+    "build/application-smoke-evidence-framework-dependent-1/capacity-details.png": "eeef4d9a493cce380fc60e08da1a3118b7b6748d1cd0b3a87ef869625e2331e2",
+    "build/application-smoke-evidence-framework-dependent-1/capacity-unavailable.png": "9fbea9ca40c0ec4988b93d26b3ce4a754835375325a1109da834fec680f5a476",
+    "build/application-smoke-evidence-framework-dependent-1/efficiency-workload.json": "4ffbadd552b62e40624c25f8d5a1ba990ef9ffc97f55b5d73f09935fef2e4c94",
+    "build/application-smoke-evidence-framework-dependent-1/gaming-alert-settings.png": "e5821eb02656c80195c201f34b388934b6b0e4e41d0f61b9762b970cd060d30c",
+    "build/application-smoke-evidence-framework-dependent-1/gaming-alert.png": "be594c7716f49901e81c3e36f0edbb1a396baccfb3b8ca1699dcb2e01e601879",
+    "build/application-smoke-evidence-framework-dependent-1/harness-build.log": "493664cd05f98fe99721a3841b19b5739ce970a3f9fbafe9ce38d4091e935e7e",
+    "build/application-smoke-evidence-framework-dependent-1/popup.png": "a319210514ff0f2fad086e14621316ac856083bc120acbd3fb9d0e26527fda7a",
+    "build/application-smoke-evidence-framework-dependent-1/runtime-popup.png": "99aa39a9e2d28f93340e40eb01499870ea8c58f0c4f84499075d098eb9984942",
+    "build/application-smoke-evidence-framework-dependent-1/settings-selected.png": "229c6c6ba681699708b5c20e0e3137694a48e8fc709a37e24004a2bcbfa30030",
+    "build/application-smoke-evidence-framework-dependent-1/settings.png": "e581fd1fe50af67463d8f0643e7a19b3bb182c78b48ab8de25f316bece4b3a9b",
+    "build/application-smoke-evidence-framework-dependent-1/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/application-smoke-evidence-framework-dependent-1/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/application-smoke-evidence-framework-dependent-1/synthetic-capacity-history.json": "c2f0689ff7c881853053f7db9bc72267c9bd0c8fd383afceb455614ad686eb64",
+    "build/application-smoke-evidence-framework-dependent-1/synthetic-capacity-pending.json": "22c5ed10836826713c1d1e286fb8716a2f4ec435ee754322cb502761fb00c6ea",
+    "build/application-smoke-evidence-framework-dependent-1/synthetic-capacity-restarted.json": "663db4264c484b3ee8255d85ef2196fff39479f1a2626e1f4d838c30d22bef66",
+    "build/application-smoke-evidence-framework-dependent-1/synthetic-gaming-settings/settings.json": "cb7b293c53a3e7a0802cd5d188b71fde6e05d8a9cac6d48d3dd7e1bfc6bd0e5e",
+    "build/application-smoke-evidence-framework-dependent-1/tray-0-48.png": "8f5b8330a9af1cce82eaed7e7f1fbf20981ca3471f2248098d110e779dcd2ff3",
+    "build/application-smoke-evidence-framework-dependent-1/tray-100-48.png": "3fc124134bf80b7023150664089f7732842a095f886572eaaa06cea643443357",
+    "build/application-smoke-evidence-framework-dependent-1/tray-neutral-48.png": "57352badb44082ecf722b2d47d51a9ec15ccef8d391b81e9e2a8f8bfd4d1e471",
+    "build/application-smoke-evidence-framework-dependent-1/updates-off.png": "e60fbfb4b37d983d3eb3afb2e405bc7614c0528efc9f6be13d587b2622bec9b9",
+    "build/application-smoke-evidence-self-contained-1/application-smoke.json": "6e75a04f519c335d66e9bc5d6bd5ee240c50fe37c9db6ddb431ab2f5ca4b0bfe",
+    "build/application-smoke-evidence-self-contained-1/capacity-details.png": "eeef4d9a493cce380fc60e08da1a3118b7b6748d1cd0b3a87ef869625e2331e2",
+    "build/application-smoke-evidence-self-contained-1/capacity-unavailable.png": "9fbea9ca40c0ec4988b93d26b3ce4a754835375325a1109da834fec680f5a476",
+    "build/application-smoke-evidence-self-contained-1/efficiency-workload.json": "877c69b3db10bb37e9e726c46f3576ccff246d7a474668556f702cf5fde767e3",
+    "build/application-smoke-evidence-self-contained-1/gaming-alert-settings.png": "e5821eb02656c80195c201f34b388934b6b0e4e41d0f61b9762b970cd060d30c",
+    "build/application-smoke-evidence-self-contained-1/gaming-alert.png": "be594c7716f49901e81c3e36f0edbb1a396baccfb3b8ca1699dcb2e01e601879",
+    "build/application-smoke-evidence-self-contained-1/harness-build.log": "dadb50f174206f7b997a5b1022880682fa828c6735d2fb75964dda32c8ddf40c",
+    "build/application-smoke-evidence-self-contained-1/popup.png": "a319210514ff0f2fad086e14621316ac856083bc120acbd3fb9d0e26527fda7a",
+    "build/application-smoke-evidence-self-contained-1/runtime-popup.png": "99aa39a9e2d28f93340e40eb01499870ea8c58f0c4f84499075d098eb9984942",
+    "build/application-smoke-evidence-self-contained-1/settings-selected.png": "229c6c6ba681699708b5c20e0e3137694a48e8fc709a37e24004a2bcbfa30030",
+    "build/application-smoke-evidence-self-contained-1/settings.png": "e581fd1fe50af67463d8f0643e7a19b3bb182c78b48ab8de25f316bece4b3a9b",
+    "build/application-smoke-evidence-self-contained-1/stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/application-smoke-evidence-self-contained-1/stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build/application-smoke-evidence-self-contained-1/synthetic-capacity-history.json": "51e29dc9390ee932b67df29d4e34e5e55e55d9411d74ac6ce01041b8ed12c5e9",
+    "build/application-smoke-evidence-self-contained-1/synthetic-capacity-pending.json": "22c5ed10836826713c1d1e286fb8716a2f4ec435ee754322cb502761fb00c6ea",
+    "build/application-smoke-evidence-self-contained-1/synthetic-capacity-restarted.json": "663db4264c484b3ee8255d85ef2196fff39479f1a2626e1f4d838c30d22bef66",
+    "build/application-smoke-evidence-self-contained-1/synthetic-gaming-settings/settings.json": "f373de9b4af10d2cc1cbca00d387bdd56f9132ede80ffea1913321dfcdb615de",
+    "build/application-smoke-evidence-self-contained-1/tray-0-48.png": "8f5b8330a9af1cce82eaed7e7f1fbf20981ca3471f2248098d110e779dcd2ff3",
+    "build/application-smoke-evidence-self-contained-1/tray-100-48.png": "3fc124134bf80b7023150664089f7732842a095f886572eaaa06cea643443357",
+    "build/application-smoke-evidence-self-contained-1/tray-neutral-48.png": "57352badb44082ecf722b2d47d51a9ec15ccef8d391b81e9e2a8f8bfd4d1e471",
+    "build/application-smoke-evidence-self-contained-1/updates-off.png": "e60fbfb4b37d983d3eb3afb2e405bc7614c0528efc9f6be13d587b2622bec9b9",
+    "build/compile-evidence-1/compile.log": "8d69ac5f73268b45326c4e13c0ba68d961110788572f96ee6826e827a489de33",
+    "build/compile-evidence-1/restore.log": "7c93766c0db83f127cfd98de1f0aaffb2e4870c6bd74c234dc1f7856ccf8998b",
+    "build/focused-unit-tests-evidence-1/TestResults/focused.trx": "c88d669f7487e1002a0d87ee5de532e9b2e9b8791d098bff593a08e3f97d4e40",
+    "build/focused-unit-tests-evidence-1/ci-logs/focused.log": "e94551302f635b8f4c41a285c5d215918dce7b5985a7a1a9e6439b718b1c4673",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/blocked-running-application.log": "af28cdc7625af9095f8d4fb123af902f2fb9eac93217d01738609e0042904f0e",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/install-prior-fixture.log": "7cb8d672e486edcee8aeb583495ba4f7ff7fbec34609cfb8dcdca43be94eb9eb",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/installer-smoke.json": "04dd158be129258b0ba51f230d62749672a1be187d71ad27280545349f02957c",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/reinstall-current.log": "650f279cd308d889ba38a62624d8d5792800e7c076c1ff1585ef991cec610ae1",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/uninstall-foreign-startup.log": "f62ae84132760da54b48ab65df166bf68d388a39fc2e7726816e24498be42feb",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/uninstall-owned-startup.log": "8a06fe6241e6312a82f2efafb578070eacc2d47492045d908d6eda29e6122cc3",
+    "build/installer-smoke-evidence-1/artifacts/installer-smoke/upgrade-to-current.log": "050859e054d2001e08800b0074c95671e34780942d8ca0b635d20d2437c9d1ee",
+    "build/installer-smoke-evidence-1/ci-logs/installer-compile.log": "47784616529285690739aebbdcb1a290e37cdf39a3fa8fb80d0468099cd0b3cc",
+    "build/installer-smoke-evidence-1/ci-logs/installer-compiler-probe.log": "b7dffc9642cbcfc2294c5a34297ed89c1e4ca7932acb20810419cf23f493c15d",
+    "build/installer-smoke-evidence-1/ci-logs/installer-upgrade-fixture-compile.log": "4cd9ae2650afb6630de83ffdbb58b17c663905ab8fef5f0f03d67d23f5516a96",
+    "build/offline-capture-tests-evidence-1/offline.log": "55fe93d2c98bd9f7962731fb753d1fd88726da530cf143502395589303b405fc",
+    "build/package-evidence-framework-dependent-1/package-size-framework-dependent.json": "4ad8075d7b03555ee80a55502a4aa47938196c5c3f0749e701ead6b5d193da7d",
+    "build/package-evidence-framework-dependent-1/publish-framework-dependent.log": "117709675c60f1cd1071503a96edefb631b7074c79c49209832d3efa8857251c",
+    "build/package-evidence-self-contained-1/package-size-self-contained.json": "294d8affc92f16fbea7ecb9346e7999b78581f9de7d2820253685355f6d0edf8",
+    "build/package-evidence-self-contained-1/publish-self-contained.log": "2418cb80d08864bbd309bed235b302ad2bc4c6ef94a9416d5b3409e0a173782e",
+    "build/windows-installer-win-x64-1/installer-release.json": "d9d21248fdda36f8f3a8def99340ff66bda1e26b096d2ed54579da3e8f7a1971",
+    "full/full-offline-parser-tests-1/offline.log": "55fe93d2c98bd9f7962731fb753d1fd88726da530cf143502395589303b405fc",
+    "full/full-release-automation-tests-1/release-automation.log": "e20b93dd4ea2dae1296aff48314b549fc92d71e1967b1b0ef16e026b4b858dfa",
+    "full/full-software-tests-Debug-1/TestResults/full-Debug.json": "6555e6bd0c59ef44aa011a76cbb6f78344e917d16750bfc894e2d46f50c78f3f",
+    "full/full-software-tests-Debug-1/TestResults/runneradmin_runnervmdaln5_2026-10-25_21_37_17_net10.0.trx": "a1fc24d3bf9ecee87d68e07ab8e0c1e6a2892d5abcd210c17e591a18c6fbcb53",
+    "full/full-software-tests-Debug-1/ci-logs/full-Debug.log": "57322b238fbec007596e3abee88c7bf3e772f4ae453626aa241364a7ba565770",
+    "full/full-software-tests-Release-1/TestResults/full-Release.json": "6c06788df13990f22244080e551753baf21ccf89feec1de31217064205b527e8",
+    "full/full-software-tests-Release-1/TestResults/runneradmin_runnervmdaln5_2026-10-25_21_37_04_net10.0.trx": "32f4fe2fb58e61da9a774af5923ee8d5734054f48d17e041c0a5830c5a427d43",
+    "full/full-software-tests-Release-1/ci-logs/full-Release.log": "02fcb11b3c65a97b1a981091a13dc6d41f8810338c760ea083ce330590df65a2"
+  },
+  "filesChanged": [
+    "A\t.github/scripts/build-smoke-harness.ps1",
+    "A\t.github/scripts/measure-package-size.py",
+    "M\t.github/scripts/package-windows.ps1",
+    "M\t.github/scripts/publish-verified-preview.py",
+    "M\t.github/scripts/run-application-smoke.ps1",
+    "A\t.github/scripts/test_measure_package_size.py",
+    "M\t.github/scripts/test_publish_verified_preview.py",
+    "M\t.github/scripts/verify-windows-package.ps1",
+    "M\t.github/workflows/full-software-tests.yml",
+    "M\t.github/workflows/windows-build.yml",
+    "M\tDeviceBatteryStatus.sln",
+    "A\tdocs/lightweight-optimization.md",
+    "M\tglobal.json",
+    "M\tsrc/DeviceBatteryStatus.App/App.xaml",
+    "M\tsrc/DeviceBatteryStatus.App/App.xaml.cs",
+    "M\tsrc/DeviceBatteryStatus.App/ApplicationController.cs",
+    "A\tsrc/DeviceBatteryStatus.App/Properties/AssemblyInfo.cs",
+    "A\tsrc/DeviceBatteryStatus.App/Themes/Controls.xaml",
+    "M\tsrc/DeviceBatteryStatus.App/Tray/TrayIconManager.cs",
+    "M\tsrc/DeviceBatteryStatus.Core/Alerts/GamingAlertPolicy.cs",
+    "A\tsrc/DeviceBatteryStatus.Core/Alerts/GamingAlertPreferences.cs",
+    "M\tsrc/DeviceBatteryStatus.Core/Diagnostics/DiagnosticLog.cs",
+    "M\tsrc/DeviceBatteryStatus.Core/Health/CapacityHealthService.cs",
+    "M\tsrc/DeviceBatteryStatus.Core/Settings/FileSettingsStore.cs",
+    "A\ttests/DeviceBatteryStatus.Smoke/DeviceBatteryStatus.Smoke.csproj",
+    "A\ttests/DeviceBatteryStatus.Smoke/Program.cs",
+    "A\ttests/DeviceBatteryStatus.Smoke/SmokeProvenance.cs",
+    "R100\tsrc/DeviceBatteryStatus.App/Testing/EfficiencyWorkload.cs\ttests/DeviceBatteryStatus.Smoke/Testing/EfficiencyWorkload.cs",
+    "R100\tsrc/DeviceBatteryStatus.App/Testing/GamingAlertSmoke.cs\ttests/DeviceBatteryStatus.Smoke/Testing/GamingAlertSmoke.cs",
+    "R097\tsrc/DeviceBatteryStatus.App/Testing/SoftwareSmokeTest.cs\ttests/DeviceBatteryStatus.Smoke/Testing/SoftwareSmokeTest.cs",
+    "A\ttests/DeviceBatteryStatus.Tests/CapacityCacheBoundsTests.cs",
+    "A\ttests/DeviceBatteryStatus.Tests/GamingAlertPreferencesTests.cs",
+    "A\ttests/DeviceBatteryStatus.Tests/StorageBoundsTests.cs"
+  ],
+  "documentationFollowupFiles": [
+    "README.md",
+    "docs/lightweight-optimization.md",
+    "docs/verification.md",
+    ".github/reviews/1.2.0-gaming.json",
+    ".github/reviews/1.2.0-lightweight.json",
+    ".github/reviews/1.2.0-lightweight.md"
+  ]
+}

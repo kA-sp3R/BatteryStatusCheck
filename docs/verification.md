@@ -1,6 +1,14 @@
 # Verification
 
-## 1.2.0 candidate with runtime and gaming alerts
+## 1.2.0 lightweight candidate
+
+The optimized unpublished candidate passed at source `46123738ffa203b4978bc06d8fa94e97d34c75ab`: Windows compilation, 1,116 C# cases each in Debug/Release, 5 parser/39 automation cases, both portable inspections, 18 companion checks per flavor and 64 installer lifecycle assertions. [Build/packages/companion run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40236243538), [full software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40236244173), [source/run/count/hash record](../.github/reviews/1.2.0-lightweight.json).
+
+Framework-dependent download fell 391,744→336,205 bytes (14.18%); self-contained 76,418,618→73,783,640 (3.45%). Extracted payload fell by 140,239 bytes each. All 468 bundled runtime/localisation files and notices retain their hashes. [Full report](lightweight-optimization.md) records exact package/extracted sizes, contributors, file/dependency changes, actual synthetic CPU/memory/handle observations, tradeoffs and remaining limits.
+
+Verification fixtures now run in a separate companion that loads the exact packaged DLLs and, for self-contained, the actual bundled runtime. The production apphost/startup/controller is not launched. Screenshots match the baseline exactly; no physical hardware, network, startup registration or games are accessed. Startup/idle performance, real input routing, physical DPI/power/PnP/Explorer events and endurance remain unverified. Size reduction does not establish lower CPU/memory. No new release exists; v1.1.0 remains published.
+
+## Earlier runtime/gaming 1.2.0 snapshot
 
 The expanded unpublished 1.2.0 candidate passed at source `1ca669c2b90770d7074cad4b98f156b0031a9240`: Windows compilation; 1,095 C# cases each in Debug/Release (zero failed/skipped); 5 parser/18 release-policy cases; both portable inspections; 18 isolated application checks per flavor; and 64 installer lifecycle assertions. [Build/package/smoke run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40233889412), [full-software run](https://github.com/kA-sp3R/BatteryStatusCheck/actions/runs/40233889759), [source/run/hash review](../.github/reviews/1.2.0-gaming.json).
 
